@@ -58,7 +58,7 @@ for (const ind of CS.INDUSTRIES) {
         if (!process.env.NOADS) CS.CELEB_ADS.forEach(a => { if (G.adReadyIn(g, a) === 0 && G.adChance(g, a) > 0.25 && Math.random() < 0.5) G.tryAd(g, a.id); });
         const war = G.warInit(g);
         if (!process.env.NOWAR && war.energy > 0 && Math.random() < 0.3 && G.warAttackRival(g, CS.U.pick(g.rivals))) {
-          while (!war.battle.done) G.warRound(g, CS.U.pick(CS.WAR_TACTICS).id);
+          while (!war.battle.done) G.warSubmit(g, G.warGame(war.battle.games[war.battle.mine.length]).typical * CS.U.rand(0.6, 1.3));
           G.warClose(g);
         }
         CS.UPGRADES.forEach(u => { const c = G.upCost(g, u.id); if (c && g.cash > c * 4 && g.level >= G.upNeedLevel(g, u.id)) G.buyUpgrade(g, u.id); });

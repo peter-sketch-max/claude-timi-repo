@@ -204,13 +204,14 @@ CS.CATS = {
   business: { label: 'Business', emoji: '🏪', color: '#FF7A3D' },
   customers: { label: 'Customers', emoji: '🛍️', color: '#20C997' },
   social: { label: 'Social Media', emoji: '📱', color: '#FF5FA2' },
-  boss: { label: 'Boss Stuff', emoji: '👔', color: '#7C4DFF' },
-  funny: { label: 'Funny', emoji: '😂', color: '#FFB020' },
-  trouble: { label: 'Big Trouble', emoji: '🚨', color: '#FF4D5E' },
-  lucky: { label: 'Lucky', emoji: '🍀', color: '#12B886' },
+  boss: { label: 'Your Life', emoji: '👔', color: '#7C4DFF' },
+  money: { label: 'Money', emoji: '💰', color: '#E0A100' },
+  trouble: { label: 'Trouble', emoji: '🚨', color: '#FF4D5E' },
+  shady: { label: 'Shady Deal', emoji: '🕶️', color: '#495057' },
+  lucky: { label: 'Lucky Break', emoji: '🍀', color: '#12B886' },
   rivals: { label: 'Rivals', emoji: '🥊', color: '#E8590C' },
   world: { label: 'World News', emoji: '🌍', color: '#4263EB' },
-  weird: { label: 'Legendary', emoji: '✨', color: '#9C36B5' }
+  legendary: { label: 'Legendary', emoji: '✨', color: '#9C36B5' }
 };
 
 // Missions. Each gives a goal and a reward. check(g, m) returns [current, target].
@@ -301,7 +302,7 @@ CS.VIP_PERKS = [
   ['🎯', '4 missions at once', 'One extra mission slot with bigger rewards'],
   ['💤', 'Bigger offline earnings', 'Your shop earns 2x while you are away'],
   ['📺', 'Extra ad try', '4 free ad tries every week instead of 3'],
-  ['⚔️', 'More war energy', 'Store up to 4 war energy instead of 3'],
+  ['⚔️', 'Unlimited Friend Wars', 'Battle friends as much as you want, and store 4 war energy'],
   ['👑', 'VIP look', 'Golden name badge and VIP logos']
 ];
 CS.VIP_LOGOS = ['👑', '💰', '🏆', '🪐', '🐉', '🌈'];
@@ -331,12 +332,13 @@ CS.CELEB_ADS = [
   { id: 'queen', emoji: '👑', name: 'Worldwide Icon Ad', who: 'global icon Queen Sky', need: 5000000, cd: 13, boost: 0.4, weeks: 6, fans: 80, rep: 10, xp: 45, tags: [] }
 ];
 
-// Company Wars. Each tactic beats one other tactic: 💸 > 🕵️ > 🛡️ > 📣 > 💸.
-CS.WAR_TACTICS = [
-  { id: 'price', emoji: '💸', name: 'Price Attack', beats: 'spy' },
-  { id: 'spy', emoji: '🕵️', name: 'Spy Mission', beats: 'shield' },
-  { id: 'shield', emoji: '🛡️', name: 'Iron Defense', beats: 'blitz' },
-  { id: 'blitz', emoji: '📣', name: 'Ad Blitz', beats: 'price' }
+// Company Wars: 5 rounds, one of each game (in a random order). typical = a normal score, used for AI rivals.
+CS.WAR_GAMES = [
+  { id: 'coins', emoji: '💰', name: 'Coin Rush', desc: 'Tap the coins fast. Gold coins are worth 3. Don\'t tap the bombs!', typical: 16 },
+  { id: 'stop', emoji: '🎯', name: 'Perfect Stop', desc: 'Tap to stop the bar in the green zone. 5 tries, and it gets faster!', typical: 300 },
+  { id: 'whack', emoji: '🔨', name: 'Whack-a-Rival', desc: 'Hit your rival\'s logo when it pops up. Don\'t hit your own!', typical: 11 },
+  { id: 'math', emoji: '🧮', name: 'Quick Math', desc: 'Answer as many as you can in 15 seconds.', typical: 6 },
+  { id: 'memory', emoji: '🧠', name: 'Memory Grid', desc: 'Remember the lit squares, then tap them. One mistake and it\'s over! 25 seconds.', typical: 12 }
 ];
 CS.WAR_RANKS = [
   { emoji: '🪖', name: 'Recruit', min: 0 },

@@ -7,7 +7,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   var KEYS = {
     main: 'companysim_save_v2', daily: 'companysim_daily_v2', legacy: 'companysim_legacy_v1',
     book: 'companysim_book_v1', settings: 'companysim_settings_v1', gift: 'companysim_gift_v1', best: 'companysim_dailybest_v1',
-    share: 'companysim_share_v1'
+    share: 'companysim_share_v1', friendwar: 'companysim_friendwar_v1'
   };
   var MAX_DECISIONS = 3;
   var MINIGAMES = { boxes: 1, wheel: 1, tap: 1, post: 1, quiz: 1, deal: 1, vs: 1, interview: 1 };
@@ -755,12 +755,12 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   function rollCount(g) {
     var r = U.random(), n;
-    if (r < 0.18) n = 0;
-    else if (r < 0.52) n = 1;
-    else if (r < 0.75) n = 2;
-    else if (r < 0.88) n = 3;
-    else if (r < 0.945) n = 4;
-    else { n = 5; while (U.chance(0.35)) n++; }
+    if (r < 0.22) n = 0;
+    else if (r < 0.6) n = 1;
+    else if (r < 0.82) n = 2;
+    else if (r < 0.93) n = 3;
+    else if (r < 0.975) n = 4;
+    else { n = 5; while (U.chance(0.3)) n++; }
     if (g.employees.length > 20 && U.chance(0.3)) n++;
     if (g.week <= 2) n = Math.max(1, Math.min(n, 1));
     return n;
@@ -975,7 +975,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   G.currentEvent = function (g) {
     while (g.queue.length) {
       var x = g.queue[0];
-      if (ctxValid(g, x.ctx)) return x;
+      if (CS.EV[x.id] && ctxValid(g, x.ctx)) return x;
       g.queue.shift();
     }
     return null;
@@ -1220,119 +1220,218 @@ var CS = globalThis.CS = globalThis.CS || {};
   };
 
   // ---------- Company Wars ----------
-  // No server needed: rivals are AI companies, and friends battle each other with war codes they send in any chat app.
+  // A war is 5 rounds, each one a different quick game (see CS.WAR_GAMES). Win more rounds to win the war.
+  // The winner takes 10% of the loser's fans. Rivals are AI companies. Friends battle with war codes and no server:
+  // a code carries the sender's 5 scores and the game seed, so both players get exactly the same games.
 
+  G.WAR_FAN_SHARE = 0.1;
+  G.FRIEND_WARS_PER_DAY = 3;
   G.warInit = function (g) {
-    if (!g.war) g.war = { trophies: 0, wins: 0, losses: 0, friendWins: 0, energy: 3, id: Math.random().toString(36).slice(2, 10), plan: ['price', 'spy', 'shield'], fought: {}, battle: null };
+    if (!g.war || g.war.v !== 2) {
+      var old = g.war || {};
+      g.war = { v: 2, trophies: old.trophies || 0, wins: old.wins || 0, losses: old.losses || 0, friendWins: old.friendWins || 0,
+        energy: old.energy == null ? 3 : old.energy, id: old.id || Math.random().toString(36).slice(2, 10), battle: null, last: null };
+    }
     return g.war;
   };
   G.warMaxEnergy = function () { return G.isVIP() ? 4 : 3; };
-  G.warPower = function (g) {
-    var emps = g.employees, skill = emps.length ? emps.reduce(function (s, e) { return s + e.skill; }, 0) / emps.length : 0;
-    var ups = CS.UPGRADES.reduce(function (s, u) { return s + G.upLevel(g, u.id); }, 0);
-    return Math.round(20 * Math.log10(Math.max(1000, G.valuation(g))) + 3 * Math.sqrt(emps.length) * skill / 10 +
-      15 * Math.log10(g.followers + 10) + g.reputation * 0.8 + g.level * 3 + ups * 2 + (g.cups ? g.cups.gold * 4 : 0));
-  };
   G.warRankIndex = function (g) {
     var t = g.war ? g.war.trophies : 0, i = 0;
     CS.WAR_RANKS.forEach(function (r, k) { if (t >= r.min) i = k; });
     return i;
   };
-  G.tactic = function (id) { return CS.WAR_TACTICS.find(function (t) { return t.id === id; }); };
-  // Each rival has a favorite tactic. Your spies can find out which one.
-  G.rivalStyle = function (name) { return CS.WAR_TACTICS[U.hash(name) % 4].id; };
-  G.rivalWarPower = function (g, rv) { return Math.round(G.warPower(g) * (0.72 + 0.28 * rv.power)); };
+  G.warGame = function (id) { return CS.WAR_GAMES.find(function (w) { return w.id === id; }); };
 
-  function startBattle(g, foe) {
-    var w = G.warInit(g);
-    w.battle = { foe: foe, me: { name: g.company.name, logo: g.company.logo, color: g.company.color, power: G.warPower(g) }, rounds: [], done: false, result: null };
+  // Friend wars: 3 a day, unlimited with VIP. Counted per device.
+  G.friendWarsLeft = function () {
+    if (G.isVIP()) return Infinity;
+    var d = readJSON(KEYS.friendwar) || {};
+    return d.day === U.today() ? Math.max(0, G.FRIEND_WARS_PER_DAY - d.used) : G.FRIEND_WARS_PER_DAY;
+  };
+  function useFriendWar() {
+    if (G.isVIP()) return;
+    var d = readJSON(KEYS.friendwar) || {};
+    writeJSON(KEYS.friendwar, { day: U.today(), used: (d.day === U.today() ? d.used : 0) + 1 });
+  }
+
+  // Seeded random numbers just for the war games, so a war code always makes the same games.
+  function srng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  G.warOrder = function (seed) {
+    var r = srng(seed), ids = CS.WAR_GAMES.map(function (w) { return w.id; });
+    for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
+    return ids;
+  };
+  // Everything a game needs (coin spots, questions, lit squares...), made from the seed.
+  G.warGameData = function (id, seed) {
+    var r = srng(seed * 31 + U.hash(id)), list = [], t, k;
+    if (id === 'coins') {
+      for (t = 300; t < 7800; t += 210 + r() * 150) list.push({ t: Math.round(t), x: r(), y: r(), bomb: r() < 0.18, gold: r() < 0.1 });
+      return { secs: 8, items: list };
+    }
+    if (id === 'stop') {
+      for (k = 0; k < 5; k++) list.push({ zone: 0.12 + r() * 0.56, width: 0.26 - k * 0.035, speed: 0.75 + k * 0.22 + r() * 0.1, phase: r() });
+      return { tries: list };
+    }
+    if (id === 'whack') {
+      for (t = 400; t < 9600; t += 330 + r() * 220) list.push({ t: Math.round(t), hole: Math.floor(r() * 9), mine: r() < 0.28, dur: Math.round(950 - (t / 9600) * 380) });
+      return { secs: 10, pops: list };
+    }
+    if (id === 'math') {
+      for (k = 0; k < 40; k++) {
+        var type = Math.floor(r() * 4), a, b, q, ans;
+        if (type === 0) { a = 2 + Math.floor(r() * 25); b = 2 + Math.floor(r() * 25); q = a + ' + ' + b; ans = a + b; }
+        else if (type === 1) { a = 10 + Math.floor(r() * 40); b = 1 + Math.floor(r() * (a - 1)); q = a + ' − ' + b; ans = a - b; }
+        else if (type === 2) { a = 2 + Math.floor(r() * 8); b = 2 + Math.floor(r() * 8); q = a + ' × ' + b; ans = a * b; }
+        else { a = 2 + Math.floor(r() * 6); b = [2, 3, 4, 5, 10][Math.floor(r() * 5)]; q = a + ' items at $' + b; ans = a * b; }
+        var opts = [ans];
+        while (opts.length < 4) { var o = ans + (Math.floor(r() * 9) - 4) * (type === 2 || type === 3 ? 2 : 1); if (o > 0 && opts.indexOf(o) < 0) opts.push(o); }
+        for (var i = 3; i > 0; i--) { var j = Math.floor(r() * (i + 1)), tmp = opts[i]; opts[i] = opts[j]; opts[j] = tmp; }
+        list.push({ q: q, options: opts.map(function (o) { return (type === 3 ? '$' : '') + o; }), answer: opts.indexOf(ans) });
+      }
+      return { secs: 15, questions: list };
+    }
+    // memory: 5 levels with 3, 4, 5, 6 and 7 lit squares out of 9
+    for (k = 3; k <= 7; k++) {
+      var cells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+      for (var m = cells.length - 1; m > 0; m--) { var n = Math.floor(r() * (m + 1)), c = cells[m]; cells[m] = cells[n]; cells[n] = c; }
+      list.push(cells.slice(0, k));
+    }
+    return { levels: list, show: 1300, secs: 25 };
+  };
+
+  G.rivalFans = function (g, rv) { return Math.max(40, Math.round(g.followers * (0.6 + 0.4 * rv.power))); };
+  function aiScores(g, games, power) {
+    var s = U.clamp(0.72 + 0.28 * power, 0.75, 1.25) * Math.min(1, 0.85 + g.week / 300);
+    return games.map(function (id) { return Math.max(1, Math.round(G.warGame(id).typical * s * U.rand(0.75, 1.2))); });
+  }
+  function newBattle(g, kind, foe, seed) {
+    var w = G.warInit(g), games = G.warOrder(seed);
+    w.battle = { kind: kind, foe: foe, seed: seed, games: games, mine: [], rounds: [], done: false, result: null };
     return w.battle;
   }
   G.warAttackRival = function (g, name) {
     var w = G.warInit(g), rv = G.rivalByName(g, name);
     if (!rv || w.energy < 1 || (w.battle && !w.battle.done)) return null;
     w.energy--;
-    return startBattle(g, { kind: 'rival', name: rv.name, logo: rv.logo, color: rv.color, power: Math.round(G.rivalWarPower(g, rv) * U.rand(0.92, 1.08)), style: G.rivalStyle(rv.name) });
+    var seed = Math.floor(Math.random() * 1e9), games = G.warOrder(seed);
+    return newBattle(g, 'rival', { name: rv.name, logo: rv.logo, color: rv.color, fans: G.rivalFans(g, rv), scores: aiScores(g, games, rv.power) }, seed);
   };
-  G.warRound = function (g, tacticId) {
-    var w = G.warInit(g), b = w.battle, me = G.tactic(tacticId);
-    if (!b || b.done || !me) return null;
-    var r = b.rounds.length, them;
-    if (b.foe.plan) them = G.tactic(b.foe.plan[r]);
-    else them = U.chance(0.4) ? G.tactic(b.foe.style) : U.pick(CS.WAR_TACTICS);
-    var mult = function (x, y) { return x.beats === y.id ? 1.35 : y.beats === x.id ? 0.75 : 1; };
-    var mine = b.me.power * mult(me, them) * U.rand(0.85, 1.15), theirs = b.foe.power * mult(them, me) * U.rand(0.85, 1.15);
-    var round = { me: me.id, them: them.id, win: mine >= theirs, beat: me.beats === them.id ? 1 : them.beats === me.id ? -1 : 0 };
+  G.warStartFriend = function (g, foe) {
+    var w = G.warInit(g);
+    if (!foe || foe.error || G.friendWarsLeft() < 1 || (w.battle && !w.battle.done)) return null;
+    useFriendWar();
+    return newBattle(g, 'friend', foe, foe.seed);
+  };
+  // A practice run makes a challenge code for friends. It's free and has no winner.
+  G.warStartChallenge = function (g) {
+    var w = G.warInit(g);
+    if (w.battle && !w.battle.done) return null;
+    return newBattle(g, 'challenge', null, Math.floor(Math.random() * 1e9));
+  };
+  G.warRematch = function (g) {
+    var w = G.warInit(g), last = w.last;
+    if (!last || (w.battle && !w.battle.done)) return null;
+    if (last.kind === 'friend') return G.warStartFriend(g, last.foe);
+    if (last.kind === 'rival') return G.warAttackRival(g, last.foe.name);
+    return G.warStartChallenge(g);
+  };
+  // Saves your score for the current round and compares it with theirs.
+  G.warSubmit = function (g, score) {
+    var w = G.warInit(g), b = w.battle;
+    if (!b || b.done) return null;
+    var i = b.mine.length, mine = Math.max(0, Math.round(score) || 0);
+    b.mine.push(mine);
+    var round = { game: b.games[i], mine: mine };
+    if (b.foe) { round.theirs = b.foe.scores[i]; round.win = mine > round.theirs ? 1 : mine < round.theirs ? -1 : 0; }
     b.rounds.push(round);
-    var wins = b.rounds.filter(function (x) { return x.win; }).length, losses = b.rounds.length - wins;
-    if (wins >= 2 || losses >= 2) finishBattle(g, b, wins >= 2);
+    if (b.mine.length === b.games.length) finishBattle(g, b);
     return round;
   };
-  function finishBattle(g, b, won) {
-    var w = g.war, before = G.snap(g), friend = b.foe.kind === 'friend', t0 = w.trophies, text;
+  function finishBattle(g, b) {
+    var w = g.war, before = G.snap(g), t0 = w.trophies, text;
     b.done = true;
+    w.last = { kind: b.kind, foe: b.foe };
+    if (b.kind === 'challenge') {
+      b.result = { won: null, text: 'Your scores are ready. Send the code to a friend and see if they can beat you!', chips: [] };
+      G.save(g);
+      return;
+    }
+    var mineWins = b.rounds.filter(function (r) { return r.win > 0; }).length, theirWins = b.rounds.filter(function (r) { return r.win < 0; }).length;
+    if (mineWins === theirWins) { // tie-break: who was better overall
+      var edge = b.rounds.reduce(function (s, r) { return s + (r.mine - r.theirs) / G.warGame(r.game).typical; }, 0);
+      if (edge > 0) mineWins++; else if (edge < 0) theirWins++;
+    }
+    var won = mineWins > theirWins, friend = b.kind === 'friend', fans;
     if (won) {
+      fans = Math.max(1, Math.round(b.foe.fans * G.WAR_FAN_SHARE));
+      g.followers += fans;
       w.wins++;
-      var underdog = b.foe.power > b.me.power;
-      w.trophies += (friend ? 5 : 3) + (underdog ? 1 : 0);
-      g.cash += G.prize(g, friend ? 1 : 0.6 + (underdog ? 0.3 : 0));
+      w.trophies += friend ? 5 : 3;
       if (friend) w.friendWins++;
-      else G.rivalShift(g, b.foe.name, -0.08);
+      else { G.rivalShift(g, b.foe.name, -0.08); g.cash += G.prize(g, 0.4); }
       G.addXP(g, friend ? 30 : 25);
-      text = friend ? 'You beat ' + b.foe.name + '! Send them a message to rub it in. 😎' : b.foe.name + ' is running away! Their power went down. 🏳️';
-      G.news(g, '⚔️ Won a war against ' + b.foe.name + '!', 'good');
+      text = 'You took ' + U.num(fans) + ' fans from ' + b.foe.name + '!';
+      G.news(g, '⚔️ Beat ' + b.foe.name + ' in a war and took ' + U.num(fans) + ' fans!', 'good');
     } else {
+      fans = Math.round(g.followers * G.WAR_FAN_SHARE);
+      g.followers = Math.max(0, g.followers - fans);
       w.losses++;
       w.trophies = Math.max(0, w.trophies - (friend ? 2 : 1));
-      if (!friend) { g.cash -= G.cost(g, 0.25); G.rivalShift(g, b.foe.name, 0.03); }
+      if (!friend) G.rivalShift(g, b.foe.name, 0.03);
       G.addXP(g, friend ? 10 : 8);
-      text = friend ? b.foe.name + ' was too strong this time. Grow and try again tomorrow! 💪' : b.foe.name + ' won this battle. They took some of your cash. 😤';
-      G.news(g, '⚔️ Lost a war against ' + b.foe.name + '.', 'bad');
+      text = b.foe.name + ' won and took ' + U.num(fans) + ' of your fans.';
+      G.news(g, '⚔️ Lost a war to ' + b.foe.name + '. They took ' + U.num(fans) + ' fans.', 'bad');
     }
     G.clampAll(g);
     var chips = G.diff(before, g), dt = w.trophies - t0;
     if (dt) chips.unshift({ txt: '🏆 ' + (dt > 0 ? '+' : '') + dt + ' war trophies', good: dt > 0 });
-    b.result = { won: won, text: text, chips: chips, unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g) };
+    b.result = { won: won, score: [mineWins, theirWins], fans: fans, text: text, chips: chips, unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g) };
     G.save(g);
   }
   G.warClose = function (g) { if (g.war && g.war.battle && g.war.battle.done) g.war.battle = null; };
 
-  // War codes: a snapshot of your company and your secret 3-round defense plan, with a checksum so it can't be edited easily.
-  function warSum(json) { return (U.hash(json + '|cs-war') >>> 0).toString(36).slice(0, 6); }
-  G.warCode = function (g) {
+  // War codes (v2): your company, fans and your 5 scores on one seed, with a checksum so they can't be edited easily.
+  function warSum(json) { return (U.hash(json + '|cs-war2') >>> 0).toString(36).slice(0, 6); }
+  G.warCode = function (g, b) {
     var w = G.warInit(g);
-    var json = JSON.stringify({ v: 1, id: w.id, n: g.company.name.slice(0, 24), l: g.company.logo, c: g.company.color, i: g.company.industry, p: G.warPower(g), pl: w.plan, t: w.trophies });
-    return 'CSW1.' + U.b64enc(json) + '.' + warSum(json);
+    var json = JSON.stringify({ v: 2, id: w.id, n: g.company.name.slice(0, 24), l: g.company.logo, c: g.company.color, i: g.company.industry, f: g.followers, t: w.trophies, s: b.seed, sc: b.mine });
+    return 'CSW2.' + U.b64enc(json) + '.' + warSum(json);
   };
-  G.warCodeText = function (g) {
-    return '⚔️ WAR! ' + g.company.logo + ' ' + g.company.name + ' (power ' + G.warPower(g) + ') challenges you in Company Simulator!\n' +
-      'Open the ⚔️ War page and paste this code:\n' + G.warCode(g) + (CS.SHARE_URL ? '\n' + CS.SHARE_URL : '');
+  G.warCodeText = function (g, b) {
+    var total = b.mine.reduce(function (s, x) { return s + x; }, 0);
+    return '⚔️ ' + g.company.logo + ' ' + g.company.name + ' challenges you to a Company War! 5 games, and the winner takes 10% of the loser\'s fans.\n' +
+      'My scores: ' + b.mine.join(' · ') + ' (total ' + total + '). Can you beat them?\n' +
+      'Open Company Simulator → ⚔️ Wars → paste this code:\n' + G.warCode(g, b) + (CS.SHARE_URL ? '\n' + CS.SHARE_URL : '');
   };
   // Returns a foe, or { error } if the code is broken.
   G.readWarCode = function (g, text) {
-    var m = /CSW1\.([A-Za-z0-9_-]+)\.([a-z0-9]+)/.exec(text || '');
-    if (!m) return { error: 'That doesn\'t look like a war code. It starts with CSW1.' };
+    if (/CSW1\./.test(text || '')) return { error: 'That\'s an old war code. Ask your friend to send a new one!' };
+    var m = /CSW2\.([A-Za-z0-9_-]+)\.([a-z0-9]+)/.exec(text || '');
+    if (!m) return { error: 'That doesn\'t look like a war code. It starts with CSW2.' };
     var json, d;
     try { json = U.b64dec(m[1]); d = JSON.parse(json); } catch (e) { return { error: 'This code is broken. Ask your friend to send it again.' }; }
-    if (warSum(json) !== m[2]) return { error: 'This code was changed. Nice try! 😏' };
-    var ok = d && typeof d.n === 'string' && typeof d.p === 'number' && d.p > 0 && d.p < 5000 && Array.isArray(d.pl) && d.pl.length === 3 && d.pl.every(G.tactic);
+    if (warSum(json) !== m[2]) return { error: 'This code was changed. Nice try!' };
+    var ok = d && typeof d.n === 'string' && typeof d.s === 'number' && Array.isArray(d.sc) && d.sc.length === CS.WAR_GAMES.length &&
+      d.sc.every(function (x) { return typeof x === 'number' && x >= 0 && x < 10000; });
     if (!ok) return { error: 'This code is broken. Ask your friend to send it again.' };
-    var w = G.warInit(g);
-    if (d.id === w.id) return { error: 'That\'s your own code! Send it to a friend. 😄' };
-    if (w.fought[d.id] === U.today()) return { error: 'You already fought ' + d.n + ' today. Come back tomorrow! ⏰' };
-    return { kind: 'friend', id: String(d.id).slice(0, 16), name: d.n.slice(0, 24) || 'Mystery Co', logo: Array.from(String(d.l || '🏢')).slice(0, 3).join(''), color: /^#[0-9A-Fa-f]{6}$/.test(d.c) ? d.c : '#7C4DFF', industry: d.i, power: Math.round(d.p), plan: d.pl, trophies: d.t || 0 };
-  };
-  G.warAttackFriend = function (g, foe) {
-    var w = G.warInit(g);
-    if (!foe || foe.error || (w.battle && !w.battle.done)) return null;
-    w.fought[foe.id] = U.today();
-    return startBattle(g, foe);
+    if (d.id === G.warInit(g).id) return { error: 'That\'s your own code! Send it to a friend.' };
+    return { kind: 'friend', id: String(d.id).slice(0, 16), name: d.n.slice(0, 24) || 'Mystery Co', logo: Array.from(String(d.l || '🏢')).slice(0, 3).join(''),
+      color: /^#[0-9A-Fa-f]{6}$/.test(d.c) ? d.c : '#7C4DFF', fans: Math.max(0, Math.min(1e9, Math.round(d.f) || 0)), trophies: d.t || 0, seed: d.s >>> 0, scores: d.sc.map(Math.round) };
   };
   G.warShareText = function (g) {
     var b = g.war && g.war.battle;
-    if (!b || !b.done) return '';
-    return (b.result.won ? '🏆 I beat ' : '😭 I lost to ') + b.foe.logo + ' ' + b.foe.name + ' in a Company War! ' +
-      b.rounds.map(function (r) { return r.win ? '🟩' : '🟥'; }).join('') + '\n' + (b.result.won ? 'Want a rematch? 😎' : 'Rematch tomorrow! 🔥');
+    if (!b || !b.done || !b.result || b.result.won == null) return '';
+    return (b.result.won ? '🏆 I beat ' : '😤 I lost to ') + b.foe.logo + ' ' + b.foe.name + ' in a Company War! ' +
+      b.rounds.map(function (r) { return r.win > 0 ? '🟩' : r.win < 0 ? '🟥' : '🟨'; }).join('') + ' (' + b.result.score.join('-') + ')\n' +
+      (b.result.won ? 'I took ' + U.num(b.result.fans) + ' of their fans 😎' : 'Rematch coming 🔥');
   };
 
   // ---------- golden customer, pets, offline earnings ----------
@@ -1443,6 +1542,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     g.stats.golden = g.stats.golden || 0;
     g.adCd = g.adCd || {};
     G.warInit(g);
+    // Events from older versions of the game may not exist anymore.
+    g.queue = g.queue.filter(function (x) { return CS.EV[x.id]; });
+    g.pending = g.pending.filter(function (p) { return CS.EV[p.id]; });
     G.fillMissions(g);
   };
   G.clearSave = function (mode) { removeKey(mode === 'daily' ? KEYS.daily : KEYS.main); };

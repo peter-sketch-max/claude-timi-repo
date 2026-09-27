@@ -116,7 +116,8 @@ These are in Play Console under **Policy → App content**.
 - **App access:** All features are available without a login.
 - **Content rating:** Fill in the questionnaire honestly.
   - There's no bad language and no real gambling.
-  - Some event texts mention a customer slapping the boss, and a few gently mention an old worker or pet passing away. There are no pictures of this, only text. Answer the violence questions honestly (this usually counts as mild, text-only content).
+  - Some event texts mention a customer slapping the boss, a robbery, or a worker getting hurt, and a few gently mention an old worker or pet passing away. There are no pictures of this, only text. Answer the violence questions honestly (this usually counts as mild, text-only content).
+  - A few "shady deal" events let you choose to bribe an inspector or hide cash from the tax office. These choices usually backfire later (a fine, a raid or bad news), and there is no real money involved.
   - The **lucky wheel** and **mystery boxes** only use pretend in-game money. You can never pay real money for spins. Some questionnaires still count this as "simulated gambling", so answer based on what the question says.
   - If the rating comes out higher than you want, Claude can rename or change those mini-games.
 - **Target audience:** This one matters.
@@ -138,7 +139,7 @@ These are in Play Console under **Policy → App content**.
 3. Go to **Monetize → Products → Subscriptions → Create subscription**:
    - Product ID: **`vip_monthly`** (it must match exactly, since the game looks for this name)
    - Name: `VIP`
-   - Benefits: *VIP companies · Double daily gifts · Faster Boss Powers · 4 missions · 2x offline earnings*
+   - Benefits: *VIP companies · Double daily gifts · Faster Boss Powers · 4 missions · 2x offline earnings · Unlimited Friend Wars*
 4. Add a **base plan**:
    - Auto-renewing, billing period **1 month**
    - Set a price, for example $2.99
@@ -151,6 +152,7 @@ What VIP unlocks in the game:
 - Powers recharge 1 week faster
 - A 4th mission slot
 - 2x offline earnings
+- Unlimited Friend Wars (free players get 3 a day)
 - VIP logos
 
 ---

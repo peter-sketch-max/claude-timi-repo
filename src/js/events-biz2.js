@@ -1,888 +1,888 @@
-// Events that only happen in one kind of business, part 2: the medium businesses.
-// B(business, id, icon, title, text, [4 x [answer, effect]], extra fields) — defined in events-biz1.js.
+// Events that only happen in one kind of business, part 2: the growing companies.
+// B(business, id, icon, title, text, [4 x [answer, effect]], extra fields). Defined in events-biz1.js.
 var CS = globalThis.CS = globalThis.CS || {};
 
 (function () {
   var B = CS.biz, H = CS.EVH, rival = H.rival, FRONT = { who: { a: 'front' } };
-  function inWeeks(ind, from, to) { return function (g) { var w = ((g.week - 1) % 52) + 1; return g.company.industry === ind && w >= from && w <= to; }; }
+  var week = function (g) { return ((g.week - 1) % 52) + 1; };
 
   // 🛒 SUPERMARKET
-  B('supermarket', 'cart_escape', '🛒', 'The shopping carts escaped!', 'Strong wind blew 40 shopping carts down the hill. They\'re rolling toward the lake! 🛒🛒🛒💨', [
-    ['🏃 Everyone chase the carts!', { team: 6, fans: 15, say: 'The Great Cart Chase! You saved 39. One is in the lake forever. 🏃' }],
-    ['🔒 Buy cart locks', { cash: -0.3, say: 'Coin-lock carts. No more escapes. 🔒' }],
-    ['📹 Film it', { chance: { p: 0.45, win: { viral: [1, 3], say: '"Carts go for a swim" went viral! 📹' }, lose: { fans: 10, say: 'Funny video. Wet carts. 📹' } } }],
-    ['🦆 Let the lake keep them', { cash: -0.4, say: 'The ducks have carts now. 🦆' }]
+  B('supermarket', 'price_war', '🏷️', 'A discount chain is undercutting you', 'Everything 20% cheaper. Your parking lot is half empty.', [
+    ['🏷️ Store brand at low prices', { cash: -0.4, demand: [1.1, 12, 'Store brand'], say: 'Cheap and good. Customers came back.' }],
+    ['🥬 Best fresh food in town', { cash: -0.5, rep: 5, say: 'Quality won them back.' }],
+    ['🎟️ Loyalty app with points', { cash: -0.3, happy: 5, demand: [1.06, 12, 'Loyalty app'], say: 'Regulars love the points.' }],
+    ['📉 Cut prices across the board', { price: -1, say: 'Busy again. Tiny margins.' }]
   ]);
-  B('supermarket', 'panic_buying', '🧻', 'PANIC BUYING!', 'A silly rumor says there will be no toilet paper next month. People are filling carts with 50 rolls each! 🧻😱', [
-    ['🧻 Limit 2 per person', { rep: 4, say: 'Fair for everyone! 🧻' }],
-    ['💰 Sell as much as they want', { extra: [0.35, 1, 'Panic buying'], rep: -3, say: 'Big sales... but people are angry at you. 💰' }],
-    ['📢 Tell everyone the rumor is fake', { rep: 5, fans: 10, say: 'Calm returned. People trust you. 📢' }],
-    ['😂 Make a toilet paper castle display', { fans: 20, say: 'The TP castle is on the news! 😂' }]
+  B('supermarket', 'recall_meat', '🥩', 'Your meat supplier has a recall', 'Some meat you sold might be unsafe.', [
+    ['📢 Pull it and tell everyone', { cash: -0.5, rep: 5, say: 'Customers trusted you more.' }],
+    ['💸 Refund anyone who asks', { cash: -0.3, rep: 2, say: 'Handled.' }],
+    ['🔄 Switch suppliers', { cash: -0.4, rep: 3, say: 'A safer supplier.' }],
+    ['🤫 Remove it quietly', { chance: { p: 0.5, win: { say: 'Nobody got sick.' }, lose: { rep: -12, say: 'People got sick. The news found out.' } } }]
+  ], { kind: 'news' });
+  B('supermarket', 'self_checkout', '🤖', 'Self-checkout machines?', 'Faster lines, fewer cashiers. The team is worried about their jobs.', [
+    ['🤖 Install them', { cash: -1.2, equip: 0.05, team: -12, say: 'Faster. The team feels threatened.' }],
+    ['🤝 Install and retrain staff', { cash: -1.4, equip: 0.04, team: 2, say: 'Nobody lost their job.' }],
+    ['🧪 Try two machines', { cash: -0.4, equip: 0.015, say: 'A test run.' }],
+    ['🙅 Keep real cashiers', { team: 8, rep: 2, say: 'Older customers love it.' }]
   ]);
-  B('supermarket', 'sample_eater', '🧀', 'Someone ate ALL the free samples', 'A man walked around the store eating EVERY free sample. Twice. 200 cheese cubes. He hasn\'t bought anything. 🧀', [
-    ['😂 Give him a "Sample King" crown', { fans: 15, say: 'He was so embarrassed he bought 10 kilos of cheese. 👑' }],
-    ['📏 "One per person" sign', { say: 'Samples for everyone now. 📏' }],
-    ['🍽️ Give him a job as taste tester', { hireSpecial: { role: 'front', skill: 40 }, fans: 10, say: 'Best taste tester ever! 🍽️' }],
-    ['🚪 Ask him to leave', { rep: -1, say: 'He left. With a cheese cube in each pocket. 🚪' }]
+  B('supermarket', 'freezer_outage', '🧊', 'The freezers failed overnight', 'Frozen food everywhere is thawing.', [
+    ['🗑️ Throw it all out', { cash: -0.8, rep: 2, say: 'Safe, but costly.' }],
+    ['🏷️ Sell thawed food cheap today', { cash: -0.4, happy: 3, say: 'Customers loved the bargains.' }],
+    ['🔧 Emergency repair', { cash: -0.5, say: 'Fixed. Half saved.' }],
+    ['🤫 Refreeze and sell', { chance: { p: 0.4, win: { say: 'Nobody noticed.' }, lose: { rep: -15, say: 'Food poisoning cases. A scandal.' } } }]
   ]);
-  B('supermarket', 'one_checkout', '🧍', 'Only ONE checkout open!', 'It\'s Saturday, everyone is shopping... and only one checkout is open. The line goes to the frozen food aisle.', [
-    ['📢 "Everyone to the registers!"', { capacity: [1.15, 1, 'All registers'], team: -3, say: 'Lines gone in 10 minutes! 📢' }],
-    ['🤖 Buy self-checkouts', { cash: -1, capacity: [1.1, 52, 'Self-checkout'], say: 'Fast lines forever! 🤖' }],
-    ['👥 Hire weekend helpers', { hireSpecial: { role: 'front', skill: 45 }, say: 'More hands, faster lines. 👥' }],
-    ['😬 Hope they wait', { happy: -5, say: 'Some left their carts and walked out. 😬' }]
+  B('supermarket', 'local_farmers', '🧑‍🌾', 'Local farmers want shelf space', 'They\'d sell fresh produce directly. Prices are a bit higher.', [
+    ['✅ A local corner', { rep: 5, demand: [1.06, 12, 'Local produce'], say: 'Customers love it.' }],
+    ['📉 Only at your prices', { chance: { p: 0.5, win: { demand: [1.05, 12, 'Local produce'], say: 'They agreed.' }, lose: { say: 'They went to a market instead.' } } }],
+    ['🎪 Weekend farmers market', { cash: -0.2, fans: 20, demand: [1.08, 8, 'Farmers market'], say: 'Weekends are packed.' }],
+    ['🙅 No space', { say: 'You passed.' }]
   ]);
-  B('supermarket', 'dollar_tvs', '📺', 'TVs for $1?!', '{a} made a mistake on the price tags. Big TVs are marked $1. There\'s a crowd grabbing them! 📺😱', [
-    ['💸 Honor the price', { cash: -1.5, rep: 8, fans: 40, say: 'You lost money but the whole country is talking about you! 💸' }],
-    ['🙏 Say sorry and give coupons', { cash: -0.2, rep: 2, say: 'Most people understood. 🙏' }],
-    ['📺 Only the first 10 get it', { cash: -0.3, fans: 20, rep: 3, say: 'The lucky 10 went viral! 📺' }],
-    ['🔒 Stop all sales', { rep: -5, happy: -5, say: 'People are mad. Very mad. 🔒' }]
-  ], FRONT);
-  B('supermarket', 'store_brand', '🏷️', 'Your own store brand?', 'You could make your own cheaper brand of cereal, milk and snacks with your logo on them.', [
-    ['🏷️ Launch "{company} Basics"', { cash: -0.8, supply: [-0.04, 52, 'Store brand'], fans: 10, say: 'Cheaper for customers, better for you! 🏷️' }],
-    ['🥇 A fancy premium brand', { cash: -1, extra: [0.2, 20, 'Premium brand'], say: 'Fancy jam in fancy jars! 🥇' }],
-    ['🧪 Test with one product', { cash: -0.2, supply: [-0.01, 26, 'Store cereal'], say: '"{company} Cereal" is a hit! 🧪' }],
-    ['🙅 Stick to big brands', { say: 'Safe choice. 🙅' }]
+  B('supermarket', 'shoplifting_ring', '🕵️', 'A shoplifting gang is hitting you', 'Organized. Fast. They took thousands in a week.', [
+    ['🦺 Hire guards', { cash: -0.6, say: 'They moved on.' }],
+    ['📹 Better cameras', { cash: -0.8, chance: { p: 0.6, win: { rep: 3, say: 'The police caught them on your footage.' }, lose: { say: 'They wore masks.' } } }],
+    ['🔒 Lock up expensive items', { happy: -3, say: 'Annoying for customers, but it worked.' }],
+    ['🤷 Accept the loss', { cash: -0.6, say: 'They came back.' }]
   ]);
-  B('supermarket', 'black_friday', '🛍️', 'BLACK FRIDAY MADNESS', 'It\'s Black Friday! Hundreds of people are waiting outside at 5 AM. When the doors open, it will be chaos! 🛍️', [
-    ['💥 Huge discounts!', { demand: [1.4, 1, 'Black Friday'], price: -1, say: 'Record day! The floor is a mess! 💥' }],
-    ['🎟️ Ticket system to keep it safe', { demand: [1.25, 1, 'Black Friday'], rep: 4, say: 'Safe and busy. Nicely done! 🎟️' }],
-    ['🌐 Move sales online', { cash: -0.3, extra: [0.5, 1, 'Online Black Friday'], say: 'Online orders exploded! 🌐' }],
-    ['🛌 "Buy Nothing Day" instead', { rep: 5, fans: 15, say: 'A bold move. People respect it! 🛌' }]
-  ], { cond: inWeeks('supermarket', 46, 48) });
+  B('supermarket', 'holiday_turkeys', '🦃', 'Holiday season shopping', 'Everyone needs a big holiday dinner. Shelves empty fast.', [
+    ['📦 Order double stock', { cash: -0.6, extra: [0.4, 1, 'Holiday shopping'], say: 'Full shelves, happy customers.' }],
+    ['📝 Pre-order holiday boxes', { extra: [0.3, 1, 'Holiday boxes'], fans: 10, say: 'Organized and profitable.' }],
+    ['❤️ Donate dinners to families', { cash: -0.2, rep: 8, extra: [0.2, 1, 'Holiday shopping'], say: 'The news covered it.' }],
+    ['😌 Normal stock', { extra: [0.1, 1, 'Holiday shopping'], happy: -4, say: 'Empty shelves by noon.' }]
+  ], { cond: function (g) { return week(g) >= 46 && week(g) <= 51; }, w: 20 });
 
   // 🏨 HOTEL
-  B('hotel', 'rockstar_room', '🎸', 'A rock star trashed a room!', 'A famous rock star stayed in your best suite. The TV is in the pool. The bed is on the balcony. There\'s glitter everywhere. 🎸', [
-    ['🧾 Send them a big bill', { cash: 1, say: 'They paid it all, plus a signed guitar! 🧾🎸' }],
-    ['🖼️ Make it the "Rock Star Suite"', { cash: -0.3, fans: 25, extra: [0.12, 12, 'Rock Star Suite'], say: 'Fans pay extra to sleep in THE room! 🖼️' }],
-    ['🚫 Ban them forever', { rep: 2, say: 'No more rock stars! 🚫' }],
-    ['📰 Tell the newspapers', { fans: 20, rep: -2, say: 'Big story! The rock star is annoyed. 📰' }]
+  B('hotel', 'bedbugs', '🛏️', 'A guest found bedbugs', 'They posted photos. Room 212.', [
+    ['🔒 Close the floor and treat it', { cash: -0.6, capacity: [0.85, 2, 'Pest control'], rep: 2, say: 'Handled properly.' }],
+    ['🎁 Refund and a free stay', { cash: -0.1, rep: 1, say: 'The guest calmed down.' }],
+    ['🔍 Inspect every room', { cash: -0.8, rep: 4, say: 'Found two more. All clean now.' }],
+    ['🤐 Deny it', { rep: -12, say: 'The photos went viral.' }]
   ]);
-  B('hotel', 'overbooked', '📋', 'Overbooked by 20 rooms!', 'A big conference is in town and your system booked 20 more guests than you have rooms. They\'re arriving NOW. 😱', [
-    ['🏨 Pay for rooms at another hotel', { cash: -0.6, rep: 3, say: 'Everyone had a bed. Expensive, but classy. 🏨' }],
-    ['🛋️ Turn the lobby into a "sleepover"', { fans: 10, happy: -4, say: 'Pillows and movies in the lobby. Some loved it. Some didn\'t. 🛋️' }],
-    ['🎁 Free upgrades for early guests to share', { happy: 2, say: 'Some friends shared the big suites! 🎁' }],
-    ['🔧 Fix the booking system', { cash: -0.4, equip: 0.03, say: 'Never again! 🔧' }]
+  B('hotel', 'overbooked', '📅', 'You\'re overbooked tonight', 'Twelve guests have rooms. You only have eight.', [
+    ['🏨 Pay for rooms elsewhere', { cash: -0.4, rep: 3, say: 'Guests were impressed.' }],
+    ['⬆️ Upgrade some to suites', { cash: -0.2, say: 'Lucky guests. Tight squeeze.' }],
+    ['💸 Refund and apologize', { rep: -3, say: 'Four angry reviews.' }],
+    ['🛋️ Offer sofa beds', { rep: -5, say: 'Terrible reviews.' }]
   ]);
-  B('hotel', 'bedbugs', '🐛', 'A guest says there are BEDBUGS', 'A guest is shouting in the lobby that room 12 has bedbugs. Other guests are listening... and scratching. 🐛', [
-    ['🔍 Check the room right now', { chance: { p: 0.7, win: { rep: 3, say: 'No bugs! It was a crumb. Phew! 🔍' }, lose: { cash: -0.4, rep: -3, say: 'There WERE bugs. Pest control called. 🐛' } } }],
-    ['🎁 Free night and a new room', { cash: -0.1, happy: 3, say: 'The guest calmed down. 🎁' }],
-    ['🧪 Pest control for the whole hotel', { cash: -0.8, rep: 5, say: 'The cleanest hotel in {city}! 🧪' }],
-    ['🤫 "We\'ve never had bugs!"', { rep: -6, say: 'They posted photos. Oh no. 😬' }]
+  B('hotel', 'celebrity_stay', '🌟', 'A superstar booked your best suite', 'Fans found out. They\'re camping outside.', [
+    ['🦺 Extra security', { cash: -0.3, rep: 5, say: 'The star was safe. They\'ll be back.' }],
+    ['📸 Post about it', { fans: 40, rep: -4, say: 'Fans went wild. The star left early.' }],
+    ['🤫 Protect their privacy', { rep: 8, say: 'Stars now call you the safest hotel in town.' }],
+    ['🎁 A private dinner for them', { cash: -0.2, chance: { p: 0.6, win: { fans: 30, rep: 5, say: 'They posted about you.' }, lose: { say: 'Politely declined.' } } }]
   ]);
-  B('hotel', 'forever_guest', '🧳', 'The guest who won\'t leave', 'A guest checked in for one night... 3 months ago. He pays every day, but now he gives tours of "HIS hotel" to other guests.', [
-    ['🎩 Make him the official tour guide', { fans: 15, happy: 3, say: 'Guests LOVE his tours! 🎩' }],
-    ['💲 Offer a monthly price', { extra: [0.08, 20, 'Long-stay guest'], say: 'He\'s basically family now. 💲' }],
-    ['🧳 Politely ask him to leave', { say: 'He cried a little, then left. 🧳' }],
-    ['📰 Local newspaper story', { fans: 20, say: '"The Man Who Lives in a Hotel" is a famous story now! 📰' }]
+  B('hotel', 'conference', '🎤', 'A big conference wants your hotel', 'Five hundred guests for three days. They want a discount.', [
+    ['✍️ Accept', { extra: [0.5, 1, 'Conference'], team: -6, say: 'Fully booked.' }],
+    ['🤝 Push for a better price', { chance: { p: 0.5, win: { extra: [0.7, 1, 'Conference'], say: 'Signed at your price.' }, lose: { say: 'They went elsewhere.' } } }],
+    ['🍽️ Include food and events', { cash: -0.2, extra: [0.7, 1, 'Conference'], say: 'A huge week.' }],
+    ['🙅 Too much', { say: 'You passed.' }]
   ]);
-  B('hotel', 'rooftop_pool', '🏊', 'Rooftop pool party?', 'Guests keep asking for a rooftop pool party. It could be amazing... or loud and messy.', [
-    ['🎉 Weekly pool parties!', { cash: -0.4, extra: [0.25, 8, 'Pool parties'], fans: 20, say: 'The coolest parties in {city}! 🎉' }],
-    ['🍹 Calm "sunset nights"', { extra: [0.15, 8, 'Sunset nights'], rep: 3, say: 'Classy and relaxing. 🍹' }],
-    ['🏗️ Build a bigger pool first', { cash: -1.5, demand: [1.12, 26, 'Big rooftop pool'], say: 'The new infinity pool is stunning! 🏗️' }],
-    ['🙅 Too noisy', { say: 'Quiet nights. 🙅' }]
+  B('hotel', 'guest_died', '🕯️', 'A guest passed away in their room', 'An old man, peacefully in his sleep. His family is on the way.', [
+    ['🕯️ Handle it with respect', { rep: 4, say: 'The family thanked you.' }],
+    ['🔒 Close the room for a while', { capacity: [0.97, 4, 'Room closed'], rep: 2, say: 'Quietly respectful.' }],
+    ['💐 Flowers and help for the family', { cash: -0.1, rep: 6, say: 'They wrote a kind letter.' }],
+    ['🤐 Keep it from other guests', { say: 'Most never knew.' }]
   ]);
-  B('hotel', 'wedding_booking', '💒', 'A wedding books the WHOLE hotel', 'A big family wants every room for a 3-day wedding. They want a band, fireworks and 400 cupcakes.', [
-    ['💒 Yes to everything!', { cash: 2, team: -8, say: 'The wedding of the year! Everyone is tired. 💒' }],
-    ['🎆 Yes, but no fireworks', { cash: 1.5, rep: 2, say: 'Safe and lovely. 🎆' }],
-    ['💲 Charge a premium price', { cash: 2.4, happy: -2, say: 'They paid, but grumbled. 💲' }],
-    ['🙅 Keep rooms for normal guests', { rep: 1, say: 'Regular guests are happy. 🙅' }]
+  B('hotel', 'review_site', '⭐', 'A travel site wants a big fee', '"Pay us, or you drop to page ten."', [
+    ['💸 Pay it', { supply: [0.04, 12, 'Travel site fee'], demand: [1.1, 12, 'Top listing'], say: 'Bookings rolled in.' }],
+    ['🌐 Build your own booking site', { cash: -0.6, demand: [1.04, 16, 'Own website'], say: 'No fees, slower growth.' }],
+    ['🤝 Negotiate', { chance: { p: 0.4, win: { supply: [0.02, 12, 'Travel site fee'], demand: [1.1, 12, 'Top listing'], say: 'A better deal.' }, lose: { demand: [0.9, 6, 'Low listing'], say: 'Page ten.' } } }],
+    ['🙅 Refuse', { demand: [0.9, 6, 'Low listing'], say: 'Fewer bookings.' }]
   ]);
-  B('hotel', 'lost_luggage', '🧳', 'A guest\'s luggage went missing', 'A famous businesswoman says her bag with a very important dress disappeared from the lobby. Her big speech is tonight!', [
-    ['🔍 Search every room', { team: -3, chance: { p: 0.7, win: { rep: 5, say: 'Found it in the wrong room! She gave a great speech! 🔍' }, lose: { say: 'Not found. 😬' } } }],
-    ['👗 Buy her a new dress fast', { cash: -0.3, rep: 6, say: 'She looked amazing and told everyone about your service! 👗' }],
-    ['📹 Check the cameras', { chance: { p: 0.5, win: { rep: 4, say: 'A guest took it by mistake! Returned! 📹' }, lose: { say: 'The cameras were off. 📹' } } }],
-    ['🤷 "Not our fault"', { rep: -5, say: 'She wrote a VERY bad review. 🤷' }]
+  B('hotel', 'pool_accident', '🏊', 'A child almost drowned in the pool', 'A lifeguard pulled her out just in time. The parents are shaken.', [
+    ['🏅 Reward the lifeguard', { team: 6, rep: 4, say: 'A hero on your staff.' }],
+    ['🦺 Two lifeguards from now on', { cash: -0.3, rep: 6, say: 'The safest pool in town.' }],
+    ['🔒 Close the pool for a review', { capacity: [0.95, 2, 'Pool closed'], rep: 3, say: 'Safety checked.' }],
+    ['⚖️ Call your lawyer', { rep: -5, say: 'The parents felt ignored.' }]
   ]);
 
   // 🏋️ GYM
-  B('gym', 'january_rush', '🎆', 'New Year, new gym members!', 'It\'s January! Everyone promised to "get fit this year". The gym is PACKED. (By February, half will stop coming.)', [
-    ['💪 Sign up everyone!', { extra: [0.5, 2, 'New Year signups'], team: -4, say: 'So many new members! 💪' }],
-    ['🎓 Free "first week" classes', { cash: -0.2, rep: 4, demand: [1.1, 8, 'New members stay'], say: 'More people keep coming after January! 🎓' }],
-    ['📆 Yearly plans only', { extra: [0.7, 1, 'Yearly plans'], happy: -3, say: 'Big money now. Some grumbling. 📆' }],
-    ['🧃 Motivation smoothies', { cash: -0.1, fans: 10, say: 'Everyone loves the free smoothies! 🧃' }]
-  ], { cond: inWeeks('gym', 1, 4) });
-  B('gym', 'grunter', '😤', 'The LOUDEST grunter', 'A huge guy yells "HUUURRGH!" every time he lifts. Every. Single. Time. Other members can\'t hear their music.', [
-    ['🤫 A polite "quiet please" sign', { happy: 2, say: 'He grunts quieter. A bit. 🤫' }],
-    ['🏆 Hold a grunting contest', { fans: 25, say: 'The grunting contest was on TV. What? 🏆' }],
-    ['🎧 Free headphones for members', { cash: -0.2, happy: 4, say: 'Nobody hears him now! 🎧' }],
-    ['🎤 Make him the gym mascot', { fans: 15, say: '"The Grunter" is famous now. 🎤' }]
+  B('gym', 'new_year', '🎆', 'New Year\'s resolution rush', 'Hundreds want to join. By March, most will stop coming.', [
+    ['📜 Year-long contracts', { cash: 1, happy: -3, say: 'Money in the bank. Some complaints later.' }],
+    ['🎟️ Monthly memberships', { extra: [0.2, 4, 'New Year rush'], say: 'Honest money.' }],
+    ['🏋️ Free classes to keep them', { cash: -0.2, demand: [1.1, 8, 'Motivated members'], say: 'More of them stuck with it.' }],
+    ['🙅 No special offer', { extra: [0.1, 4, 'New Year rush'], say: 'Still busy.' }]
+  ], { cond: function (g) { return week(g) <= 4; }, w: 20 });
+  B('gym', 'injury', '🩼', 'A member got hurt on a machine', 'The machine broke mid-lift. He\'s in the hospital.', [
+    ['💸 Pay his bills', { cash: -0.6, rep: 3, say: 'No lawsuit.' }],
+    ['🔧 Check every machine', { cash: -0.5, equip: 0.02, rep: 4, say: 'All safe now.' }],
+    ['⚖️ Fight it', { chance: { p: 0.5, win: { say: 'He signed a waiver. You won.' }, lose: { cash: -1.5, rep: -5, say: 'You lost.' } } }],
+    ['🙏 Visit him', { rep: 3, say: 'He appreciated it. No lawsuit.' }]
   ]);
-  B('gym', 'treadmill_launch', '🏃', 'The treadmill LAUNCHED someone', 'A treadmill went super fast by itself and launched a member into a pile of yoga balls. They\'re fine. Everyone saw it. 😂', [
-    ['🔧 Fix all the treadmills', { cash: -0.5, rep: 3, say: 'Safe treadmills. No more flying. 🔧' }],
-    ['🆕 Buy new treadmills', { cash: -1.2, equip: 0.04, rep: 4, say: 'Brand new, super smooth! 🆕' }],
-    ['🎁 Free month for the member', { cash: -0.05, happy: 3, say: 'They laughed about it. 🎁' }],
-    ['📹 "Ninja treadmill" video', { chance: { p: 0.5, win: { viral: [1, 3], say: 'It went viral! Membership signups went UP. 📹' }, lose: { rep: -3, say: 'People think your gym is dangerous. 😬' } } }]
-  ]);
-  B('gym', 'bodybuilding', '💪', 'Host a bodybuilding contest?', 'The {city} Muscle Championship needs a new place. They want YOUR gym!', [
-    ['💪 Host it!', { cash: -0.3, fans: 30, demand: [1.12, 6, 'Muscle Championship'], say: 'Oiled muscles everywhere! Huge crowd! 💪' }],
-    ['🏋️ Enter your best trainer', { chance: { p: 0.4, win: { fans: 40, rep: 5, say: 'Your trainer WON! 🏆' }, lose: { fans: 10, say: 'Third place. Not bad! 🥉' } } }],
-    ['🧘 Host a yoga contest instead', { fans: 12, rep: 3, say: 'Calm, bendy and lovely. 🧘' }],
-    ['🙅 Too much oil on the floor', { say: 'Fair. 🙅' }]
-  ]);
-  B('gym', 'smoothie_bar', '🥤', 'Open a smoothie bar?', 'Members are thirsty after workouts. {a} wants to open a smoothie bar at the front desk.', [
-    ['🥤 Yes! Protein smoothies!', { cash: -0.4, extra: [0.15, 20, 'Smoothie bar'], say: 'The smoothie bar makes great money! 🥤' }],
-    ['🥦 Only green veggie smoothies', { cash: -0.3, extra: [0.08, 20, 'Green smoothies'], rep: 2, say: 'Healthy but... green. 🥦' }],
-    ['🍫 Chocolate milkshakes', { cash: -0.3, extra: [0.2, 20, 'Milkshakes'], rep: -1, say: 'Popular. Maybe not very healthy. 🍫' }],
-    ['🙅 Water is free', { a: -4, say: 'Water fountain it is. 🙅' }]
+  B('gym', 'trainer_influencer', '💪', '{a} is famous online', 'Their workout videos have a million fans. Members want sessions with {a}.', [
+    ['💵 Premium sessions with {a}', { extra: [0.1, 8, 'Star trainer'], a: 10, say: 'Fully booked for weeks.' }],
+    ['📱 Film classes at your gym', { fans: 40, demand: [1.08, 8, 'Famous trainer'], say: 'New members from everywhere.' }],
+    ['💰 Raise to keep {a}', { raise: ['a', 0.2], loyal: { a: 20 }, say: '{a} isn\'t leaving.' }],
+    ['🙅 "No filming at work"', { a: -12, say: '{a} is looking at other gyms.' }]
   ], FRONT);
-  B('gym', 'fitness_influencer', '📱', '{a} became a fitness influencer', '{a}\'s workout videos have 500,000 followers! People want to train with {a}.', [
-    ['📱 "Train with {a}" classes', { extra: [0.2, 12, '{a} classes'], a: 10, fans: 20, say: 'Classes sold out instantly! 📱' }],
-    ['🎥 Film videos AT the gym', { fans: 30, say: 'Free ads for your gym every day! 🎥' }],
-    ['💵 Big raise so {a} doesn\'t leave', { raise: ['a', 0.25], loyal: { a: 25 }, say: '{a} stays! 💵' }],
-    ['🙅 "Work, not videos"', { a: -10, chance: { p: 0.4, win: { say: '{a} stays... unhappy. 🙅' }, lose: { quit: 'a', say: '{a} left to be a full-time influencer. 😢' } } }]
-  ], FRONT);
-  B('gym', 'open_247', '🌙', 'Open 24 hours?', 'Night-shift workers and early birds want the gym open all night. It would need more staff and security.', [
-    ['🌙 24/7 gym!', { cash: -0.4, demand: [1.15, 26, 'Open 24/7'], team: -5, say: 'Members work out at 3 AM! 🌙' }],
-    ['🔑 Key cards, no staff at night', { cash: -0.6, demand: [1.1, 52, 'Key card access'], say: 'Smart and cheap! 🔑' }],
-    ['⏰ Open at 5 AM instead', { demand: [1.05, 26, 'Early hours'], say: 'Early birds are happy. ⏰' }],
-    ['🛌 Sleep is exercise too', { team: 3, say: 'Normal hours. Happy team. 🛌' }]
+  B('gym', 'cheap_gym', '🏋️', 'A cheap 24/7 gym opened nearby', 'Half your price. Members are leaving.', [
+    ['⭐ Premium experience', { cash: -0.6, rep: 5, say: 'Better gym, better people.' }],
+    ['🧘 Classes they don\'t have', { cash: -0.3, demand: [1.06, 12, 'Special classes'], say: 'Yoga and boxing brought them back.' }],
+    ['📉 Lower your price', { price: -1, say: 'You kept members.' }],
+    ['🤷 Wait', { demand: [0.88, 8, 'Cheap gym'], say: 'Members left.' }]
   ]);
+  B('gym', 'steroids', '💉', 'Steroids are being sold in your gym', 'A member reported it. Others know too.', [
+    ['🚪 Ban him', { rep: 4, say: 'He\'s gone.' }],
+    ['👮 Call the police', { rep: 6, say: 'He was arrested.' }],
+    ['📹 Cameras in the hallway', { cash: -0.3, rep: 3, say: 'It stopped.' }],
+    ['🙈 Ignore it', { chance: { p: 0.5, win: { say: 'He stopped on his own.' }, lose: { rep: -12, say: 'The news ran a story on your gym.' } } }]
+  ]);
+  B('gym', 'marathon', '🏃', 'The city marathon needs a sponsor', 'Your logo on every runner\'s shirt.', [
+    ['🏃 Sponsor it', { cash: -0.8, fans: 40, rep: 5, say: 'Your logo was everywhere.' }],
+    ['🏋️ A training program for runners', { extra: [0.1, 6, 'Marathon training'], fans: 15, say: 'Runners signed up.' }],
+    ['🥤 A water station', { cash: -0.2, fans: 20, say: 'Runners loved you.' }],
+    ['🙅 Pass', { say: 'You passed.' }]
+  ]);
+  B('gym', 'broken_ac', '🥵', 'The AC broke in summer', 'The gym feels like a sauna. Members are complaining.', [
+    ['❄️ New AC today', { cash: -0.8, happy: 5, say: 'Cool again.' }],
+    ['🌀 Big fans for now', { cash: -0.1, happy: -2, say: 'Better than nothing.' }],
+    ['🏖️ Outdoor classes', { fans: 10, say: 'Members loved it.' }],
+    ['💸 Discount for the heat', { supply: [0.04, 2, 'Heat discount'], rep: 2, say: 'Members felt heard.' }]
+  ], { cond: function (g) { return week(g) >= 24 && week(g) <= 36; } });
 
   // 🏗️ CONSTRUCTION
-  B('construction', 'crane_cat', '🐈', 'A cat is stuck on the crane!', 'A cat climbed to the top of your 50-meter crane and won\'t come down. Work has stopped. The whole street is watching. 🐈', [
-    ['🏗️ Lower the crane super slowly', { fans: 25, say: 'The cat rode down like a queen. Everyone cheered! 🐈👑' }],
-    ['🚒 Call the fire department', { rep: 3, say: 'The firefighters saved the cat. Heroes! 🚒' }],
-    ['🐟 Tempt it with tuna', { chance: { p: 0.6, win: { fans: 15, say: 'The tuna worked! 🐟' }, lose: { demand: [0.95, 1, 'Cat on crane'], say: 'The cat stayed up there for 2 days. 🐈' } } }],
-    ['🐈 Adopt the cat', { pet: '🐈', fans: 12, say: 'The site cat, "Crane", is your new mascot! 🐈' }]
-  ]);
-  B('construction', 'old_tunnel', '🕳️', 'An old tunnel under the site!', 'While digging, {a} found an old tunnel. It goes somewhere deep under the city. 🕳️', [
-    ['🔦 Explore it', { chance: { p: 0.4, win: { cash: 2, fans: 20, say: 'An old secret wine cellar! Museums paid a lot! 🔦' }, lose: { closed: [1, 'Tunnel check'], say: 'Just an old sewer. Stinky. 🤢' } } }],
-    ['🏛️ Call the historians', { rep: 6, closed: [1, 'History check'], say: 'It\'s a 200-year-old tunnel! You\'re in the history books! 🏛️' }],
-    ['🧱 Fill it with concrete', { say: 'Gone forever. 🧱' }],
-    ['🎟️ Tunnel tours!', { cash: -0.3, extra: [0.15, 8, 'Tunnel tours'], say: 'Tourists love the spooky tunnel! 🎟️' }]
+  B('construction', 'worker_fall', '🚑', '{a} fell from the scaffold', 'A serious fall. {a} is on the way to the hospital.', [
+    ['🏥 Pay everything, full salary', { cash: -0.8, team: 10, loyal: { a: 25 }, capacity: [0.9, 4, '{a} injured'], say: 'The team respects you.' }],
+    ['🦺 Stop work for a safety check', { closed: [1, 'Safety check'], rep: 5, say: 'You found three more dangers.' }],
+    ['⚖️ Blame {a}', { team: -15, rep: -8, say: 'The team is disgusted.' }],
+    ['💐 Visit {a} with the team', { team: 8, a: 15, say: '{a} was touched.' }]
   ], FRONT);
-  B('construction', 'rain_delay', '🌧️', 'Rain is delaying the project', 'It has rained for 3 weeks. The building is late and the client is VERY angry.', [
-    ['⛺ Build a giant tent over the site', { cash: -0.6, capacity: [1.1, 4, 'Rain tent'], say: 'Working in the rain! 🌧️⛺' }],
-    ['🔥 Work weekends when it stops', { team: -8, say: 'Caught up! Everyone is exhausted. 🔥' }],
-    ['📞 Explain and give a discount', { cash: -0.3, rep: 3, say: 'The client understood. 📞' }],
-    ['🤷 "We can\'t control the weather"', { rep: -3, say: 'The client is not happy. 🤷' }]
+  B('construction', 'city_contract', '🏛️', 'The city is bidding a big project', 'A new school. Big money. Lots of builders want it.', [
+    ['📉 Bid low to win', { chance: { p: 0.6, win: { extra: [0.12, 10, 'School project'], say: 'You won. Tight budget.' }, lose: { say: 'Someone went even lower.' } } }],
+    ['⭐ Bid on quality', { chance: { p: 0.4, win: { extra: [0.15, 10, 'School project'], rep: 5, say: 'Quality won.' }, lose: { say: 'Price won.' } } }],
+    ['🤝 Team up with {rival}', { chance: { p: 0.7, win: { extra: [0.08, 10, 'Shared project'], say: 'Won together.' }, lose: { say: 'Lost together.' } } }],
+    ['🙅 Skip it', { say: 'You passed.' }]
+  ], { init: rival });
+  B('construction', 'steel_prices', '🏗️', 'Steel prices doubled', 'Every project is now over budget.', [
+    ['📜 Pass it to clients', { happy: -4, say: 'Clients grumbled but paid.' }],
+    ['😬 Absorb it', { supply: [0.06, 8, 'Steel prices'], say: 'Painful profits.' }],
+    ['🪵 Use wood where possible', { cash: -0.2, rep: 2, supply: [0.02, 8, 'Mixed materials'], say: 'Clever and cheaper.' }],
+    ['⏳ Pause projects', { capacity: [0.8, 3, 'Paused'], say: 'Waiting for prices to drop.' }]
+  ], { kind: 'news' });
+  B('construction', 'bad_foundation', '🧱', 'Cracks in a building you finished', 'A client says the foundation is failing. It\'s your work.', [
+    ['🔧 Fix it for free', { cash: -1, rep: 6, say: 'The client was impressed.' }],
+    ['🔍 Hire an expert to check', { cash: -0.2, chance: { p: 0.5, win: { say: 'It was the ground, not you.' }, lose: { cash: -1, say: 'It was your work. Fixed.' } } }],
+    ['⚖️ Fight it', { chance: { p: 0.4, win: { say: 'You won.' }, lose: { cash: -2, rep: -10, say: 'You lost. Everyone heard.' } } }],
+    ['🙈 Ignore it', { rep: -12, say: 'The client went to the news.' }]
   ]);
-  B('construction', 'cheap_concrete', '🧱', 'Super cheap concrete?', 'A new supplier offers concrete for half price. {a} says it looks "a bit crumbly".', [
-    ['💸 Buy it', { supply: [-0.05, 12, 'Cheap concrete'], chance: { p: 0.4, win: { say: 'It was fine! Big savings. 💸' }, lose: { rep: -12, cash: -2, say: 'A wall cracked! Everything had to be rebuilt! 😱' } } }],
-    ['🔬 Test it in a lab', { cash: -0.1, chance: { p: 0.4, win: { supply: [-0.04, 12, 'Cheap concrete'], say: 'It passed the test! 🔬' }, lose: { say: 'Failed! Good thing you checked. 🔬' } } }],
-    ['🏆 Only the best concrete', { rep: 3, say: 'Safe buildings. Happy clients. 🏆' }],
-    ['👮 Report the supplier', { rep: 2, say: 'The supplier was selling fake stuff! 👮' }]
-  ], FRONT);
-  B('construction', 'tallest_tower', '🏙️', 'Build the tallest tower in {city}?', 'A rich investor wants you to build the tallest tower in {city}. It would take a year and it\'s VERY risky.', [
-    ['🏙️ Let\'s build it!', { cash: -1, chance: { p: 0.6, win: { cash: 5, rep: 10, fans: 40, say: 'The tower is finished! Your name is on the skyline! 🏙️' }, lose: { cash: -1, rep: -4, say: 'The investor ran out of money halfway. 😩' } } }],
-    ['📐 Only the design', { cash: 1, rep: 3, say: 'Easy money for drawings. 📐' }],
-    ['🤝 Team up with a bigger builder', { cash: 2, rep: 5, say: 'Shared work, shared glory. 🤝' }],
-    ['🙅 Too risky', { say: 'Safe and small. 🙅' }]
+  B('construction', 'rain_delay', '🌧️', 'Three weeks of rain', 'Projects are behind. Clients are angry.', [
+    ['⏰ Work weekends after', { team: -10, say: 'Back on schedule.' }],
+    ['🧑‍🔧 Hire extra crews', { cash: -0.6, say: 'Back on time.' }],
+    ['📞 Explain to clients', { chance: { p: 0.6, win: { say: 'They understood.' }, lose: { cash: -0.3, say: 'Late fees.' } } }],
+    ['🏠 Work indoors meanwhile', { capacity: [0.9, 3, 'Rain'], say: 'Something is getting done.' }]
+  ]);
+  B('construction', 'historic_find', '🏺', 'Your crew dug up old ruins', 'On a building site. Ancient pottery. Work must stop.', [
+    ['🏛️ Call the museum', { closed: [1, 'Dig site'], rep: 8, fans: 30, say: 'You were on the news. Heroes.' }],
+    ['🤫 Keep digging', { chance: { p: 0.3, win: { say: 'Nobody found out.' }, lose: { cash: -2, rep: -15, say: 'Illegal. Huge fine.' } } }],
+    ['🤝 Build around it', { cash: -0.5, rep: 5, say: 'The ruins are now part of the building.' }],
+    ['📸 Post photos first', { fans: 20, closed: [1, 'Dig site'], say: 'The internet went crazy.' }]
   ], { rarity: 'rare' });
-  B('construction', 'treehouse', '🌳', 'A kid wants the BEST treehouse ever', 'A 9-year-old sends a drawing: a treehouse with a slide, a zip line and a secret door. "I saved $47. Is that enough?"', [
-    ['🌳 Build it for $47!', { cash: -0.4, rep: 8, fans: 35, say: 'The best treehouse in the world! The video went everywhere! 🌳' }],
-    ['🏠 Start a treehouse business', { cash: -0.5, extra: [0.2, 12, 'Treehouses'], fans: 15, say: 'Every kid wants one now! 🏠' }],
-    ['✏️ Send a nice letter and a toy hammer', { rep: 2, say: 'The kid framed your letter. ✏️' }],
-    ['🙅 "Sorry, too small a job"', { say: 'The kid will build it with their dad. 🙅' }]
-  ]);
-  B('construction', 'nap_mixer', '😴', 'A worker fell asleep in the cement mixer', '{a} took a nap in an empty cement mixer truck at lunch. Someone almost turned it on! 😱', [
-    ['🛌 Build a real nap room', { cash: -0.2, team: 8, say: 'Safe naps for everyone! 🛌' }],
-    ['🦺 Safety meeting for all', { team: 2, rep: 2, say: 'Nobody sleeps in machines now. 🦺' }],
-    ['😂 Name the truck after {a}', { fans: 10, a: -3, say: 'The truck is called "{a}\'s Bed" now. 😂' }],
-    ['⚠️ Warning for {a}', { a: -8, reliable: { a: 5 }, say: '{a} naps in the break room now. ⚠️' }]
-  ], FRONT);
+  B('construction', 'skyscraper', '🏙️', 'A developer wants a skyscraper', 'The tallest building in {city}. The biggest job you\'ve ever had.', [
+    ['🏙️ Take it', { cash: -1, extra: [0.12, 10, 'Skyscraper'], team: -5, say: 'Your name on the city skyline.' }],
+    ['🤝 Share it with other builders', { extra: [0.07, 10, 'Skyscraper share'], say: 'Safer. Still big.' }],
+    ['📈 Ask for more money', { chance: { p: 0.4, win: { extra: [0.16, 10, 'Skyscraper'], say: 'They agreed.' }, lose: { say: 'They went elsewhere.' } } }],
+    ['🙅 Too risky', { say: 'You passed.' }]
+  ], { minWeek: 20 });
 
   // 🛋️ FURNITURE MAKER
-  B('furniture', 'flatpack_giant', '📦', 'A giant flat-pack store opened!', 'A huge store with cheap build-it-yourself furniture opened nearby. They have meatballs. You don\'t have meatballs.', [
-    ['🪵 "Real wood, made by hand" ads', { cash: -0.4, rep: 4, fans: 15, say: 'People want quality! 🪵' }],
-    ['💸 Lower your prices', { price: -1, say: 'Cheaper, but less profit. 💸' }],
-    ['🔧 Offer "we build it for you"', { extra: [0.15, 12, 'Building service'], say: 'People hate building flat-pack stuff. You build theirs! 🔧' }],
-    ['🍖 Sell meatballs too', { cash: -0.2, fans: 20, extra: [0.08, 8, 'Meatballs'], say: 'Sofas AND meatballs. Why not? 🍖' }]
+  B('furniture', 'wood_shortage', '🪵', 'There\'s a wood shortage', 'A forest fire cut supply. Prices are up and orders are waiting.', [
+    ['💸 Pay the high price', { supply: [0.05, 8, 'Wood shortage'], say: 'Orders delivered.' }],
+    ['♻️ Use recycled wood', { cash: -0.1, rep: 5, fans: 15, say: 'Customers love the eco look.' }],
+    ['⏳ Delay orders', { happy: -5, say: 'Unhappy customers.' }],
+    ['🌍 Import wood', { cash: -0.4, say: 'Expensive, but on time.' }]
+  ], { kind: 'news' });
+  B('furniture', 'custom_order', '🪑', 'A famous chef wants custom tables', 'Twenty handmade tables for a new restaurant. Tight deadline.', [
+    ['💪 Accept', { extra: [0.3, 1, 'Custom tables'], team: -6, fans: 10, say: 'Beautiful work.' }],
+    ['🧑‍🔧 Hire help and accept', { cash: -0.2, extra: [0.3, 1, 'Custom tables'], say: 'Done on time.' }],
+    ['📈 Charge a rush fee', { chance: { p: 0.6, win: { extra: [0.45, 1, 'Custom tables'], team: -6, say: 'They paid.' }, lose: { say: 'They went elsewhere.' } } }],
+    ['🙅 Too tight', { say: 'You passed.' }]
   ]);
-  B('furniture', 'wobbly', '🪑', 'The tables WOBBLE', 'Customers are complaining: every table you made last month wobbles. Coffee everywhere! ☕💦', [
-    ['🔧 Fix them all for free', { cash: -0.5, rep: 5, say: 'Solid as a rock now! 🔧' }],
-    ['📏 New measuring machine', { cash: -0.6, equip: 0.03, say: 'Perfect legs every time! 📏' }],
-    ['🎁 Free coasters', { cash: -0.05, fans: 5, say: 'Coasters under the short leg. Classic. 🎁' }],
-    ['😬 "It\'s the floor"', { rep: -5, say: 'Nobody believed that. 😬' }]
+  B('furniture', 'cheap_import', '📦', 'Cheap flat-pack furniture everywhere', 'A giant store sells sofas at half your price.', [
+    ['⭐ Handmade and lasting', { rep: 5, say: 'Quality buyers stay loyal.' }],
+    ['📉 A cheaper line', { cash: -0.3, demand: [1.06, 12, 'Budget line'], say: 'New customers.' }],
+    ['🔧 Repair service', { extra: [0.05, 12, 'Repairs'], say: 'People fix their old furniture with you.' }],
+    ['🤷 Ignore it', { demand: [0.9, 8, 'Cheap imports'], say: 'Sales dropped.' }]
   ]);
-  B('furniture', 'giant_bed', '🛏️', 'A 2.3-meter basketball player needs a bed', 'A famous basketball player wants a custom bed. His feet hang off every bed in the world!', [
-    ['🛏️ Make the biggest bed ever', { cash: 1, fans: 25, say: 'He slept perfectly for the first time in years! 🛏️' }],
-    ['🏀 Ask him for a photo with the bed', { cash: 0.8, fans: 35, say: 'The photo was everywhere! 🏀' }],
-    ['📏 Start a "tall people" line', { cash: -0.3, extra: [0.15, 12, 'Tall furniture'], say: 'Tall people finally have furniture! 📏' }],
-    ['🙅 "Just sleep diagonally"', { say: 'He did not like that answer. 🙅' }]
-  ], { rarity: 'rare' });
-  B('furniture', 'recycled_wood', '♻️', 'Use recycled wood?', '{a} found a warehouse full of old wood from ships and barns. "It has STORIES!"', [
-    ['♻️ Make a "Story Wood" line', { cash: -0.4, extra: [0.18, 16, 'Story wood'], rep: 5, say: 'Every table has a story. Customers love it! ♻️' }],
-    ['🌳 Plant 2 trees for every sofa', { cash: -0.3, rep: 8, fans: 15, say: 'Good for the planet! 🌳' }],
-    ['🪵 Only use it for small things', { cash: -0.1, fans: 8, say: 'Cute recycled shelves! 🪵' }],
-    ['🙅 New wood is easier', { a: -4, say: 'Simple. 🙅' }]
+  B('furniture', 'saw_accident', '🪚', '{a} cut their hand on a saw', 'Not too deep, but a lot of blood. The team is shaken.', [
+    ['🏥 Hospital, paid leave', { cash: -0.2, a: 15, capacity: [0.9, 2, '{a} injured'], say: '{a} is grateful.' }],
+    ['🦺 New safety guards on saws', { cash: -0.4, team: 8, say: 'Safer workshop.' }],
+    ['🎓 Safety training', { cash: -0.1, team: 4, say: 'Everyone is careful now.' }],
+    ['🩹 Bandage and back to work', { a: -15, team: -8, say: 'The team thinks you don\'t care.' }]
   ], FRONT);
-  B('furniture', 'confusing_instructions', '📄', 'Your instructions are TOO confusing', 'Customers keep building your chairs upside down. One built a chair into a small boat. 🪑⛵', [
-    ['📹 Make video instructions', { cash: -0.2, happy: 5, say: 'Easy to follow now! 📹' }],
-    ['😂 Share the funniest fails', { fans: 25, say: 'The "chair boat" is famous! 😂' }],
-    ['🔧 Deliver it already built', { cash: -0.4, happy: 6, say: 'No more building! 🔧' }],
-    ['🤷 "Read them again"', { happy: -4, say: 'More boats. 🤷' }]
+  B('furniture', 'design_award', '🏆', 'Your chair is nominated for an award', 'A design prize. Winning would put you in magazines.', [
+    ['🏆 Enter and show up', { cash: -0.2, chance: { p: 0.5, win: { rep: 8, fans: 30, say: 'You won.' }, lose: { rep: 2, say: 'Runner-up.' } } }],
+    ['🎨 Make a special edition', { cash: -0.4, chance: { p: 0.6, win: { rep: 8, extra: [0.1, 6, 'Award chair'], say: 'Won. It sold out.' }, lose: { say: 'Didn\'t win.' } } }],
+    ['📢 Promote the nomination', { fans: 15, say: 'Nice buzz.' }],
+    ['🙅 Skip it', { say: 'You passed.' }]
   ]);
-  B('furniture', 'cat_scratch', '🐈', 'Cats scratched every sofa!', 'A customer brought three cats to "test" sofas. Every sofa in the showroom is scratched. 🐈🐈🐈', [
-    ['🐈 Make scratch-proof sofas', { cash: -0.5, extra: [0.15, 16, 'Cat-proof sofas'], fans: 15, say: 'Cat owners everywhere are buying them! 🐈' }],
-    ['🧾 Make the customer pay', { cash: 0.3, rep: -2, say: 'They paid... angrily. 🧾' }],
-    ['🏷️ "Cat-tested" discount sale', { cash: 0.1, fans: 10, say: 'Scratched sofas sold with a funny label! 🏷️' }],
-    ['🚫 No pets in the showroom', { say: 'Rules are rules. 🚫' }]
+  B('furniture', 'returns', '🔄', 'A sofa came back broken', 'The customer says it broke in a week. The photos look bad.', [
+    ['🛋️ Replace it', { cash: -0.3, rep: 3, say: 'Happy customer.' }],
+    ['🔍 Check how it broke', { chance: { p: 0.5, win: { say: 'Their kids jumped on it. No refund.' }, lose: { cash: -0.3, say: 'A bad batch. Replaced.' } } }],
+    ['🔧 Check the whole batch', { cash: -0.5, rep: 5, say: 'Found and fixed the problem.' }],
+    ['🙅 Refuse', { rep: -6, say: 'Bad reviews.' }]
   ]);
-  B('furniture', 'tiny_house', '🏠', 'Build a tiny house?', 'People want tiny houses with smart furniture that folds and hides. It\'s a big trend!', [
-    ['🏠 Build a tiny house model', { cash: -0.8, fans: 30, extra: [0.25, 12, 'Tiny houses'], say: 'Your tiny house is on TV! 🏠' }],
-    ['🪑 Make folding furniture', { cash: -0.4, extra: [0.15, 12, 'Folding furniture'], say: 'A bed that becomes a table! Genius! 🪑' }],
-    ['🎟️ Tiny house tours', { fans: 15, say: 'Hundreds came to look! 🎟️' }],
-    ['🙅 Big furniture is better', { say: 'Big sofas it is. 🙅' }]
+  B('furniture', 'hotel_order', '🏨', 'A hotel chain wants 500 beds', 'The biggest order in your history.', [
+    ['✍️ Sign', { extra: [0.15, 8, 'Hotel order'], team: -6, say: 'The workshop is working flat out.' }],
+    ['🏭 Rent a bigger workshop', { cash: -0.8, extra: [0.15, 8, 'Hotel order'], capacity: [1.1, 8, 'Bigger workshop'], say: 'Room to grow.' }],
+    ['🤝 Half the order', { extra: [0.08, 8, 'Hotel order'], say: 'Manageable.' }],
+    ['🙅 Too big', { say: 'You passed.' }]
+  ], { minWeek: 10 });
+
+  // 📺 ELECTRONICS
+  B('electronics', 'exploding_battery', '🔋', 'A gadget you sold caught fire', 'A battery overheated. Nobody was hurt, but the video is spreading.', [
+    ['📢 Recall the model', { cash: -0.6, rep: 5, say: 'Safe and responsible.' }],
+    ['🔍 Test the batch', { cash: -0.2, chance: { p: 0.6, win: { say: 'Just one bad unit.' }, lose: { cash: -0.6, say: 'A bad batch. Recalled.' } } }],
+    ['⚖️ Blame the maker', { rep: -2, say: 'Customers didn\'t care whose fault it was.' }],
+    ['🤐 Say nothing', { chance: { p: 0.3, win: { say: 'It blew over.' }, lose: { rep: -12, say: 'Another one caught fire.' } } }]
+  ]);
+  B('electronics', 'launch_day', '📱', 'A hot new console launches Friday', 'Everyone wants one. You got only fifty.', [
+    ['🎟️ Raffle them', { fans: 20, rep: 3, say: 'Fair and exciting.' }],
+    ['🏃 First come, first served', { extra: [0.1, 1, 'Launch day'], happy: -2, say: 'A line all night.' }],
+    ['📈 Sell above price', { extra: [0.2, 1, 'Launch day'], rep: -5, say: 'People called you greedy.' }],
+    ['🎁 Bundle with games', { extra: [0.18, 1, 'Launch day'], say: 'Bigger sales.' }]
+  ]);
+  B('electronics', 'online_giant', '📦', 'Customers try in-store, buy online', 'They test your products, then order cheaper on their phones.', [
+    ['🏷️ Match online prices', { price: -1, say: 'You keep sales.' }],
+    ['🔧 Free setup and support', { cash: -0.2, demand: [1.08, 12, 'Free setup'], say: 'Service they can\'t get online.' }],
+    ['🌐 Open an online shop', { cash: -0.6, demand: [1.1, 12, 'Online shop'], say: 'Selling everywhere now.' }],
+    ['🤷 Ignore it', { demand: [0.9, 8, 'Showrooming'], say: 'Sales dropped.' }]
+  ]);
+  B('electronics', 'warranty_scam', '🔄', 'Fake warranty claims', 'People bring broken gadgets, bought elsewhere, and claim a warranty.', [
+    ['📜 Serial number checks', { cash: -0.1, say: 'Fake claims stopped.' }],
+    ['🙏 Accept them all', { cash: -0.3, say: 'Customers love you. Your wallet doesn\'t.' }],
+    ['👮 Report the worst one', { rep: 2, say: 'Word got around.' }],
+    ['🔒 Stricter rules', { happy: -3, say: 'Honest customers grumbled.' }]
+  ]);
+  B('electronics', 'smart_home', '🏠', 'Smart home gadgets are booming', 'Smart lights, speakers, doorbells. Everyone wants them.', [
+    ['📦 A smart home section', { cash: -0.5, demand: [1.1, 12, 'Smart home'], say: 'Selling fast.' }],
+    ['🧑‍🔧 Installation service', { extra: [0.08, 12, 'Installs'], say: 'Customers love it.' }],
+    ['🏠 A demo room', { cash: -0.3, fans: 15, demand: [1.08, 10, 'Demo room'], say: 'People come just to play.' }],
+    ['🙅 Pass', { say: 'You passed.' }]
+  ]);
+  B('electronics', 'employee_theft', '📦', 'Phones are missing from storage', 'Only staff can get in. Twelve phones are gone.', [
+    ['📹 Camera in storage', { cash: -0.3, say: 'It stopped.' }],
+    ['🔍 Check everyone\'s bags', { team: -8, chance: { p: 0.5, win: { say: 'Found them.' }, lose: { say: 'Nothing found.' } } }],
+    ['💬 Talk to the team', { chance: { p: 0.4, win: { say: 'Someone confessed.' }, lose: { cash: -0.3, say: 'Silence.' } } }],
+    ['👮 Call the police', { team: -4, rep: 1, say: 'They found the thief.' }]
+  ]);
+  B('electronics', 'repair_shop', '🔧', 'Add a repair counter?', 'Customers keep asking if you fix things.', [
+    ['🔧 Hire a technician', { hireSpecial: { role: 'front', skill: 65 }, extra: [0.07, 12, 'Repairs'], say: 'Steady repair money.' }],
+    ['🎓 Train {a}', { cash: -0.2, skill: { a: 6 }, extra: [0.05, 12, 'Repairs'], say: '{a} fixes everything now.' }],
+    ['🤝 Partner with a repair shop', { extra: [0.03, 12, 'Referrals'], say: 'Small but easy money.' }],
+    ['🙅 No', { say: 'You passed.' }]
+  ], FRONT);
+
+  // 🚚 DELIVERY
+  B('delivery', 'van_crash', '🚐', '{a} crashed a delivery van', 'Nobody hurt. The van is wrecked. Packages everywhere.', [
+    ['🆕 Replace the van', { cash: -1, say: 'Back on the road.' }],
+    ['🧑‍🏫 Driver training', { cash: -0.2, skill: { a: 5 }, say: 'Safer drivers.' }],
+    ['📄 Insurance', { chance: { p: function (g) { return g.flags.insured ? 0.9 : 0.4; }, win: { cash: -0.1, say: 'Covered.' }, lose: { cash: -0.8, say: 'Not covered.' } } }],
+    ['🚪 Fire {a}', { fire: 'a', team: -5, say: 'The drivers are nervous.' }]
+  ], FRONT);
+  B('delivery', 'holiday_peak', '🎁', 'Holiday season. Packages everywhere', 'Three times the normal volume.', [
+    ['🧑‍💼 Hire temp drivers', { cash: -0.3, extra: [0.3, 1, 'Holiday peak'], say: 'Everything delivered on time.' }],
+    ['⏰ Everyone works overtime', { extra: [0.3, 1, 'Holiday peak'], team: -12, say: 'Delivered. Exhausted team.' }],
+    ['📈 Charge a holiday surcharge', { extra: [0.25, 1, 'Holiday peak'], happy: -3, say: 'More money, fewer friends.' }],
+    ['🐢 Accept delays', { extra: [0.1, 1, 'Holiday peak'], rep: -5, say: 'Angry customers.' }]
+  ], { cond: function (g) { return week(g) >= 47 && week(g) <= 51; }, w: 20 });
+  B('delivery', 'lost_package', '📦', 'A very expensive package went missing', 'A client\'s diamond ring. Worth a fortune.', [
+    ['🔍 Search everything', { chance: { p: 0.5, win: { rep: 4, say: 'Found under a seat.' }, lose: { cash: -0.8, say: 'Gone. You paid.' } } }],
+    ['💸 Pay the client', { cash: -0.8, rep: 2, say: 'Paid in full.' }],
+    ['📹 GPS trackers on all packages', { cash: -0.5, equip: 0.01, say: 'Never again.' }],
+    ['🙅 "Not our fault"', { rep: -8, say: 'The client posted everywhere.' }]
+  ]);
+  B('delivery', 'drone', '🛸', 'Drone delivery trial', 'The city wants a company to test drone deliveries.', [
+    ['🛸 Volunteer', { cash: -1, fans: 40, equip: 0.04, say: 'The future, and you\'re in it.' }],
+    ['🤝 Partner with a drone company', { cash: -0.3, fans: 20, equip: 0.02, say: 'Low risk.' }],
+    ['👀 Watch others try first', { say: 'You waited.' }],
+    ['🙅 Too risky', { say: 'You passed.' }]
+  ], { minWeek: 20 });
+  B('delivery', 'online_store', '🛒', 'A huge online store wants you', 'They want you to deliver all their orders in {city}. Low price.', [
+    ['✍️ Sign', { extra: [0.15, 12, 'Online store'], team: -5, say: 'Busy trucks.' }],
+    ['🤝 Negotiate', { chance: { p: 0.5, win: { extra: [0.2, 12, 'Online store'], say: 'Better price.' }, lose: { say: 'They signed with someone else.' } } }],
+    ['🚐 Buy more vans first', { cash: -1, capacity: [1.15, 20, 'More vans'], extra: [0.15, 12, 'Online store'], say: 'Ready for anything.' }],
+    ['🙅 Too cheap', { say: 'You passed.' }]
+  ]);
+  B('delivery', 'dog_bite', '🐕', 'A dog bit {a} on a delivery', '{a} is okay, but scared to go back to that street.', [
+    ['🏥 Doctor and a paid day', { a: 12, say: '{a} is grateful.' }],
+    ['⚖️ Report the owner', { chance: { p: 0.6, win: { cash: 0.2, say: 'The owner paid.' }, lose: { say: 'Nothing happened.' } } }],
+    ['🔀 Change {a}\'s route', { a: 8, say: '{a} feels safe.' }],
+    ['😤 "Part of the job"', { a: -15, say: '{a} is upset.' }]
+  ], FRONT);
+  B('delivery', 'gas_prices', '⛽', 'Gas prices jumped', 'Your trucks cost twice as much to run.', [
+    ['📈 Add a fuel fee', { happy: -4, say: 'Customers grumbled.' }],
+    ['🔋 Buy electric vans', { cash: -1.5, supply: [-0.04, 30, 'Electric vans'], rep: 4, say: 'Cheaper to run. Greener.' }],
+    ['🗺️ Smarter routes', { cash: -0.2, supply: [-0.02, 20, 'Smart routes'], say: 'Less driving.' }],
+    ['😬 Absorb it', { supply: [0.05, 8, 'Fuel costs'], say: 'Thin profits.' }]
+  ], { kind: 'news' });
+
+  // 📢 MARKETING AGENCY
+  B('marketing', 'client_scandal', '📉', 'Your biggest client is in a scandal', 'Their boss did something awful. Your ads are everywhere with their name.', [
+    ['🚫 Drop them', { demand: [0.85, 6, 'Lost client'], rep: 5, say: 'You kept your name clean.' }],
+    ['🛡️ Help them fix their image', { extra: [0.15, 6, 'Crisis work'], rep: -3, say: 'Good money. Some people judged you.' }],
+    ['🤐 Pause the ads', { say: 'Waiting it out.' }],
+    ['💸 Charge double to stay', { extra: [0.2, 6, 'Crisis work'], rep: -6, say: 'Rich, but people talk.' }]
+  ]);
+  B('marketing', 'viral_campaign', '🔥', 'Your campaign went viral', 'An ad you made is everywhere. Brands are calling.', [
+    ['📞 Take every call', { extra: [0.2, 6, 'New clients'], team: -8, say: 'Busy. Maybe too busy.' }],
+    ['📈 Raise your prices', { extra: [0.15, 8, 'Premium clients'], say: 'Only big clients now.' }],
+    ['🏆 Enter it for awards', { cash: -0.2, rep: 6, fans: 20, say: 'It won gold.' }],
+    ['🧑‍🤝‍🧑 Credit the team publicly', { team: 12, rep: 3, say: 'The team is proud.' }]
+  ]);
+  B('marketing', 'client_pays_late', '💸', 'A big client hasn\'t paid in 3 months', 'They owe you a fortune and keep saying "next week".', [
+    ['⏸️ Stop all work', { chance: { p: 0.6, win: { cash: 1, say: 'They paid within days.' }, lose: { say: 'They went bankrupt.' } } }],
+    ['⚖️ Lawyer\'s letter', { cash: -0.1, chance: { p: 0.7, win: { cash: 1, say: 'Paid.' }, lose: { say: 'They ignored it.' } } }],
+    ['🤝 Payment plan', { cash: 0.5, say: 'Slowly, it comes.' }],
+    ['🤐 Keep working', { cash: -0.3, say: 'They still haven\'t paid.' }]
+  ]);
+  B('marketing', 'idea_stolen_pitch', '💡', 'A client stole your pitch', 'You pitched an idea. They said no. Now they\'re using it without you.', [
+    ['⚖️ Sue them', { cash: -0.5, chance: { p: 0.5, win: { cash: 1.5, rep: 4, say: 'You won.' }, lose: { say: 'Hard to prove.' } } }],
+    ['📢 Tell the industry', { rep: 4, fans: 10, say: 'Other agencies won\'t work with them.' }],
+    ['💸 Send them a bill', { chance: { p: 0.4, win: { cash: 0.8, say: 'They paid quietly.' }, lose: { say: 'They laughed.' } } }],
+    ['🔒 NDAs before every pitch', { rep: 1, say: 'Never again.' }]
+  ]);
+  B('marketing', 'creative_block', '🧠', 'The team is out of ideas', 'Three pitches failed in a row. Everyone is stuck.', [
+    ['🏖️ A creative retreat', { cash: -0.4, team: 12, say: 'They came back full of ideas.' }],
+    ['🧑‍🎨 Hire a star creative', { hireSpecial: { role: 'front', skill: 85, traits: ['creative'] }, say: 'Fresh blood.' }],
+    ['🎲 A crazy idea day', { team: 6, chance: { p: 0.5, win: { extra: [0.1, 4, 'Big idea'], say: 'One idea won a client.' }, lose: { say: 'Fun, but nothing.' } } }],
+    ['😤 More pressure', { team: -10, say: 'Worse.' }]
+  ]);
+  B('marketing', 'ai_tools', '🤖', 'AI tools can do half your work', 'Clients ask why they should pay you when AI is cheaper.', [
+    ['🤖 Use AI, keep the humans', { cash: -0.3, equip: 0.04, say: 'Faster and still creative.' }],
+    ['⭐ Sell human creativity', { rep: 4, say: 'Premium clients love it.' }],
+    ['📉 Lower your prices', { price: -1, say: 'You kept clients.' }],
+    ['🤷 Ignore it', { demand: [0.9, 8, 'AI competition'], say: 'Some clients left.' }]
+  ]);
+  B('marketing', 'award_night', '🏆', 'The big advertising awards', 'Your team is nominated three times.', [
+    ['🎉 Bring the whole team', { cash: -0.3, team: 12, chance: { p: 0.6, win: { rep: 8, fans: 20, say: 'You won two.' }, lose: { say: 'No wins. Great night.' } } }],
+    ['🎤 Prepare a speech', { chance: { p: 0.5, win: { rep: 8, fans: 25, say: 'You won. Your speech went viral.' }, lose: { say: 'No speech needed.' } } }],
+    ['📢 Promote the nominations', { fans: 15, extra: [0.05, 4, 'Buzz'], say: 'New clients called.' }],
+    ['🙅 Stay home', { say: 'You won one. Nobody was there to accept.' }]
   ]);
 
-  // 🔌 ELECTRONICS
-  B('electronics', 'console_launch', '🎮', 'The new console launches tomorrow!', 'The new game console launches tomorrow. 200 people are camping outside your store tonight! ⛺🎮', [
-    ['🍕 Bring them pizza', { cash: -0.1, rep: 4, fans: 15, say: 'The campers LOVE you! 🍕' }],
-    ['🌙 Open at midnight!', { extra: [0.5, 1, 'Midnight launch'], team: -5, say: 'Midnight launch party! Sold out! 🌙' }],
-    ['🎟️ Numbered tickets', { extra: [0.35, 1, 'Console launch'], rep: 3, say: 'Organized and fair! 🎟️' }],
-    ['😴 Open at the normal time', { extra: [0.25, 1, 'Console launch'], happy: -3, say: 'Tired, grumpy campers. 😴' }]
+  // 💾 APP COMPANY
+  B('software', 'server_down', '🔥', 'Your servers crashed', 'The app has been down for three hours. Users are furious.', [
+    ['🧑‍💻 All hands fix it', { team: -6, rep: -2, say: 'Back up. Everyone stayed late.' }],
+    ['📢 Honest updates every hour', { rep: 3, say: 'Users appreciated the honesty.' }],
+    ['☁️ Move to better servers', { cash: -1, equip: 0.03, say: 'It won\'t happen again.' }],
+    ['🤐 Say nothing', { rep: -8, say: 'People were angrier.' }]
   ]);
-  B('electronics', 'puffy_battery', '🔋', 'A battery is PUFFING UP', 'A laptop battery in the storage room is swelling like a balloon. {a} says it\'s getting warm! 😱', [
-    ['🧯 Get it outside safely, NOW', { rep: 3, say: 'Safe! The fire department said you did it right. 🧯' }],
-    ['📞 Call the fire department', { closed: [1, 'Battery danger'], rep: 4, say: 'The experts took it away. 📞' }],
-    ['🔍 Check all the batteries', { cash: -0.2, rep: 2, say: 'Found two more bad ones. Glad you checked! 🔍' }],
-    ['👀 Poke it', { cash: -1, closed: [1, 'Small fire'], say: 'It popped! A small fire. Nobody hurt, but NEVER poke batteries! 🔥' }]
-  ], FRONT);
-  B('electronics', 'tv_wall', '📺', 'Show the big match on the TV wall?', 'The big football match is tonight. You have 50 TVs on the wall. People are looking through the window...', [
-    ['📺 Match on ALL TVs!', { fans: 25, demand: [1.15, 2, 'Match night'], say: 'The whole street watched in your store! Sales went up! 📺⚽' }],
-    ['🎟️ Watch party with a TV sale', { extra: [0.3, 1, 'Match night TV sale'], say: 'People bought TVs during halftime! 🎟️' }],
-    ['🍿 Free popcorn', { cash: -0.1, fans: 15, say: 'Popcorn and football! 🍿' }],
-    ['🔌 Keep the demo videos', { say: 'Waterfalls and fish on 50 TVs. 🐠' }]
+  B('software', 'data_breach', '🔓', 'Hackers stole user passwords', 'A million accounts. It\'s on the news.', [
+    ['📢 Tell users now', { rep: -3, say: 'Painful, but honest.' }],
+    ['🧑‍💻 Hire security experts', { cash: -1, rep: 3, say: 'Stronger than ever.' }],
+    ['🎁 Free premium for a year', { supply: [0.05, 12, 'Free premium'], rep: 4, say: 'Users forgave you.' }],
+    ['🤐 Hide it', { chance: { p: 0.3, win: { say: 'Nobody found out.' }, lose: { cash: -2, rep: -15, say: 'Found out. Huge fine.' } } }]
   ]);
-  B('electronics', 'scalpers', '🤖', 'Scalpers are buying everything!', 'People with bots are buying all the new graphics cards to sell them for triple the price online. Real gamers are angry! 😤', [
-    ['🪪 One per person, ID required', { rep: 6, fans: 10, say: 'Real gamers got their cards! 🪪' }],
-    ['🎟️ A fair lottery system', { rep: 5, say: 'Fair for everyone! 🎟️' }],
-    ['💰 Sell to anyone', { extra: [0.2, 2, 'Scalper sales'], rep: -5, say: 'Money is money... but gamers are mad. 💰' }],
-    ['🏪 In-store only, no online', { rep: 3, demand: [1.05, 4, 'In-store only'], say: 'Bots can\'t walk into stores! 🏪' }]
+  B('software', 'big_client', '🏢', 'A giant company wants your app', 'For all 50,000 of their workers. They want custom features.', [
+    ['✍️ Sign and build', { extra: [0.15, 12, 'Enterprise client'], team: -8, say: 'Big money, big work.' }],
+    ['🤝 Sign, no custom work', { chance: { p: 0.5, win: { extra: [0.12, 12, 'Enterprise client'], say: 'They accepted.' }, lose: { say: 'They went elsewhere.' } } }],
+    ['🧑‍💻 Hire more developers', { hireSpecial: { role: 'front', skill: 70 }, extra: [0.15, 12, 'Enterprise client'], say: 'Ready to deliver.' }],
+    ['🙅 Too distracting', { say: 'You passed.' }]
+  ], { minWeek: 10 });
+  B('software', 'acquisition', '💼', 'A tech giant wants to buy your app', 'A huge offer. They\'d probably shut it down.', [
+    ['💰 Sell a piece', { cash: 3, say: 'Rich. Still in charge.' }],
+    ['🙅 Say no', { team: 8, rep: 3, say: 'The team cheered.' }],
+    ['📈 Ask for double', { chance: { p: 0.3, win: { cash: 5, say: 'They paid for a small share.' }, lose: { say: 'They built a copy instead.' } } }],
+    ['🤝 Partner instead', { demand: [1.1, 12, 'Big partner'], say: 'Their users are yours too.' }]
+  ], { minWeek: 20 });
+  B('software', 'app_store_ban', '🚫', 'The app store removed your app', 'They say you broke a rule. You don\'t know which one.', [
+    ['📝 Appeal', { chance: { p: 0.6, win: { say: 'Back in a week.' }, lose: { demand: [0.8, 3, 'App removed'], say: 'Still gone.' } } }],
+    ['🔧 Change anything risky', { cash: -0.3, demand: [0.9, 2, 'App removed'], say: 'Back. Slightly worse.' }],
+    ['📢 Go public', { fans: 30, chance: { p: 0.5, win: { say: 'The pressure worked.' }, lose: { demand: [0.8, 3, 'App removed'], say: 'They didn\'t care.' } } }],
+    ['🌐 Launch on the web', { cash: -0.4, demand: [0.9, 3, 'Web only'], say: 'Some users followed.' }]
   ]);
-  B('electronics', 'demo_thief', '📱', 'Demo phones keep disappearing', 'Three demo phones went missing this week. The security cables were cut. 🕵️', [
-    ['📹 Better cameras', { cash: -0.3, flag: 'cameras', say: 'The thief was caught on camera! 📹' }],
-    ['🔒 Strong steel cables', { cash: -0.2, say: 'No more missing phones! 🔒' }],
-    ['🪤 Put a fake phone out as a trap', { chance: { p: 0.5, win: { fans: 20, say: 'The thief grabbed the fake phone. It played a loud siren! 🚨' }, lose: { say: 'They were too smart. 🪤' } } }],
-    ['🤷 It happens', { cash: -0.3, say: 'Losses add up. 🤷' }]
+  B('software', 'feature_request', '🗳️', 'Users are begging for dark mode', 'Thousands of requests. Your team wants to build other things.', [
+    ['🌙 Build it now', { fans: 20, rep: 3, say: 'Users are thrilled.' }],
+    ['🗳️ Let users vote on features', { fans: 15, say: 'Users feel heard.' }],
+    ['⏳ Next quarter', { rep: -2, say: 'Users are impatient.' }],
+    ['💰 Make it a paid feature', { extra: [0.06, 8, 'Premium feature'], rep: -3, say: 'Some paid. Many complained.' }]
   ]);
-  B('electronics', 'smart_home', '🏠', 'Sell smart home installs?', 'Customers buy smart lights and speakers but can\'t set them up. {a} wants to offer home installation.', [
-    ['🏠 Smart home service!', { cash: -0.3, extra: [0.2, 16, 'Smart home installs'], say: 'Everyone wants a talking house! 🏠' }],
-    ['🎓 Free setup classes', { rep: 4, fans: 10, say: 'Customers love the classes! 🎓' }],
-    ['🤖 A robot butler demo', { cash: -0.6, fans: 30, say: 'The robot butler brought coffee! Everyone filmed it! 🤖' }],
-    ['🙅 "Read the manual"', { happy: -2, say: 'Returns went up. 🙅' }]
-  ], FRONT);
-  B('electronics', 'price_match', '💻', '"It\'s cheaper online!"', 'A customer shows you the same laptop online for $100 less. "Match the price or I\'m leaving!"', [
-    ['🤝 Match it', { cash: -0.05, happy: 3, rep: 2, say: 'Happy customer, small loss. 🤝' }],
-    ['🛡️ "We give 2 years of free help"', { chance: { p: 0.6, win: { say: 'They bought it from you for the help! 🛡️' }, lose: { say: 'They left to buy it online. 🛡️' } } }],
-    ['🎁 Free headphones instead', { cash: -0.03, happy: 3, say: 'They took the deal! 🎁' }],
-    ['🙅 "Then buy it online"', { happy: -2, say: 'They did. 🙅' }]
-  ]);
-
-  // 📦 DELIVERY COMPANY
-  B('delivery', 'angry_dog', '🐕', 'The dog that hates delivery drivers', 'At one house, a tiny dog chases {a} EVERY day. {a} has started running from the van to the door.', [
-    ['🦴 Bring the dog treats', { chance: { p: 0.7, win: { a: 10, fans: 10, say: 'Now the dog waits for {a} every day with a wagging tail! 🦴' }, lose: { a: -3, say: 'The dog ate the treat AND chased {a}. 😂' } } }],
-    ['🔀 Let someone else take that route', { a: 5, say: 'New driver, same dog. 🔀' }],
-    ['📹 Film the chase', { fans: 20, say: '"Tiny Dog vs Driver" is hilarious. 📹' }],
-    ['🥾 Buy {a} running shoes', { money: -80, a: 6, say: '{a} is very fast now. 🥾' }]
-  ], FRONT);
-  B('delivery', 'wrong_house', '🎂', 'Delivered to the wrong house!', 'A birthday cake was delivered to the wrong house. The neighbors ate it. The real birthday party is in 1 hour!', [
-    ['🎂 Buy a new cake and rush it', { cash: -0.1, rep: 4, say: 'Delivered with 5 minutes to spare! 🎂' }],
-    ['🎉 Add balloons to say sorry', { cash: -0.12, rep: 5, fans: 10, say: 'The family loved the balloons! 🎉' }],
-    ['📍 Better GPS for all drivers', { cash: -0.3, capacity: [1.05, 26, 'Better GPS'], say: 'No more wrong houses! 📍' }],
-    ['🤷 "The neighbors ate it, not us"', { rep: -5, say: 'Very bad review. 🤷' }]
-  ]);
-  B('delivery', 'holiday_peak', '🎄', 'The holiday rush!', 'It\'s December. Everyone is ordering gifts. There are 5 TIMES more packages than normal! 📦📦📦', [
-    ['👥 Hire holiday drivers', { hireSpecial: { role: 'front', skill: 45 }, extra: [0.4, 3, 'Holiday rush'], say: 'Every gift arrived on time! 👥' }],
-    ['🔥 Everyone works double shifts', { extra: [0.5, 3, 'Holiday rush'], team: -12, say: 'Big money. Very tired team. 🔥' }],
-    ['🎅 Drivers wear Santa hats', { fans: 20, extra: [0.3, 3, 'Holiday rush'], say: 'Santa drivers! Kids love it! 🎅' }],
-    ['📅 "Might arrive after Christmas"', { rep: -6, say: 'Angry customers. 📅' }]
-  ], { cond: inWeeks('delivery', 48, 52) });
-  B('delivery', 'drones', '🚁', 'Try drone delivery?', 'A company offers delivery drones. "Packages fly right to the door!" What could go wrong?', [
-    ['🚁 Buy 10 drones', { cash: -1.5, chance: { p: 0.6, win: { capacity: [1.2, 52, 'Drone delivery'], fans: 25, say: 'Flying packages! The future is here! 🚁' }, lose: { rep: -4, say: 'A drone dropped a package into a pool. And a seagull attacked another one. 🦅' } } }],
-    ['🚁 Test with one drone', { cash: -0.2, fans: 12, say: 'Cool test! Everyone waved at the drone. 🚁' }],
-    ['🚲 Try cargo bikes instead', { cash: -0.3, rep: 4, capacity: [1.05, 52, 'Cargo bikes'], say: 'Fast in traffic, good for the planet! 🚲' }],
-    ['🙅 Vans work fine', { say: 'Old but gold. 🙅' }]
-  ]);
-  B('delivery', 'mud_stuck', '🚚', 'A van is stuck in the mud', 'A van went down a country road and is stuck in deep mud. 60 packages are waiting inside!', [
-    ['🚜 Ask a farmer with a tractor', { money: -50, fans: 10, say: 'The farmer pulled it out! 🚜' }],
-    ['🏃 Deliver the packages on foot', { team: -5, rep: 4, say: 'Everything delivered, with muddy shoes. 🏃' }],
-    ['🔧 Call a tow truck', { cash: -0.2, say: 'Out! But very late. 🔧' }],
-    ['🛻 Buy all-terrain vans', { cash: -1.5, capacity: [1.08, 52, 'Off-road vans'], say: 'Nothing stops you now! 🛻' }]
-  ]);
-  B('delivery', 'fragile', '🥂', 'The "FRAGILE" box went CRASH', 'A box marked "FRAGILE — GLASS" fell off the cart. It made a very sad sound. 🥂💥', [
-    ['📞 Call the customer and pay for it', { cash: -0.2, rep: 4, say: 'Honest and fair. 📞' }],
-    ['📦 Better packing rules', { cash: -0.2, equip: 0.02, say: 'Bubble wrap everywhere! 📦' }],
-    ['🛡️ Buy delivery insurance', { cash: -0.3, rep: 2, say: 'Now accidents are covered. 🛡️' }],
-    ['🙈 Deliver it anyway', { rep: -6, say: 'They opened a box of crumbs. VERY bad review. 🙈' }]
-  ]);
-  B('delivery', 'porch_pirates', '🏴‍☠️', 'Porch pirates are stealing packages!', 'Someone steals packages from doorsteps right after you deliver them. Customers blame YOU.', [
-    ['📸 Photo of every delivery', { rep: 4, say: 'Proof you delivered! 📸' }],
-    ['🔐 Package lockers around town', { cash: -1, rep: 6, capacity: [1.05, 52, 'Package lockers'], say: 'Safe lockers everywhere! 🔐' }],
-    ['🪤 Fake glitter-bomb package', { fans: 30, say: 'The thief got covered in glitter! Viral video! ✨' }],
-    ['🤷 "Not our problem"', { rep: -5, say: 'Customers went to other companies. 🤷' }]
-  ]);
-
-  // 📣 MARKETING AGENCY
-  B('marketing', 'hates_logo', '🎨', 'The client HATES the new logo', 'You spent 3 weeks on a logo. The client says: "It looks like a potato." 🥔 They want changes by tomorrow.', [
-    ['🔄 Start over, work all night', { team: -6, chance: { p: 0.6, win: { rep: 4, say: 'They LOVE the new one! 🎨' }, lose: { say: 'They picked... the first one. 😑' } } }],
-    ['🥔 "It\'s a GOOD potato"', { chance: { p: 0.3, win: { fans: 20, say: 'They laughed and kept it! 🥔' }, lose: { rep: -3, say: 'They were not amused. 🥔' } } }],
-    ['🎨 Show 5 new quick ideas', { team: -3, rep: 3, say: 'They picked number 3! 🎨' }],
-    ['👋 Drop the client', { cash: -0.3, team: 5, say: 'Freedom! But less money. 👋' }]
-  ]);
-  B('marketing', 'bad_slogan', '💬', 'A slogan went viral... for the wrong reason', '{a} wrote a slogan for a juice company: "Taste the Squeeze!" People think it sounds weird and are making memes about it. 😬', [
-    ['😂 Lean into it! Make more memes', { fans: 30, chance: { p: 0.5, win: { rep: 4, say: 'The client LOVES the attention! 😂' }, lose: { rep: -3, say: 'The client wanted fewer jokes. 😬' } } }],
-    ['🔄 Quickly change the slogan', { rep: 1, say: 'New slogan, fewer memes. 🔄' }],
-    ['🙏 Say sorry to the client', { rep: 2, a: -5, say: 'The client forgave you. 🙏' }],
-    ['📊 Show the client how many views it got', { cash: 0.5, say: '10 million views! The client gave you a bonus! 📊' }]
-  ], FRONT);
-  B('marketing', 'soda_pitch', '🥤', 'A giant soda brand wants a pitch!', 'The biggest soda company in the world wants new ideas. If you win, it\'s the biggest deal ever. 5 other agencies are competing.', [
-    ['🔥 All-in: work nonstop for a week', { team: -10, chance: { p: 0.4, win: { cash: 5, rep: 8, fans: 30, say: 'YOU WON THE DEAL! 🥤🏆' }, lose: { say: 'They picked another agency. So close. 😩' } } }],
-    ['💡 One crazy, bold idea', { chance: { p: 0.3, win: { cash: 5, fans: 40, say: 'Your crazy idea WON! 💡' }, lose: { say: 'Too crazy for them. 💡' } } }],
-    ['🤝 Team up with another agency', { chance: { p: 0.6, win: { cash: 2.5, rep: 4, say: 'You won together! 🤝' }, lose: { say: 'Lost together. 🤝' } } }],
-    ['🙅 Too big for us', { say: 'Maybe next time. 🙅' }]
-  ], { rarity: 'rare' });
-  B('marketing', 'jingle', '🎵', 'The client wants a jingle', 'A pet food company wants a catchy song for their ads. {a} says they can sing. Can they?', [
-    ['🎤 Let {a} sing it', { chance: { p: 0.5, win: { fans: 25, a: 10, say: 'The jingle is SO catchy! Everyone is humming it! 🎤' }, lose: { rep: -2, say: 'It sounded like a cat in a washing machine. 😬' } } }],
-    ['🎹 Hire a real singer', { cash: -0.3, rep: 4, say: 'Perfect jingle! 🎹' }],
-    ['🐶 Real barking dogs singing', { fans: 30, say: 'The barking jingle went viral! 🐶🎵' }],
-    ['📼 Use free music', { say: 'Safe, boring jingle. 📼' }]
-  ], FRONT);
-  B('marketing', 'ad_awards', '🏆', 'Nominated for Best Ad of the Year!', 'Your funny ad about a talking sandwich is nominated at the big ad awards!', [
-    ['🎩 Go in fancy clothes', { chance: { p: 0.4, win: { rep: 10, fans: 30, say: 'YOU WON! New clients are calling! 🏆' }, lose: { fans: 8, say: 'Didn\'t win. Nice party though. 🎩' } } }],
-    ['🥪 Go in a sandwich costume', { fans: 25, chance: { p: 0.4, win: { rep: 8, say: 'You WON in a sandwich costume! Legendary! 🥪🏆' }, lose: { say: 'No award. Very good costume though. 🥪' } } }],
-    ['🎉 Office watch party', { team: 8, say: 'The team screamed at the screen! 🎉' }],
-    ['😴 Skip it', { say: 'You found out the next day. 😴' }]
-  ]);
-  B('marketing', 'influencer_cancelled', '📉', 'Your influencer got CANCELLED', 'The influencer you hired for a big campaign just posted something very rude. Everyone is angry at them... and the ad has your client\'s name on it!', [
-    ['🗑️ Pull the ads immediately', { cash: -0.4, rep: 4, say: 'Fast move. The client is grateful. 🗑️' }],
-    ['🔄 Find a new influencer tonight', { cash: -0.3, team: -4, rep: 3, say: 'New face, campaign saved! 🔄' }],
-    ['🙊 Wait and see', { chance: { p: 0.3, win: { say: 'It blew over. 🙊' }, lose: { rep: -8, say: 'It got worse. The client left you. 😱', cash: -0.8 } } }],
-    ['📜 Check influencers better from now on', { rep: 2, cash: -0.2, say: 'Smarter choices next time. 📜' }]
-  ]);
-  B('marketing', 'all_nighter', '🌙', 'The pitch is due TOMORROW', 'The client moved the deadline. The big presentation is tomorrow morning instead of next week! 😱', [
-    ['🍕 Pizza and all-nighter!', { cash: -0.1, team: -6, chance: { p: 0.7, win: { cash: 1, say: 'Nailed it with no sleep! 🍕' }, lose: { say: 'The slides had typos. Sleepy typos. 😴' } } }],
-    ['📞 Ask for 2 more days', { chance: { p: 0.5, win: { say: 'They agreed! Phew. 📞' }, lose: { rep: -3, say: '"No." 📞' } } }],
-    ['✨ Keep it short and simple', { cash: 0.5, say: 'Short and sweet. They liked it! ✨' }],
-    ['🎭 Present it as a play', { fans: 15, chance: { p: 0.5, win: { cash: 1.2, say: 'They LOVED the theater! 🎭' }, lose: { say: 'Confusing. 🎭' } } }]
-  ]);
-
-  // 💻 APP COMPANY
-  B('software', 'server_crash', '🔥', 'The servers crashed on launch day!', 'Your new app launched and a million people tried to sign up at once. The servers are on fire (not really, but almost). 🔥', [
-    ['☁️ Buy more servers NOW', { cash: -1, capacity: [1.2, 12, 'More servers'], say: 'Back online! A million new users! ☁️' }],
-    ['😂 Post a funny "we broke" message', { fans: 25, say: 'People loved your honesty! 😂' }],
-    ['🎟️ Waiting list with a number', { rep: 3, say: 'People waited. And got excited. 🎟️' }],
-    ['😱 Panic', { rep: -4, say: 'The app was down for 2 days. 😱' }]
-  ]);
-  B('software', 'store_reject', '🚫', 'The app store REJECTED your app', 'Your update was rejected because "the button is 2 pixels too small". The update was supposed to come out today.', [
-    ['🔧 Fix it and resubmit', { chance: { p: 0.8, win: { say: 'Approved! 🔧' }, lose: { rep: -2, say: 'Rejected AGAIN. Now the icon is "too blue". 😤' } } }],
-    ['📞 Call them and complain', { chance: { p: 0.4, win: { say: 'They approved it! 📞' }, lose: { say: 'Nobody answered. 📞' } } }],
-    ['🌐 Release a web version', { cash: -0.3, fans: 10, say: 'Users can use it in the browser! 🌐' }],
-    ['😂 Tweet about the 2 pixels', { fans: 20, say: 'Developers everywhere laughed. 😂' }]
-  ]);
-  B('software', 'hackathon', '💡', 'Hackathon weekend!', 'The team wants a 48-hour hackathon: build anything new, with pizza and energy drinks!', [
-    ['💡 Let\'s do it!', { cash: -0.2, team: 8, chance: { p: 0.4, win: { extra: [0.3, 12, 'Hackathon idea'], say: 'Someone built a GREAT new feature! 💡' }, lose: { say: 'Everyone built games. Fun, though! 🎮' } } }],
-    ['🏆 Big prize for the best idea', { cash: -0.4, team: 10, chance: { p: 0.5, win: { extra: [0.35, 12, 'Hackathon idea'], say: 'The winning idea is a hit! 🏆' }, lose: { say: 'Good ideas, none finished. 🏆' } } }],
-    ['🌍 Invite the public', { cash: -0.3, fans: 25, say: 'Hundreds came! You hired two of them! 🌍', hireSpecial: { role: 'front', skill: 60 } }],
-    ['🙅 Too busy', { team: -3, say: 'Normal weekend. 🙅' }]
-  ]);
-  B('software', 'dark_mode', '🌙', 'Users DEMAND dark mode', 'Thousands of angry messages: "WHERE IS DARK MODE?! My eyes hurt!" 🌙', [
-    ['🌙 Build dark mode', { cash: -0.3, fans: 20, rep: 3, say: 'Users are happy! 🌙' }],
-    ['🌈 Build 10 color themes', { cash: -0.5, fans: 30, say: 'Rainbow mode is the favorite! 🌈' }],
-    ['😎 Make EVERYTHING dark', { fans: 10, rep: -2, say: 'Some people can\'t find the buttons now. 😎' }],
-    ['🤷 "Turn down your brightness"', { fans: -10, say: 'Users are annoyed. 🤷' }]
-  ]);
-  B('software', 'buyout', '💰', 'A tech giant wants to buy your app!', 'A huge tech company offers to buy your app for a LOT of money. But they might shut it down.', [
-    ['💰 Sell it!', { cash: 5, fans: -20, say: 'You\'re rich! Users are sad. 💰' }],
-    ['📈 Ask for double', { chance: { p: 0.35, win: { cash: 9, say: 'THEY SAID YES! 💰💰' }, lose: { say: 'They walked away. 📈' } } }],
-    ['🤝 Partner instead of selling', { extra: [0.3, 20, 'Tech partnership'], rep: 4, say: 'Their users can use your app now! 🤝' }],
-    ['🙅 Not for sale', { team: 8, fans: 15, say: 'The team cheered! 🙅' }]
-  ], { rarity: 'rare' });
-  B('software', 'security_hole', '🛡️', 'A hacker found a security hole', 'A friendly hacker emails: "Your app has a big security hole. I can show you, but I want a reward." 🛡️', [
-    ['💵 Pay the reward', { cash: -0.3, equip: 0.02, rep: 4, say: 'Hole fixed! Users are safe! 💵' }],
-    ['🏆 Start a bug bounty program', { cash: -0.5, rep: 6, say: 'Friendly hackers help you now! 🏆' }],
-    ['🔍 Find it yourselves', { team: -4, chance: { p: 0.5, win: { say: 'Found and fixed! 🔍' }, lose: { rep: -8, say: 'Someone else found it first. Data leak. 😱' } } }],
-    ['🙈 Ignore the email', { rep: -5, say: 'The hacker posted it online. 🙈' }]
-  ]);
-  B('software', 'add_ai', '🤖', 'Add AI to EVERYTHING?', 'Investors keep asking: "Does your app have AI?" Everyone is adding AI to everything, even toasters.', [
-    ['🤖 Add a smart AI helper', { cash: -0.8, demand: [1.15, 20, 'AI features'], say: 'The helper is actually useful! 🤖' }],
-    ['😂 Add "AI" to the name only', { fans: 15, rep: -2, say: 'Investors liked it. Users noticed nothing. 😂' }],
-    ['🧪 Test a small AI feature', { cash: -0.3, demand: [1.06, 12, 'AI test'], say: 'Nice little upgrade! 🧪' }],
-    ['🙅 Focus on what works', { rep: 2, say: 'Users like the simple app. 🙅' }]
-  ]);
+  B('software', 'dev_burnout', '🥵', 'Your developers are burning out', 'Late nights for months. Two are talking about quitting.', [
+    ['🏖️ A week off for everyone', { closed: [1, 'Team break'], team: 18, say: 'They came back refreshed.' }],
+    ['🕐 Four-day week', { capacity: [0.92, 16, 'Four-day week'], team: 15, say: 'Happier, sharper.' }],
+    ['💵 Bonuses', { teamBonus: true, team: 8, say: 'It helped. For now.' }],
+    ['💪 "Just a bit longer"', { team: -12, next: ['resign', 2, 5, 0.5], say: 'Someone is updating their CV.' }]
+  ], { who: { a: 'any' } });
 
   // 🧸 TOY COMPANY
-  B('toys', 'toy_craze', '🧸', 'Your toy is THE toy of the year!', 'Every kid wants your "Squishy Dino". Stores are sold out. Parents are fighting in the aisles! 🦖', [
-    ['🏭 Make millions more!', { cash: -1, extra: [0.8, 4, 'Squishy Dino craze'], say: 'The factory runs day and night! 🏭' }],
-    ['💲 Raise the price', { extra: [0.6, 3, 'Squishy Dino craze'], rep: -4, say: 'Rich... but parents are angry. 💲' }],
-    ['🎁 Give some to hospitals', { extra: [0.5, 3, 'Squishy Dino craze'], rep: 8, say: 'Sick kids got dinos too! ❤️' }],
-    ['🦖 Make a whole dino family', { cash: -0.5, extra: [0.7, 6, 'Dino family'], fans: 20, say: 'Kids want to collect them all! 🦖' }]
-  ], { rarity: 'rare' });
-  B('toys', 'safety_recall', '⚠️', 'A small part might be dangerous!', 'A parent found that a tiny part of your new toy can come off. Small kids could put it in their mouths. ⚠️', [
-    ['⚠️ Recall all the toys right away', { cash: -1.2, rep: 6, say: 'Safe choice. Parents trust you more. ⚠️' }],
-    ['🔧 Fix the design for new toys', { cash: -0.4, rep: 2, say: 'New ones are safe. 🔧' }],
-    ['🏷️ Add a "3+ years" label', { rep: -2, say: 'Hmm. Some parents are still worried. 🏷️' }],
-    ['🙈 Hope nothing happens', { rep: -10, say: 'The news found out. Very bad. 😱' }]
+  B('toys', 'safety_recall', '⚠️', 'A toy has a small part that breaks off', 'A parent says their toddler almost choked.', [
+    ['📢 Recall it now', { cash: -0.8, rep: 6, say: 'Parents trust you more.' }],
+    ['🔧 Fix new ones, keep the old', { cash: -0.3, rep: -4, say: 'Parents are not happy.' }],
+    ['🔍 Test it first', { chance: { p: 0.5, win: { say: 'A one-off. Safe.' }, lose: { cash: -1, rep: -5, say: 'It was a real problem. Late recall.' } } }],
+    ['🤐 Deny it', { rep: -15, say: 'A scandal.' }]
   ]);
-  B('toys', 'cartoon_deal', '📺', 'A cartoon about YOUR toy?', 'A TV studio wants to make a cartoon show about your toy characters!', [
-    ['📺 Yes!', { cash: 1, fans: 40, demand: [1.2, 20, 'Cartoon show'], say: 'Kids watch the show and want the toys! 📺' }],
-    ['✍️ Yes, but you write the stories', { cash: 0.5, fans: 35, rep: 4, say: 'Your characters, your stories! ✍️' }],
-    ['💰 Ask for more money', { chance: { p: 0.5, win: { cash: 2, fans: 35, say: 'Deal! 💰' }, lose: { say: 'They made a show about another toy. 💰' } } }],
-    ['🙅 No, toys are enough', { say: 'Just toys. 🙅' }]
-  ], { rarity: 'rare' });
-  B('toys', 'kid_testers', '🧒', 'Hire kids as toy testers?', 'Who knows toys better than kids? You could invite kids to test new toys every month.', [
-    ['🧒 Monthly toy testing day', { cash: -0.2, rep: 5, equip: 0.02, fans: 20, say: 'The kids are brutally honest. Toys got better! 🧒' }],
-    ['🏆 "Chief Toy Officer" contest', { fans: 30, say: 'An 8-year-old is now your "Chief Toy Officer"! 🏆' }],
-    ['🐶 Test with dogs too', { fans: 15, say: 'Dogs destroyed everything. Very useful data. 🐶' }],
-    ['🙅 Adults can test toys', { say: 'Adults said "nice". 🙅' }]
+  B('toys', 'holiday_hit', '🎁', 'Your toy is this year\'s must-have', 'Every kid wants it. Stores are sold out.', [
+    ['🏭 Make as many as possible', { cash: -0.8, extra: [0.35, 3, 'Holiday hit'], team: -8, say: 'Record sales.' }],
+    ['🔢 Limited supply, more hype', { extra: [0.2, 3, 'Holiday hit'], fans: 30, say: 'Everyone is talking about it.' }],
+    ['📈 Raise the price', { extra: [0.3, 3, 'Holiday hit'], rep: -4, say: 'Parents were angry.' }],
+    ['🎁 Donate some to hospitals', { rep: 8, extra: [0.25, 3, 'Holiday hit'], say: 'The news covered it.' }]
+  ], { cond: function (g) { return week(g) >= 44 && week(g) <= 50; }, w: 20 });
+  B('toys', 'movie_license', '🎬', 'A movie studio offers a toy license', 'Toys for their new big film. They want a big cut.', [
+    ['✍️ Sign', { cash: -1, chance: { p: 0.6, win: { extra: [0.15, 10, 'Movie toys'], say: 'The movie was a hit. So were the toys.' }, lose: { say: 'The movie flopped.' } } }],
+    ['🤝 Smaller deal', { cash: -0.4, extra: [0.07, 10, 'Movie toys'], say: 'Safe money.' }],
+    ['🎨 Make your own characters', { cash: -0.3, rep: 4, fans: 15, say: 'Your own world.' }],
+    ['🙅 No', { say: 'You passed.' }]
   ]);
-  B('toys', 'creepy_doll', '🪆', 'The new doll is CREEPY', 'The new talking doll says "I\'m watching you" instead of "I\'m your friend". A factory mistake. 😳', [
-    ['🔧 Fix it and recall', { cash: -0.6, rep: 3, say: 'Fixed! Now it says "hi friend!" 🔧' }],
-    ['🎃 Sell it as a Halloween doll!', { extra: [0.3, 4, 'Creepy doll'], fans: 30, say: 'The creepy doll is a Halloween HIT! 🎃' }],
-    ['😂 Post about the mistake', { fans: 25, say: 'People loved the funny honesty! 😂' }],
-    ['🙈 Hope nobody notices', { rep: -6, say: 'Everyone noticed. 😱' }]
+  B('toys', 'factory_conditions', '🏭', 'Your factory treats workers badly', 'A report shows long hours and low pay at the factory that makes your toys.', [
+    ['🔄 Change factories', { cash: -0.6, supply: [0.03, 16, 'Fair factory'], rep: 8, say: 'Fair and proud.' }],
+    ['🤝 Demand better conditions', { chance: { p: 0.6, win: { rep: 5, say: 'They improved.' }, lose: { rep: -5, say: 'They didn\'t change.' } } }],
+    ['🔍 Visit yourself', { cash: -0.2, rep: 3, say: 'You saw it. You fixed it.' }],
+    ['🤐 Ignore it', { rep: -10, say: 'Parents boycotted you.' }]
   ]);
-  B('toys', 'collectors', '🧐', 'Adult collectors are buying everything', 'Grown-ups are buying all your limited toys to keep in boxes. Kids can\'t find them!', [
-    ['🧒 "Kids first" days', { rep: 6, fans: 10, say: 'Kids get the first chance! 🧒' }],
-    ['📦 Special collector editions', { extra: [0.3, 8, 'Collector editions'], say: 'Fancy boxes for collectors, normal toys for kids! 📦' }],
-    ['💰 Make everything "limited"', { extra: [0.3, 6, 'Limited toys'], rep: -3, say: 'Money! But kids are sad. 💰' }],
-    ['🤷 A sale is a sale', { extra: [0.15, 4, 'Collector sales'], say: 'Collectors are happy. 🤷' }]
+  B('toys', 'toy_fair', '🎪', 'The world toy fair', 'Buyers from everywhere. A booth costs a fortune.', [
+    ['🎪 Big booth', { cash: -1, chance: { p: 0.6, win: { extra: [0.12, 8, 'Toy fair'], fans: 30, say: 'Stores ordered big.' }, lose: { fans: 15, say: 'Nice buzz. Few orders.' } } }],
+    ['🧸 Small booth, one star toy', { cash: -0.4, extra: [0.07, 8, 'Toy fair'], say: 'Good contacts.' }],
+    ['🚶 Just visit', { say: 'You learned a lot.' }],
+    ['🙅 Skip it', { say: 'You passed.' }]
   ]);
-  B('toys', 'toy_fair', '🎪', 'The big Toy Fair!', 'The world\'s biggest toy fair is next month. A big booth costs a lot, but every toy store will be there!', [
-    ['🎪 The BIGGEST booth', { cash: -1.2, extra: [0.4, 6, 'Toy Fair orders'], fans: 25, say: 'Everyone stopped at your booth! Huge orders! 🎪' }],
-    ['🧸 A small, cute booth', { cash: -0.4, extra: [0.2, 6, 'Toy Fair orders'], say: 'Good orders for a small price! 🧸' }],
-    ['🤖 Show a giant robot toy', { cash: -0.8, chance: { p: 0.5, win: { fans: 40, extra: [0.5, 6, 'Robot hit'], say: 'The giant robot was the star of the fair! 🤖' }, lose: { say: 'The robot broke. It just said "error". 🤖' } } }],
-    ['🙅 Skip it', { say: 'Stores ordered from others. 🙅' }]
+  B('toys', 'kid_inventor', '💡', 'A kid sent you a toy idea', 'A drawing from an 8-year-old. It\'s actually brilliant.', [
+    ['🚀 Make it, credit the kid', { cash: -0.4, fans: 40, rep: 6, demand: [1.1, 8, 'Kid\'s idea'], say: 'The kid is famous.' }],
+    ['💵 Buy the idea from the family', { cash: -0.3, demand: [1.1, 8, 'Kid\'s idea'], say: 'A fair deal.' }],
+    ['📩 A thank-you letter', { rep: 2, say: 'The kid framed it.' }],
+    ['🙅 Ignore it', { say: 'The idea went to {rival}.' }]
+  ], { init: rival });
+  B('toys', 'screen_time', '📱', 'Kids only want screens now', 'Toy sales are falling. Tablets are winning.', [
+    ['🧩 Toys with apps', { cash: -0.5, demand: [1.08, 12, 'App toys'], say: 'The best of both.' }],
+    ['📢 "Play outside" campaign', { cash: -0.3, rep: 5, fans: 20, say: 'Parents love it.' }],
+    ['🎮 A video game of your toys', { cash: -0.8, chance: { p: 0.5, win: { extra: [0.1, 10, 'Toy game'], say: 'Kids play and buy.' }, lose: { say: 'Nobody downloaded it.' } } }],
+    ['🤷 Stay classic', { demand: [0.92, 8, 'Screen time'], say: 'Slow sales.' }]
   ]);
 
   // 🍌 BANANA FARM
-  B('banana', 'hurricane', '🌀', 'A hurricane is coming!', 'The weather news says a big hurricane will hit the farm in 2 days. The bananas are almost ready!', [
-    ['🍌 Pick everything early!', { team: -6, cash: 0.3, say: 'Green bananas saved! They\'ll ripen in the boxes. 🍌' }],
-    ['🛡️ Tie up the trees', { cash: -0.3, chance: { p: 0.6, win: { say: 'The trees survived! 🛡️' }, lose: { cash: -1, say: 'Half the trees fell anyway. 🌀' } } }],
-    ['🏠 Protect the workers first', { team: 10, cash: -0.8, say: 'Everyone was safe. You lost some trees. ❤️' }],
-    ['🤞 Hope it misses', { chance: { p: 0.4, win: { say: 'It missed! Lucky! 🤞' }, lose: { cash: -1.8, closed: [2, 'Hurricane damage'], say: 'The farm was hit hard. 😱' } } }]
+  B('banana', 'fungus', '🍂', 'A plant disease is spreading', 'Banana plants are dying on the east side of the farm.', [
+    ['🔥 Burn the sick plants', { capacity: [0.85, 6, 'Lost plants'], say: 'It stopped spreading.' }],
+    ['🧪 Expensive treatment', { cash: -0.8, chance: { p: 0.6, win: { say: 'Saved.' }, lose: { capacity: [0.8, 6, 'Lost plants'], say: 'Too late.' } } }],
+    ['🌱 Plant a resistant type', { cash: -1, capacity: [0.9, 4, 'Replanting'], equip: 0.03, say: 'Stronger plants for the future.' }],
+    ['🙈 Hope it stops', { capacity: [0.7, 8, 'Disease'], say: 'It spread everywhere.' }]
   ]);
-  B('banana', 'too_ripe', '🟫', 'Tons of bananas are TOO ripe', 'A shipment got delayed and 5,000 bananas turned brown and spotty. Nobody wants to buy brown bananas!', [
-    ['🍞 Make banana bread!', { cash: -0.2, extra: [0.25, 3, 'Banana bread'], fans: 10, say: 'Banana bread is a HIT! 🍞' }],
-    ['🍦 Sell to ice cream makers', { cash: 0.3, say: 'Brown bananas = perfect for ice cream! 🍦' }],
-    ['🐷 Give them to farm animals', { rep: 2, say: 'Very happy pigs. 🐷' }],
-    ['🗑️ Throw them out', { cash: -0.3, rep: -1, say: 'What a waste. 🗑️' }]
+  B('banana', 'hurricane', '🌀', 'A hurricane is coming', 'It will hit the farm in two days.', [
+    ['🌾 Harvest everything early', { extra: [0.2, 1, 'Early harvest'], team: -8, say: 'Most of the crop saved.' }],
+    ['🧱 Protect the plants', { cash: -0.5, capacity: [0.9, 4, 'Storm damage'], say: 'Damage kept small.' }],
+    ['🏠 Keep workers safe first', { team: 10, capacity: [0.75, 6, 'Storm damage'], say: 'Everyone safe. Big damage.' }],
+    ['🤞 Hope it misses', { chance: { p: 0.4, win: { say: 'It missed.' }, lose: { capacity: [0.6, 8, 'Storm damage'], say: 'Direct hit.' } } }]
   ]);
-  B('banana', 'spider_box', '🕷️', 'A SPIDER in a banana box!', 'A supermarket found a huge spider in one of your banana boxes. A shopper screamed so loud the police came. 🕷️😱', [
-    ['🔍 Check every box from now on', { cash: -0.3, equip: 0.02, rep: 4, say: 'No more stowaways! 🔍' }],
-    ['🎁 Send the supermarket a sorry gift', { cash: -0.1, rep: 3, say: 'They forgave you. 🎁' }],
-    ['🕷️ Give the spider to the zoo', { fans: 20, say: 'The spider, "Banana Bob", lives at the zoo now! 🕷️' }],
-    ['🤷 "Spiders like bananas too"', { rep: -4, say: 'Not the right answer. 🤷' }]
+  B('banana', 'fair_trade', '🤝', 'A fair trade label wants you', 'Better pay for workers, higher prices, happier buyers.', [
+    ['✅ Join', { teamRaise: 0.08, rep: 8, demand: [1.1, 16, 'Fair trade'], say: 'Proud workers, premium bananas.' }],
+    ['🤏 Only part of the farm', { rep: 3, demand: [1.04, 16, 'Fair trade'], say: 'A start.' }],
+    ['🔍 Check the costs first', { say: 'You\'re thinking about it.' }],
+    ['🙅 Too expensive', { say: 'You passed.' }]
   ]);
-  B('banana', 'peel_video', '🎥', 'The banana peel slip video', 'Someone slipped on one of your banana peels, did a perfect backflip and landed on their feet. It\'s the most viral video this week!', [
-    ['📱 Share it with your logo', { fans: 35, say: '"Backflip Bananas" — the name stuck! 📱' }],
-    ['🏆 Hire the backflip person for an ad', { cash: -0.3, fans: 40, demand: [1.15, 6, 'Backflip ad'], say: 'The ad is amazing! 🏆' }],
-    ['⚠️ "Please throw peels in the trash!"', { rep: 4, say: 'Safety first! ⚠️' }],
-    ['🍌 Sell "Backflip Banana" shirts', { extra: [0.15, 6, 'Banana shirts'], say: 'Everyone wants the shirt! 🍌' }]
+  B('banana', 'supermarket_deal', '🛒', 'A giant supermarket wants all your bananas', 'A big contract. But they set the price.', [
+    ['✍️ Sign', { extra: [0.12, 12, 'Supermarket deal'], say: 'Everything sold. Every week.' }],
+    ['🤝 Negotiate', { chance: { p: 0.5, win: { extra: [0.16, 12, 'Supermarket deal'], say: 'A better price.' }, lose: { say: 'They went to another farm.' } } }],
+    ['📦 Half to them, half to markets', { extra: [0.07, 12, 'Supermarket deal'], say: 'Safer.' }],
+    ['🙅 Too cheap', { say: 'You passed.' }]
   ]);
-  B('banana', 'go_organic', '🌱', 'Go organic?', 'Customers want organic bananas with no chemicals. It costs more to grow, but people pay more too.', [
-    ['🌱 The whole farm goes organic', { cash: -1.2, extra: [0.3, 52, 'Organic bananas'], rep: 6, say: 'Organic bananas sell for more! 🌱' }],
-    ['🌿 Half the farm', { cash: -0.6, extra: [0.15, 52, 'Some organic'], rep: 3, say: 'A good start! 🌿' }],
-    ['🐞 Use ladybugs instead of spray', { cash: -0.2, rep: 4, fans: 10, say: 'Ladybugs eat the pests! Nature! 🐞' }],
-    ['🙅 Too expensive', { say: 'Normal bananas it is. 🙅' }]
+  B('banana', 'spider_crates', '🕷️', 'A spider was found in a shipment', 'A big one, in a crate at a supermarket. It\'s on the news.', [
+    ['🔍 Better inspections', { cash: -0.3, rep: 3, say: 'Every crate checked.' }],
+    ['🙏 Apologize', { rep: 1, say: 'The news moved on.' }],
+    ['🧪 Safe pest treatment', { cash: -0.4, rep: 4, say: 'No more stowaways.' }],
+    ['🤷 "It happens"', { rep: -5, say: 'Buyers were worried.' }]
   ]);
-  B('banana', 'export_deal', '🚢', 'A huge export deal!', 'A big supermarket chain in another country wants 1 million banana boxes a year. But you need a bigger farm!', [
-    ['🚢 Accept and grow the farm', { cash: -1.5, extra: [0.6, 26, 'Export deal'], say: 'Your bananas go around the world! 🚢' }],
-    ['🤝 Share it with other farms', { extra: [0.3, 26, 'Shared export'], rep: 4, say: 'The whole region benefits! 🤝' }],
-    ['📈 Ask for a better price', { chance: { p: 0.5, win: { extra: [0.7, 26, 'Export deal'], say: 'Better price, same deal! 📈' }, lose: { say: 'They signed with another farm. 📈' } } }],
-    ['🙅 Too big', { say: 'Maybe next year. 🙅' }]
-  ], { rarity: 'rare' });
-  B('banana', 'mascot_suit', '🍌', 'A giant banana mascot?', '{a} wants to wear a giant banana costume and dance at the market every weekend. They are VERY excited.', [
-    ['🍌 Buy the costume!', { money: -150, fans: 25, demand: [1.08, 8, 'Banana mascot'], a: 12, say: 'The dancing banana is famous! 🍌💃' }],
-    ['🍌🍌 Buy TWO costumes', { money: -300, fans: 35, team: 6, say: 'Banana dance battles every Saturday! 🍌🍌' }],
-    ['🐒 A monkey costume instead', { money: -150, fans: 20, say: 'A monkey chasing bananas! Kids love it! 🐒' }],
-    ['🙅 "Please, no"', { a: -8, say: '{a} is very sad. 🙅' }]
-  ], FRONT);
+  B('banana', 'drought', '☀️', 'No rain for months', 'The plants are thirsty. The river is low.', [
+    ['💧 Drip irrigation', { cash: -1, equip: 0.03, say: 'Every drop counts now.' }],
+    ['🚚 Buy water', { cash: -0.4, say: 'Plants saved. Expensive.' }],
+    ['🌱 Let some fields rest', { capacity: [0.85, 6, 'Drought'], say: 'Smaller harvest.' }],
+    ['🤞 Wait for rain', { chance: { p: 0.4, win: { say: 'Rain came.' }, lose: { capacity: [0.7, 8, 'Drought'], say: 'The plants suffered.' } } }]
+  ]);
+  B('banana', 'banana_bread', '🍞', 'Too many ripe bananas', 'A whole shipment ripened too fast. Stores won\'t take them.', [
+    ['🍞 Make banana bread', { cash: -0.1, extra: [0.08, 3, 'Banana bread'], fans: 10, say: 'People love it.' }],
+    ['🥤 Sell to a smoothie company', { cash: 0.3, say: 'Nothing wasted.' }],
+    ['❤️ Donate to schools', { rep: 6, say: 'Kids got bananas.' }],
+    ['🗑️ Throw them away', { cash: -0.3, say: 'Painful.' }]
+  ]);
 
   // 🍫 CHOCOLATE FACTORY
-  B('chocolate', 'cocoa_price', '📈', 'Cocoa prices are CRAZY', 'Bad weather hit the cocoa farms. Cocoa is 3 times more expensive! Chocolate without cocoa is... sad.', [
-    ['📈 Raise prices a bit', { price: 1, happy: -3, say: 'Customers grumble but buy anyway. 📈' }],
-    ['🌰 Add more nuts and caramel', { supply: [-0.02, 12, 'Less cocoa'], fans: 10, say: 'Nutty bars are a hit! 🌰' }],
-    ['🤝 Buy straight from the farmers', { cash: -0.5, supply: [-0.03, 26, 'Direct from farms'], rep: 5, say: 'Fair for farmers, cheaper for you! 🤝' }],
-    ['😬 Smaller bars, same price', { happy: -6, rep: -3, say: 'Customers noticed. They are NOT happy. 😬' }]
+  B('chocolate', 'cocoa_crisis', '🌍', 'Cocoa prices tripled', 'A bad harvest in Africa. Chocolate makers are panicking.', [
+    ['📈 Raise prices', { price: 1, happy: -3, say: 'Customers understood.' }],
+    ['🤏 Smaller bars, same price', { rep: -4, say: 'People noticed.' }],
+    ['🤝 Buy straight from farms', { cash: -0.8, supply: [-0.02, 16, 'Direct cocoa'], rep: 4, say: 'Better for farmers. Better for you.' }],
+    ['😬 Absorb it', { supply: [0.06, 8, 'Cocoa prices'], say: 'Painful.' }]
+  ], { kind: 'news' });
+  B('chocolate', 'factory_tour', '🏭', 'Families want factory tours', 'Kids dream of seeing a real chocolate factory.', [
+    ['🎟️ Paid tours', { cash: -0.4, extra: [0.08, 12, 'Tours'], fans: 20, say: 'Booked every weekend.' }],
+    ['🍫 Free tours, gift shop at end', { cash: -0.3, extra: [0.1, 12, 'Gift shop'], say: 'Everyone leaves with a bag.' }],
+    ['🏫 Free tours for schools', { rep: 6, fans: 25, say: 'Kids love you.' }],
+    ['🙅 Too risky', { say: 'Factory stays private.' }]
   ]);
-  B('chocolate', 'melted_truck', '🚚', 'The delivery truck MELTED', 'The truck\'s cooling broke on the hottest day. 10,000 chocolate bars became one giant chocolate puddle. 🍫💧', [
-    ['🍫 Sell it as "Chocolate Soup"', { cash: 0.2, fans: 20, say: 'People bought melted chocolate in cups! 🍫' }],
-    ['🔧 New trucks with better cooling', { cash: -1, equip: 0.03, say: 'Never again! 🔧' }],
-    ['🍪 Make cookies with it', { extra: [0.2, 3, 'Chocolate cookies'], say: 'Chocolate cookies everywhere! 🍪' }],
-    ['😭 Throw it away', { cash: -0.8, say: 'A sad day. 😭' }]
-  ]);
-  B('chocolate', 'factory_tours', '🎟️', 'Chocolate factory tours?', 'Families keep asking to see how chocolate is made. {a} wants to give tours!', [
-    ['🎟️ Daily tours with free samples', { cash: -0.3, extra: [0.25, 20, 'Factory tours'], fans: 25, say: 'Every tour sells out! 🎟️' }],
-    ['🎨 "Make your own bar" workshop', { cash: -0.4, extra: [0.3, 20, 'Chocolate workshops'], fans: 20, say: 'Kids make crazy bars with gummy bears! 🎨' }],
-    ['🍫 Just a window to look through', { fans: 10, say: 'People press their faces to the glass. 🍫' }],
-    ['🙅 Secret recipes!', { say: 'The factory stays secret. 🙅' }]
+  B('chocolate', 'machine_jam', '⚙️', 'The main machine jammed', 'Chocolate is overflowing. The line has stopped.', [
+    ['🔧 Emergency repair', { cash: -0.5, say: 'Running again.' }],
+    ['🆕 A new machine', { cash: -1.5, equip: 0.05, say: 'Faster than ever.' }],
+    ['🧑‍🔧 Let {a} fix it', { chance: { p: 0.5, win: { a: 12, say: '{a} fixed it.' }, lose: { cash: -0.6, closed: [1, 'Machine broken'], say: 'Worse.' } } }],
+    ['🍫 Make bars by hand', { capacity: [0.7, 2, 'Hand-made'], fans: 10, say: 'Slow, but people love hand-made.' }]
   ], FRONT);
-  B('chocolate', 'dark_vs_milk', '🗳️', 'Dark vs Milk: the big vote', 'Your customers are arguing: which is better, dark or milk chocolate? You could let them vote!', [
-    ['🗳️ Big public vote', { fans: 30, say: 'Milk won by 12 votes! The dark fans want a rematch! 🗳️' }],
-    ['🥊 A chocolate tasting battle', { fans: 25, extra: [0.12, 2, 'Tasting battle'], say: 'Everyone tasted both. Everyone won. 🥊' }],
-    ['🍫 Make a half-and-half bar', { extra: [0.15, 10, 'Half-and-half bar'], say: 'Peace bar! Best seller! 🍫' }],
-    ['⚪ "White chocolate is best"', { fans: 10, rep: -1, say: 'Both sides are mad at you now. 😂' }]
+  B('chocolate', 'valentines', '💝', 'Valentine\'s Day is coming', 'The biggest chocolate week of the year.', [
+    ['💝 Heart-shaped boxes', { cash: -0.3, extra: [0.4, 1, 'Valentine\'s'], say: 'Sold out.' }],
+    ['✍️ Custom messages', { extra: [0.35, 1, 'Custom boxes'], fans: 15, say: 'People love it.' }],
+    ['🌹 Partner with florists', { extra: [0.3, 1, 'Flower bundles'], say: 'Great combo.' }],
+    ['😌 Normal stock', { extra: [0.12, 1, 'Valentine\'s'], say: 'Sold out early.' }]
+  ], { cond: function (g) { return week(g) >= 4 && week(g) <= 7; }, w: 20 });
+  B('chocolate', 'melted_shipment', '🌡️', 'A shipment melted in a hot truck', 'The AC failed. A huge order arrived as chocolate soup.', [
+    ['💸 Replace the order', { cash: -0.6, rep: 3, say: 'The client was impressed.' }],
+    ['⚖️ Make the delivery company pay', { chance: { p: 0.6, win: { cash: 0.1, say: 'They paid.' }, lose: { cash: -0.6, say: 'They refused.' } } }],
+    ['🍫 Make it into hot chocolate', { extra: [0.05, 2, 'Hot chocolate'], say: 'Nothing wasted.' }],
+    ['🚚 Buy your own cold trucks', { cash: -1.2, equip: 0.02, say: 'Never again.' }]
   ]);
-  B('chocolate', 'easter_rush', '🐰', 'Easter rush!', 'Easter is in 2 weeks! Everyone wants chocolate eggs and bunnies. The factory must work nonstop!', [
-    ['🐰 Make 1 million chocolate bunnies', { extra: [0.6, 2, 'Easter rush'], team: -8, say: 'Bunnies everywhere! Record sales! 🐰' }],
-    ['🥚 Giant eggs with surprises inside', { cash: -0.3, extra: [0.5, 2, 'Surprise eggs'], fans: 15, say: 'Kids LOVE the surprises! 🥚' }],
-    ['👥 Hire Easter helpers', { hireSpecial: { role: 'front', skill: 45 }, extra: [0.4, 2, 'Easter rush'], say: 'Smooth and fast! 👥' }],
-    ['🎨 Paint the world\'s biggest chocolate egg', { cash: -0.4, fans: 40, say: 'A 5-meter chocolate egg! On TV! 🎨' }]
-  ], { cond: inWeeks('chocolate', 12, 15) });
-  B('chocolate', 'recipe_stolen', '🕵️', 'Someone stole your recipe!', 'A new chocolate brand tastes EXACTLY like yours. {a} thinks a worker sold the secret recipe to {rival}! 😤', [
-    ['⚖️ Sue them', { cash: -0.5, chance: { p: 0.5, win: { cash: 2, rival: -0.15, say: 'You won! They had to stop! ⚖️' }, lose: { say: 'You couldn\'t prove it. ⚖️' } } }],
-    ['🧪 Invent an even better recipe', { cash: -0.4, demand: [1.12, 12, 'New recipe'], fans: 15, say: 'The new one is better! Ha! 🧪' }],
-    ['🔐 Lock up all your secrets', { cash: -0.2, say: 'Recipes in a safe now. 🔐' }],
-    ['😎 "Ours is the original"', { fans: 10, rep: 2, say: 'Loyal fans stick with you! 😎' }]
-  ], { init: rival, who: { a: 'front' } });
-  B('chocolate', 'choco_dress', '👗', 'A dress made of chocolate?', 'A fashion designer wants you to make a dress out of chocolate for a big fashion show!', [
-    ['👗 Make it!', { cash: -0.3, fans: 40, rep: 4, say: 'The chocolate dress was the star of the show! 👗🍫' }],
-    ['🍫 And chocolate shoes too', { cash: -0.5, fans: 50, say: 'Head-to-toe chocolate! The internet went crazy! 🍫' }],
-    ['🌡️ Worry it will melt', { chance: { p: 0.5, win: { fans: 30, say: 'It didn\'t melt! Success! 🌡️' }, lose: { fans: 20, say: 'It melted on the runway. Still famous! 😂' } } }],
-    ['🙅 Chocolate is for eating', { say: 'Fair. 🙅' }]
+  B('chocolate', 'secret_recipe', '📜', 'Someone tried to steal your recipe', 'A new worker was caught copying files.', [
+    ['👮 Police', { rep: 3, say: 'Arrested. Recipe safe.' }],
+    ['🔐 Lock down everything', { cash: -0.3, say: 'Secure.' }],
+    ['🕵️ Find who sent them', { chance: { p: 0.5, win: { rival: -0.1, say: 'It was {rival}. They\'re in trouble.' }, lose: { say: 'No proof.' } } }],
+    ['🎭 Let them steal a fake one', { rival: -0.08, say: '{rival} launched a terrible chocolate.' }]
+  ], { init: rival });
+  B('chocolate', 'vegan_trend', '🌱', 'Vegan chocolate is booming', 'Oat milk, no dairy. Young buyers want it.', [
+    ['🌱 Launch a vegan line', { cash: -0.4, demand: [1.1, 12, 'Vegan line'], say: 'A hit.' }],
+    ['🧪 One vegan bar', { cash: -0.1, demand: [1.04, 12, 'Vegan bar'], say: 'Good start.' }],
+    ['🏷️ Go fully vegan', { cash: -1, rep: 5, fans: 30, demand: [1.05, 16, 'All vegan'], say: 'A bold move.' }],
+    ['🙅 Classic only', { say: 'You stayed classic.' }]
   ]);
 
   // ⚽ FOOTBALL ACADEMY
-  B('football', 'mud_pitch', '🌧️', 'The pitch is a MUD BATH', 'Heavy rain turned the training pitch into a swamp. The kids are sliding everywhere and LOVE it. The parents don\'t. 🌧️', [
-    ['⚽ Train anyway! Mud football!', { fans: 15, team: 6, happy: -3, say: 'Muddy kids, happy kids. Muddy parents. 😂' }],
-    ['🏟️ Build an artificial pitch', { cash: -1.5, capacity: [1.1, 52, 'All-weather pitch'], rep: 5, say: 'Train in any weather! 🏟️' }],
-    ['🏫 Train in a school gym', { money: -100, say: 'Indoor football for a week. 🏫' }],
-    ['🛑 Cancel training', { demand: [0.9, 1, 'No training'], say: 'A week off. 🛑' }]
+  B('football', 'star_kid', '⭐', 'A 14-year-old is a future star', 'Big clubs are already watching. His family wants the best for him.', [
+    ['📝 Sign him long-term', { cash: -0.3, rep: 5, fans: 20, say: 'Your academy has a future star.' }],
+    ['🤝 Sell him to a big club', { cash: 2, rep: 2, say: 'A big fee.' }],
+    ['🎓 Scholarship for his school', { cash: -0.2, rep: 8, say: 'His family will never forget.' }],
+    ['🙅 Treat him like everyone else', { chance: { p: 0.5, win: { team: 4, say: 'He stayed and loves it.' }, lose: { say: 'A big club took him for free.' } } }]
   ]);
-  B('football', 'angry_parent', '😤', 'An angry parent on the sideline', 'A parent is yelling at {a}: "MY kid should be the captain! He\'s the next superstar!" His kid is... okay.', [
-    ['🗣️ Talk calmly with the parent', { chance: { p: 0.6, win: { rep: 3, say: 'The parent calmed down. 🗣️' }, lose: { happy: -3, say: 'He\'s still yelling. 😤' } } }],
-    ['🔇 "Silent sideline" rule', { rep: 4, happy: -1, say: 'No yelling parents! Kids play better! 🔇' }],
-    ['👑 Make the kid captain for one game', { happy: 3, a: -4, say: 'The kid did okay. The parent was happy. 👑' }],
-    ['🚪 Ban the parent from games', { rep: 2, happy: -2, say: 'Peace on the sideline. 🚪' }]
+  B('football', 'coach_yelling', '📢', 'A parent says {a} yells at kids', 'A video shows {a} screaming at a 10-year-old after a mistake.', [
+    ['🗣️ Talk to {a}', { a: -5, rep: 2, say: '{a} promised to change.' }],
+    ['🎓 Coaching course', { cash: -0.2, skill: { a: 5 }, rep: 3, say: 'Calmer coach.' }],
+    ['🚪 Fire {a}', { fire: 'a', rep: 4, say: 'Parents approve.' }],
+    ['🛡️ Defend {a}', { rep: -8, say: 'Parents pulled kids out.' }]
   ], FRONT);
-  B('football', 'scout_visit', '🔭', 'A famous scout is visiting!', 'A scout from a giant football club is coming to watch your players this weekend! Everyone is nervous.', [
-    ['💪 Extra training all week', { team: -4, chance: { p: 0.5, win: { cash: 2, fans: 30, rep: 5, say: 'The scout signed two of your players! Big transfer money! 🔭' }, lose: { rep: 2, say: 'No signings, but the scout was impressed. 🔭' } } }],
-    ['🎉 Tell kids to just have fun', { chance: { p: 0.45, win: { cash: 1.5, fans: 25, say: 'Relaxed kids played their best! One got signed! 🎉' }, lose: { say: 'No signings this time. 🎉' } } }],
-    ['🎥 Send the scout highlight videos', { cash: -0.1, rep: 3, fans: 10, say: 'The scout wants to come back! 🎥' }],
-    ['🙈 Don\'t tell the kids', { rep: 2, say: 'The kids played normal. The scout liked that. 🙈' }]
+  B('football', 'tournament', '🏆', 'An international youth tournament', 'Teams from all over the world. It costs a lot to go.', [
+    ['✈️ Take the team', { cash: -0.8, chance: { p: 0.4, win: { rep: 10, fans: 40, say: 'Your kids won.' }, lose: { rep: 3, fans: 10, say: 'Quarterfinals. Proud.' } } }],
+    ['💰 Ask parents to pay half', { cash: -0.4, happy: -3, chance: { p: 0.4, win: { rep: 8, fans: 30, say: 'You won.' }, lose: { say: 'Out in the groups.' } } }],
+    ['🤝 Find a sponsor', { chance: { p: 0.6, win: { rep: 6, fans: 20, say: 'Sponsor paid. Great trip.' }, lose: { say: 'No sponsor. No trip.' } } }],
+    ['🙅 Too expensive', { say: 'Maybe next year.' }]
   ]);
-  B('football', 'bus_broke', '🚌', 'The team bus broke down before the final!', 'The bus to the youth cup final broke down on the highway. The game starts in 90 minutes! 🚌😱', [
-    ['🚕 Pay for 10 taxis', { cash: -0.3, chance: { p: 0.8, win: { fans: 20, say: 'Made it just in time! And they WON! 🏆' }, lose: { say: 'Too late. The game was cancelled. 😭' } } }],
-    ['📱 Ask parents to drive', { rep: 4, chance: { p: 0.7, win: { fans: 15, say: 'Parent power! Made it! ⚽' }, lose: { say: 'Not enough cars. 😩' } } }],
-    ['🏃 Run the last 5 km', { team: 8, fans: 25, say: 'They arrived sweaty, played tired... and still got 2nd! 🏃' }],
-    ['📞 Ask to delay the game', { chance: { p: 0.5, win: { say: 'The game was delayed an hour. Phew! 📞' }, lose: { rep: -2, say: 'Lost by forfeit. 😢' } } }]
+  B('football', 'pitch_flooded', '🌧️', 'The pitch is flooded', 'Heavy rain. Training has to stop.', [
+    ['🌱 New drainage', { cash: -1, equip: 0.03, say: 'Never flooded again.' }],
+    ['🏟️ Rent an indoor hall', { cash: -0.3, say: 'Training continues.' }],
+    ['🏠 Online fitness sessions', { capacity: [0.85, 2, 'Online training'], say: 'Better than nothing.' }],
+    ['⏳ Wait it out', { closed: [1, 'Flooded pitch'], say: 'A lost week.' }]
   ]);
-  B('football', 'new_kits', '👕', 'Design new team kits!', 'The team needs new shirts. {a} designed three options. The players want to vote.', [
-    ['🌈 Neon rainbow kit', { cash: -0.2, fans: 20, say: 'You can see the team from space! 🌈' }],
-    ['⚫ Cool all-black kit', { cash: -0.2, fans: 12, team: 5, say: 'The team looks SO cool! ⚫' }],
-    ['🍌 Kit with a sponsor\'s logo', { cash: 0.5, say: 'A local bakery paid for the kits! 🍌' }],
-    ['🗳️ Let the kids design it', { cash: -0.2, fans: 25, rep: 3, say: 'A dinosaur kit! Every kid loves it! 🦖' }]
-  ], FRONT);
-  B('football', 'star_injured', '🤕', 'Your star player got injured', 'Your best young player hurt their ankle in training. The big tournament is next month.', [
-    ['🩺 The best doctor, whatever it costs', { cash: -0.5, rep: 4, say: 'Back in 3 weeks, fully healed! 🩺' }],
-    ['🛌 Rest and no pressure', { rep: 3, say: 'Health first. Parents appreciate it. 🛌' }],
-    ['⚽ Give another kid a chance', { team: 6, fans: 10, say: 'A new star is born! ⚽' }],
-    ['😬 Play them anyway', { rep: -8, say: 'The injury got worse. Parents are furious. 😬' }]
+  B('football', 'scout_visit', '🔭', 'A top club scout is visiting', 'He\'ll watch one training session. Every kid is nervous.', [
+    ['⚽ Normal training', { chance: { p: 0.5, win: { rep: 6, cash: 1, say: 'He signed two kids.' }, lose: { say: 'He left without a word.' } } }],
+    ['🏆 A special match', { chance: { p: 0.6, win: { rep: 8, cash: 1.2, fans: 20, say: 'Three kids signed.' }, lose: { say: 'Nerves. Nobody played well.' } } }],
+    ['🍽️ Dinner with the scout', { cash: -0.1, rep: 4, say: 'A new relationship.' }],
+    ['😌 Tell the kids to have fun', { team: 5, chance: { p: 0.5, win: { rep: 6, say: 'Relaxed kids, great play.' }, lose: { say: 'No signings.' } } }]
   ]);
-  B('football', 'girls_team', '⚽', 'Start a girls\' team?', 'Lots of girls want to join, but there\'s no girls\' team yet. {a} would love to coach it!', [
-    ['⚽ Yes! Start it this week', { cash: -0.3, demand: [1.15, 52, 'Girls\' team'], rep: 6, fans: 20, say: 'The girls\' team is amazing! 🏆' }],
-    ['🏆 Build a whole girls\' league', { cash: -0.8, demand: [1.2, 52, 'Girls\' league'], rep: 8, fans: 30, say: 'The first girls\' league in {city}! 🏆' }],
-    ['👥 Mixed teams for everyone', { demand: [1.1, 52, 'Mixed teams'], rep: 5, say: 'Everyone plays together! 👥' }],
-    ['🙅 Not enough coaches', { rep: -3, say: 'The girls went to another academy. 🙅' }]
-  ], FRONT);
+  B('football', 'parent_pressure', '😤', 'A parent demands his son start every game', 'He pays full fees and threatens to leave. His son isn\'t ready.', [
+    ['🙅 Coach decides', { rep: 4, say: 'The other parents respect you.' }],
+    ['🤝 More playing time', { team: -4, say: 'The team feels it\'s unfair.' }],
+    ['💬 Show him the stats', { chance: { p: 0.5, win: { say: 'He understood.' }, lose: { say: 'He took his son away.' } } }],
+    ['🎓 Extra training for the boy', { cash: -0.1, rep: 3, say: 'The boy improved fast.' }]
+  ]);
+  B('football', 'former_student', '🌟', 'A former student is now a pro', 'He scored in a big league. He says your academy made him.', [
+    ['📢 Tell everyone', { fans: 40, demand: [1.12, 8, 'Pro alumni'], say: 'New signups poured in.' }],
+    ['🎤 Invite him to visit', { fans: 50, rep: 6, team: 8, say: 'The kids were starstruck.' }],
+    ['🖼️ His shirt on the wall', { fans: 20, rep: 3, say: 'Every kid looks at it.' }],
+    ['💰 Ask him to invest', { chance: { p: 0.5, win: { cash: 2, say: 'He invested.' }, lose: { say: 'He said maybe later.' } } }]
+  ], { rarity: 'rare' });
 
   // 🍔 BURGER CHAIN
-  B('burger', 'mega_burger', '🍔', 'The 10-patty MEGA BURGER', '{a} built a burger with 10 patties. It\'s taller than a cat. A customer wants to try to eat it.', [
-    ['🏆 "Eat it all and it\'s FREE"', { fans: 25, extra: [0.12, 10, 'Mega Burger challenge'], say: 'The Mega Burger challenge is famous! 🏆' }],
-    ['📸 Just for photos', { fans: 15, say: 'Everyone takes a picture with it! 📸' }],
-    ['🍔 Put it on the menu', { extra: [0.1, 10, 'Mega Burger'], say: 'People share it with 5 friends! 🍔' }],
-    ['🙅 "That\'s too much"', { a: -5, say: '{a} eats it alone in the back. 🙅' }]
-  ], FRONT);
-  B('burger', 'veggie', '🌱', 'Add a plant burger?', 'More customers are asking for a burger without meat. A company offers a plant burger that "tastes just like beef".', [
-    ['🌱 Add it to the menu', { cash: -0.2, demand: [1.1, 20, 'Plant burger'], rep: 4, say: 'New customers came for the plant burger! 🌱' }],
-    ['🧪 Blind taste test', { fans: 20, chance: { p: 0.5, win: { rep: 5, say: 'Nobody could tell the difference! 🧪' }, lose: { say: 'Everyone could tell. It\'s still nice. 🧪' } } }],
-    ['🥗 Salad bowls instead', { cash: -0.1, rep: 2, say: 'Healthy options! 🥗' }],
-    ['🥩 "We\'re a MEAT place"', { rep: -2, say: 'Some customers went elsewhere. 🥩' }]
+  B('burger', 'e_coli', '🦠', 'E. coli linked to your burgers', 'Ten people are sick. The news says it came from your meat.', [
+    ['🔒 Close all locations and check', { closed: [1, 'Safety check'], cash: -1, rep: 5, say: 'Found the bad supplier. Trust kept.' }],
+    ['💸 Pay every victim', { cash: -1.5, rep: 3, say: 'Families were grateful.' }],
+    ['🔄 Change suppliers now', { cash: -0.5, rep: 2, say: 'Safer meat.' }],
+    ['🤐 Deny it', { chance: { p: 0.3, win: { say: 'It wasn\'t you after all.' }, lose: { rep: -18, demand: [0.75, 6, 'E. coli scandal'], say: 'It was you. Disaster.' } } }]
   ]);
-  B('burger', 'drive_thru', '🚗', 'Build a drive-thru?', 'People want to order without leaving their cars. A drive-thru would cost a lot but could sell tons more burgers.', [
-    ['🚗 Build it!', { cash: -1.5, capacity: [1.2, 104, 'Drive-thru'], demand: [1.1, 104, 'Drive-thru'], say: 'The line of cars never stops! 🚗' }],
-    ['🛵 Delivery app instead', { cash: -0.4, extra: [0.2, 26, 'Delivery app'], say: 'Burgers to your door! 🛵' }],
-    ['🐴 A "horse-thru" for fun', { fans: 25, say: 'Someone actually came on a horse. It went viral. 🐴' }],
-    ['🙅 Sit down and enjoy', { say: 'Cozy restaurant. 🙅' }]
+  B('burger', 'plant_based', '🌱', 'A plant-based burger?', 'A company offers meat-free patties. Young people love them.', [
+    ['🌱 Add it', { cash: -0.3, demand: [1.08, 12, 'Plant burger'], say: 'A hit.' }],
+    ['🧪 Test in one location', { cash: -0.1, demand: [1.03, 8, 'Plant burger test'], say: 'Promising.' }],
+    ['📢 Big launch', { cash: -0.6, fans: 30, demand: [1.1, 12, 'Plant burger'], say: 'Huge buzz.' }],
+    ['🙅 Meat only', { say: 'Some young customers left.' }]
   ]);
-  B('burger', 'secret_sauce', '🥫', 'The SECRET SAUCE', '{a} mixed ketchup, mayo, pickles and "one secret thing". Customers are going crazy for it!', [
-    ['🥫 Sell the sauce in bottles', { cash: -0.3, extra: [0.2, 20, 'Secret sauce bottles'], fans: 15, say: 'The sauce is in every fridge in {city}! 🥫' }],
-    ['🔐 Lock up the recipe', { cash: -0.1, raise: ['a', 0.1], loyal: { a: 20 }, say: 'Only you and {a} know the secret. 🔐' }],
-    ['🎁 Free sauce with every burger', { cash: -0.1, happy: 5, say: 'Sauce on everything! 🎁' }],
-    ['🤔 "What IS the secret thing?"', { team: 5, say: '{a} will never tell. 🤔' }]
-  ], FRONT);
-  B('burger', 'fries_broken', '🍟', 'The fries machine is BROKEN', 'The fryer broke. A burger place with no fries. Customers are looking at you like you betrayed them. 🍟😢', [
-    ['🔧 Emergency repair', { cash: -0.3, say: 'Fries are back! Everyone cheered. 🔧' }],
-    ['🥔 Baked potato wedges', { cash: -0.05, fans: 8, say: 'The wedges were so good people want them always! 🥔' }],
-    ['🆕 Buy two new fryers', { cash: -0.8, capacity: [1.08, 52, 'Double fryers'], say: 'Double the fries! 🆕' }],
-    ['😬 "No fries today, sorry"', { happy: -6, say: 'Sad customers. 😬' }]
+  B('burger', 'drive_thru', '🚗', 'The drive-thru is too slow', 'Cars wait twenty minutes. Some drive away.', [
+    ['🚗 Add a second lane', { cash: -1, capacity: [1.12, 20, 'Second lane'], say: 'Double speed.' }],
+    ['📱 Order ahead app', { cash: -0.5, capacity: [1.08, 20, 'App orders'], say: 'Faster.' }],
+    ['🧑‍🍳 More staff at peak', { hireSpecial: { role: 'front', skill: 50 }, say: 'Faster at rush hour.' }],
+    ['📉 Smaller menu', { capacity: [1.06, 12, 'Small menu'], happy: -2, say: 'Faster, fewer choices.' }]
   ]);
-  B('burger', 'mascot', '🤡', 'A burger mascot?', 'Big burger chains have mascots. {a} wants to design one: a giant dancing burger named "Burgy".', [
-    ['🍔 Burgy it is!', { cash: -0.3, fans: 25, demand: [1.08, 20, 'Burgy mascot'], say: 'Kids love Burgy! 🍔' }],
-    ['🦖 A burger-eating dinosaur', { cash: -0.3, fans: 30, say: '"Chomp the Dino" is a hit! 🦖' }],
-    ['🎨 Mascot design contest', { fans: 30, say: 'A kid designed a burger with sunglasses. Perfect! 🎨' }],
-    ['🙅 Mascots are silly', { say: 'No mascot. 🙅' }]
+  B('burger', 'secret_menu', '🤫', 'Customers found a "secret menu"', '{a} made a special burger for friends. Now everyone wants it.', [
+    ['🍔 Add it to the menu', { demand: [1.08, 8, 'Secret burger'], a: 12, say: 'A new best seller.' }],
+    ['🤫 Keep it secret, let people ask', { fans: 25, demand: [1.06, 8, 'Secret menu'], say: 'The mystery made it cool.' }],
+    ['🏷️ Name it after {a}', { a: 18, loyal: { a: 15 }, fans: 10, say: '{a} is famous.' }],
+    ['🙅 Stop it', { a: -8, say: 'Customers were disappointed.' }]
   ], FRONT);
-  B('burger', 'copycat_across', '🥊', '{rival} opened a burger place across the street', '{rival} opened a burger shop RIGHT across the street. Same menu. Lower prices. Bigger sign. 😤', [
-    ['🍔 "Burger Battle" taste test', { chance: { p: 0.6, win: { fans: 30, rival: -0.1, say: 'Customers picked YOUR burger! 🍔🏆' }, lose: { rival: 0.05, say: 'They picked theirs. Ouch. 😖' } } }],
-    ['💸 Lower your prices', { price: -1, rival: -0.05, say: 'Price war! 💸' }],
-    ['⭐ Make everything better quality', { cash: -0.5, rep: 5, say: 'Quality wins in the end. ⭐' }],
-    ['😎 Ignore them', { demand: [0.92, 6, 'Rival across the street'], say: 'Some customers switched. 😎' }]
+  B('burger', 'franchise_bad', '🏪', 'One franchise is ruining your name', 'Dirty, slow, rude. Reviews say "worst burger ever".', [
+    ['🚫 Take their license away', { demand: [0.97, 4, 'Closed location'], rep: 5, say: 'Your name is clean.' }],
+    ['🎓 Send a training team', { cash: -0.4, rep: 3, say: 'They improved.' }],
+    ['⚠️ Final warning', { chance: { p: 0.5, win: { rep: 2, say: 'They cleaned up.' }, lose: { rep: -5, say: 'They didn\'t.' } } }],
+    ['🤷 Ignore it', { rep: -8, say: 'The bad reviews spread.' }]
+  ], { minWeek: 10 });
+  B('burger', 'kids_meal', '🧸', 'A famous toy company wants a kids\' meal deal', 'Their toys in your kids\' meals.', [
+    ['✍️ Sign', { cash: -0.3, demand: [1.12, 8, 'Kids\' meal'], say: 'Kids beg their parents to come.' }],
+    ['🥗 Healthy kids\' meal too', { cash: -0.4, demand: [1.1, 8, 'Kids\' meal'], rep: 4, say: 'Parents approve.' }],
+    ['📈 Ask them to pay you', { chance: { p: 0.4, win: { cash: 1, demand: [1.1, 8, 'Kids\' meal'], say: 'They paid.' }, lose: { say: 'They went to {rival}.' } } }],
+    ['🙅 No toys', { say: 'You passed.' }]
+  ], { init: rival });
+  B('burger', 'eating_champion', '🏆', 'A pro eater challenges your burger', 'He wants to eat ten in ten minutes, live online.', [
+    ['🎥 Host it', { fans: 40, say: 'Millions watched.' }],
+    ['🏆 A contest for everyone', { cash: -0.2, fans: 30, extra: [0.1, 1, 'Contest'], say: 'A huge crowd.' }],
+    ['💰 Bet he can\'t', { chance: { p: 0.5, win: { cash: 0.5, fans: 20, say: 'He failed. You won.' }, lose: { cash: -0.5, fans: 25, say: 'He did it.' } } }],
+    ['🙅 No', { say: 'He went to {rival}.' }]
   ], { init: rival });
 
-  // 👗 FASHION BRAND
-  B('fashion', 'red_carpet', '🌟', 'A pop star wore YOUR dress!', 'A huge pop star wore your dress on the red carpet at the music awards. Everyone is asking: "Who made that?!"', [
-    ['📱 Post "That\'s OUR dress!"', { fans: 45, demand: [1.2, 6, 'Red carpet dress'], say: 'Orders are pouring in! 📱' }],
-    ['👗 Make copies for everyone', { cash: -0.5, extra: [0.5, 4, 'The famous dress'], say: 'The dress sold out 5 times! 👗' }],
-    ['🤝 Ask the star for a collab', { chance: { p: 0.35, win: { fans: 60, extra: [0.4, 8, 'Star collab'], say: 'They said YES! A whole collection together! 🤝' }, lose: { fans: 20, say: 'They were busy. Still famous! 🌟' } } }],
-    ['🤫 Stay mysterious', { fans: 25, rep: 4, say: 'The mystery made people want it MORE. 🤫' }]
+  // 👔 FASHION BRAND
+  B('fashion', 'copied', '👗', 'A fast-fashion giant copied your design', 'Your best dress, at a tenth of the price.', [
+    ['⚖️ Sue', { cash: -0.6, chance: { p: 0.5, win: { cash: 2, rep: 5, say: 'You won.' }, lose: { say: 'Designs are hard to protect.' } } }],
+    ['📢 Call them out', { fans: 40, rep: 4, say: 'The internet took your side.' }],
+    ['✨ A new collection, fast', { cash: -0.5, fans: 20, say: 'Always one step ahead.' }],
+    ['🤷 Copies mean you\'re good', { demand: [0.93, 4, 'Copied'], say: 'Sales dipped.' }]
+  ]);
+  B('fashion', 'runway', '💃', 'Fashion week wants your show', 'The biggest stage in fashion. A show costs a fortune.', [
+    ['💃 Go all in', { cash: -2, chance: { p: 0.6, win: { fans: 80, rep: 10, demand: [1.15, 12, 'Fashion week'], say: 'The best show of the week.' }, lose: { fans: 20, rep: -3, say: 'Critics were harsh.' } } }],
+    ['🤝 Share a show with others', { cash: -0.8, fans: 30, rep: 4, say: 'Good exposure.' }],
+    ['📱 Online show only', { cash: -0.2, fans: 25, say: 'Smart and cheap.' }],
+    ['🙅 Not yet', { say: 'Next year.' }]
+  ], { minWeek: 15 });
+  B('fashion', 'model_scandal', '📸', 'Your model posted something awful', 'The face of your campaign. Now everyone is angry at your brand.', [
+    ['🚫 Drop the model', { cash: -0.4, rep: 4, say: 'Fast and clear.' }],
+    ['🙏 Public statement', { rep: 1, say: 'Some accepted it.' }],
+    ['🤐 Wait', { rep: -6, say: 'People said you didn\'t care.' }],
+    ['🛡️ Defend them', { chance: { p: 0.2, win: { fans: 10, say: 'It blew over.' }, lose: { rep: -12, say: 'Boycott.' } } }]
+  ]);
+  B('fashion', 'celebrity_wear', '🌟', 'A pop star wore your outfit', 'At an awards show. Millions saw it.', [
+    ['📦 Make more, fast', { cash: -0.6, extra: [0.25, 4, 'Star outfit'], say: 'Sold out anyway.' }],
+    ['📢 Share it everywhere', { fans: 50, say: 'Your followers exploded.' }],
+    ['🤝 Offer a collab', { chance: { p: 0.4, win: { fans: 80, extra: [0.2, 6, 'Star collab'], say: 'A collection with a star.' }, lose: { fans: 20, say: 'Politely declined.' } } }],
+    ['🔢 Limited edition', { extra: [0.15, 3, 'Limited edition'], fans: 30, say: 'Resellers went crazy.' }]
   ], { rarity: 'rare' });
-  B('fashion', 'fakes', '🏷️', 'Fake copies of your brand!', 'People are selling fake versions of your clothes on the street for super cheap. The logo is spelled wrong.', [
-    ['⚖️ Take legal action', { cash: -0.5, rep: 3, say: 'The fake sellers are gone. ⚖️' }],
-    ['😂 Laugh about the misspelled logo', { fans: 25, say: 'Your funny post went viral! 😂' }],
-    ['🏷️ Launch a cheaper line', { cash: -0.4, extra: [0.2, 20, 'Budget line'], say: 'Real clothes for less! No need for fakes! 🏷️' }],
-    ['🔐 Add special hidden tags', { cash: -0.2, rep: 3, say: 'Now everyone can tell what\'s real. 🔐' }]
+  B('fashion', 'sustainability', '♻️', 'Critics say fashion is wasteful', 'A documentary names your brand. Young buyers are upset.', [
+    ['♻️ A recycled line', { cash: -0.6, rep: 8, fans: 20, say: 'Young buyers love it.' }],
+    ['🔄 Take-back program', { cash: -0.3, rep: 6, say: 'Old clothes become new.' }],
+    ['📢 Show your real efforts', { chance: { p: 0.5, win: { rep: 4, say: 'People appreciated it.' }, lose: { rep: -3, say: 'Called greenwashing.' } } }],
+    ['🤷 Ignore it', { rep: -6, say: 'Young buyers left.' }]
   ]);
-  B('fashion', 'runway_trip', '👠', 'A model tripped on the runway!', 'At your big fashion show, a model tripped in giant heels and fell. The crowd gasped. Cameras are flashing!', [
-    ['👏 Start clapping loudly', { rep: 5, fans: 15, say: 'The whole crowd clapped. The model got up and did a spin! 👏' }],
-    ['👟 "Sneakers on the runway" from now on', { fans: 20, say: 'Comfy fashion is a hit! 👟' }],
-    ['📸 Turn the photo into an ad', { fans: 25, rep: -2, say: 'Funny... but a bit mean. 📸' }],
-    ['🙈 Pretend it didn\'t happen', { say: 'It happened. Everyone saw. 🙈' }]
+  B('fashion', 'influencer_army', '🤳', 'Pay 100 small influencers?', 'An agency says it\'s better than one big star.', [
+    ['💰 Do it', { cash: -0.8, fans: 60, demand: [1.1, 6, 'Influencer army'], say: 'Your clothes are everywhere.' }],
+    ['🎁 Pay in clothes only', { cash: -0.3, fans: 30, say: 'Half said yes.' }],
+    ['🧪 Test with ten', { cash: -0.1, fans: 12, say: 'It works. Maybe more later.' }],
+    ['🙅 No', { say: 'You passed.' }]
   ]);
-  B('fashion', 'eco_fabric', '🌿', 'Eco-friendly fabrics?', 'Customers want clothes that are good for the planet. Eco fabrics cost more.', [
-    ['🌿 The whole brand goes green', { cash: -1, demand: [1.15, 52, 'Eco brand'], rep: 8, say: 'The planet (and your customers) thank you! 🌿' }],
-    ['♻️ A recycled collection', { cash: -0.4, extra: [0.2, 20, 'Recycled collection'], rep: 5, say: 'Clothes made from old bottles! ♻️' }],
-    ['🌱 Plant a tree for every sale', { cash: -0.3, rep: 6, fans: 10, say: 'A forest of trees! 🌱' }],
-    ['🙅 Too expensive', { say: 'Normal fabric. 🙅' }]
-  ]);
-  B('fashion', 'rapper_collab', '🎤', 'A rapper wants a collab!', 'A popular rapper wants to design a hoodie collection with you. "Big, bold, and GOLD."', [
-    ['🎤 Let\'s go!', { cash: -0.5, extra: [0.5, 8, 'Rapper collab'], fans: 40, say: 'Sold out in 10 minutes! 🎤' }],
-    ['👑 Limited edition only', { cash: -0.3, extra: [0.4, 4, 'Limited collab'], fans: 30, say: 'People camped overnight! 👑' }],
-    ['💰 Ask for a bigger share', { chance: { p: 0.5, win: { extra: [0.6, 8, 'Rapper collab'], say: 'Deal! 💰' }, lose: { say: 'They went to another brand. 💰' } } }],
-    ['🙅 Not our style', { say: 'Maybe. 🙅' }]
-  ]);
-  B('fashion', 'ugly_sweater', '🧶', 'UGLY sweaters are trending?!', 'For some reason, super ugly sweaters are the hottest trend. The uglier, the better!', [
-    ['🧶 Make the ugliest sweaters ever', { cash: -0.3, extra: [0.35, 4, 'Ugly sweaters'], fans: 25, say: 'A sweater with a screaming turkey on it. Sold out! 🧶' }],
-    ['🏆 "Ugliest sweater" contest', { fans: 30, say: 'The winner had actual lights and bells! 🏆' }],
-    ['😎 Make them ugly but COOL', { cash: -0.3, extra: [0.3, 4, 'Cool-ugly sweaters'], rep: 3, say: 'Stylish ugly. Very fashion. 😎' }],
-    ['🙅 We only make nice clothes', { say: 'Other brands made the money. 🙅' }]
-  ]);
-  B('fashion', 'sample_sale', '🛍️', 'The sample sale madness', 'You\'re selling last season\'s clothes for cheap. 500 people are pushing at the door!', [
-    ['🎟️ Timed entry tickets', { extra: [0.35, 1, 'Sample sale'], rep: 4, say: 'Organized and fair! 🎟️' }],
-    ['💥 Open the doors!', { extra: [0.45, 1, 'Sample sale'], rep: -3, say: 'Chaos! Big money! Broken mannequins! 💥' }],
-    ['🌐 Online sale instead', { extra: [0.3, 1, 'Online sample sale'], say: 'No crowds, good sales! 🌐' }],
-    ['❤️ Donate the old clothes', { rep: 7, say: 'Shelters got beautiful clothes. ❤️' }]
-  ]);
+  B('fashion', 'designer_leaves', '✂️', '{a} wants to start their own brand', '{a} wants to leave and take two assistants.', [
+    ['💰 Big raise and a title', { raise: ['a', 0.25], promote: 'a', say: '{a} stayed.' }],
+    ['🤝 Invest in their brand', { cash: -1, extra: [0.06, 16, 'Designer brand'], say: 'You own part of it.' }],
+    ['👋 Let them go', { quit: 'a', say: 'A new rival is born.' }],
+    ['⚖️ Enforce the contract', { a: -20, rep: -3, say: '{a} has to stay. Unhappy.' }]
+  ], FRONT);
 
   // 👟 SNEAKER BRAND
-  B('sneakers', 'limited_drop', '👟', 'Limited sneaker drop!', 'Only 500 pairs of your new "Cloud Runners" will be sold. People are camping outside the store for 3 days! ⛺👟', [
-    ['🎟️ Raffle so it\'s fair', { extra: [0.35, 1, 'Sneaker drop'], rep: 5, fans: 20, say: 'Fair and exciting! 🎟️' }],
-    ['🏃 First come, first served', { extra: [0.35, 1, 'Sneaker drop'], fans: 25, say: 'The campers got their shoes! 🏃' }],
-    ['🍕 Bring food to the campers', { cash: -0.1, rep: 5, fans: 15, extra: [0.3, 1, 'Sneaker drop'], say: 'Happy campers! 🍕' }],
-    ['🏭 Make 50,000 instead', { cash: -0.5, extra: [0.5, 3, 'Cloud Runners'], fans: -5, say: 'Not "limited" anymore. Still sold well. 🏭' }]
+  B('sneakers', 'drop_bots', '🤖', 'Bots bought your whole drop', 'Your limited sneakers sold out in 3 seconds. Resellers have them all.', [
+    ['🎟️ Raffle system next time', { cash: -0.2, rep: 6, say: 'Fair for real fans.' }],
+    ['🔄 Cancel bot orders', { cash: -0.3, rep: 5, say: 'Real fans got them.' }],
+    ['🏭 Make more', { cash: -0.6, extra: [0.2, 3, 'Restock'], rep: 3, say: 'Resellers lost money.' }],
+    ['🤷 Money is money', { rep: -8, say: 'Fans are furious.' }]
   ]);
-  B('sneakers', 'bots', '🤖', 'Bots bought all the sneakers!', 'Your new sneakers sold out online in 3 seconds. All bought by bots. Now they\'re selling for 10 times the price!', [
-    ['🛡️ Better anti-bot website', { cash: -0.5, rep: 5, say: 'Real fans can buy now! 🛡️' }],
-    ['🔁 Restock for real fans', { cash: -0.3, extra: [0.3, 2, 'Restock'], rep: 4, say: 'The bots\' shoes are worth nothing now! 🔁' }],
-    ['📱 App with fan points', { cash: -0.6, rep: 6, fans: 20, say: 'Loyal fans get first chance! 📱' }],
-    ['🤷 A sale is a sale', { rep: -6, say: 'Fans are angry. 🤷' }]
+  B('sneakers', 'athlete_deal', '🏀', 'A rising basketball star wants a deal', 'Nobody knows him yet. He could be huge. Or not.', [
+    ['✍️ Sign him', { cash: -1, chance: { p: 0.5, win: { fans: 80, demand: [1.15, 12, 'Star athlete'], say: 'He became MVP. Your shoe is everywhere.' }, lose: { fans: 10, say: 'He got injured.' } } }],
+    ['🤝 A small deal', { cash: -0.3, chance: { p: 0.5, win: { fans: 40, say: 'He blew up.' }, lose: { say: 'Not much happened.' } } }],
+    ['🔍 Wait a season', { say: '{rival} signed him instead.' }],
+    ['🙅 No', { say: 'You passed.' }]
+  ], { init: rival });
+  B('sneakers', 'fake_sneakers', '👟', 'Fakes of your shoes are everywhere', 'Online stores sell copies for a quarter of the price.', [
+    ['⚖️ Legal team', { cash: -0.6, rep: 3, say: 'Hundreds of sites shut down.' }],
+    ['📱 Authenticity app', { cash: -0.4, fans: 20, rep: 4, say: 'Scan the tag to check. Fans love it.' }],
+    ['📉 A cheaper line', { cash: -0.3, demand: [1.06, 12, 'Budget line'], say: 'Fewer buy fakes.' }],
+    ['🤷 Ignore it', { rep: -5, say: 'Quality complaints about fakes hurt you.' }]
   ]);
-  B('sneakers', 'athlete', '🏀', 'Sign a young athlete?', 'A 17-year-old basketball star is about to become famous. You could sign them now, cheap, before anyone else!', [
-    ['✍️ Sign them!', { cash: -0.6, chance: { p: 0.6, win: { fans: 50, demand: [1.2, 26, 'Star athlete'], say: 'They became a SUPERSTAR! Your shoes are everywhere! 🏀' }, lose: { say: 'They decided to be a dentist. 🦷' } } }],
-    ['🤝 A small deal first', { cash: -0.2, fans: 15, say: 'A good start! 🤝' }],
-    ['👟 Just send free shoes', { cash: -0.05, chance: { p: 0.3, win: { fans: 30, say: 'They wore them on TV! 👟' }, lose: { say: 'They wore another brand. 👟' } } }],
-    ['🙅 Too risky', { say: 'A big brand signed them later. 😩' }]
+  B('sneakers', 'collab', '🎨', 'A famous artist wants a collab', 'Their art on your sneakers. Limited edition.', [
+    ['🎨 Yes', { cash: -0.5, extra: [0.25, 3, 'Artist collab'], fans: 50, say: 'Sold out instantly.' }],
+    ['📈 Bigger run', { cash: -0.8, extra: [0.35, 3, 'Artist collab'], fans: 30, say: 'More sales, less hype.' }],
+    ['🎁 Charity edition', { cash: -0.3, rep: 10, fans: 40, say: 'Money for art schools.' }],
+    ['🙅 No', { say: 'They worked with {rival}.' }]
+  ], { init: rival });
+  B('sneakers', 'sole_defect', '🔧', 'Soles are falling off', 'A batch has a glue problem. Customers are posting photos.', [
+    ['📢 Recall and replace', { cash: -0.8, rep: 6, say: 'Fans respected it.' }],
+    ['🔧 Free repair', { cash: -0.4, rep: 3, say: 'Fixed.' }],
+    ['🏭 Fix the factory', { cash: -0.3, rep: 2, say: 'Better glue now.' }],
+    ['🤐 Say nothing', { rep: -10, say: 'The photos spread.' }]
   ]);
-  B('sneakers', 'squeaky', '🔊', 'The new sneakers SQUEAK', 'Every step in the new sneakers makes a loud SQUEAK. Squeak. Squeak. Squeak. Customers are complaining.', [
-    ['🔧 Fix the design', { cash: -0.5, rep: 3, say: 'Silent sneakers! 🔧' }],
-    ['🎵 Sell them as "Music Sneakers"', { fans: 25, extra: [0.2, 4, 'Squeaky sneakers'], say: 'Kids LOVE squeaking everywhere! 🎵' }],
-    ['🔁 Free replacement for everyone', { cash: -0.6, rep: 6, say: 'Everyone got new ones! 🔁' }],
-    ['🙉 "They\'ll get quieter"', { rep: -4, say: 'They did not. 🙉' }]
+  B('sneakers', 'sneaker_con', '🎪', 'The big sneaker convention', 'All the fans, all the brands, one weekend.', [
+    ['🎪 Huge booth with a drop', { cash: -0.8, extra: [0.3, 1, 'Sneaker con'], fans: 50, say: 'The line went around the hall.' }],
+    ['👟 Small booth', { cash: -0.2, fans: 20, say: 'Good buzz.' }],
+    ['🎁 Surprise giveaway', { cash: -0.3, fans: 40, say: 'Everyone talked about it.' }],
+    ['🙅 Skip it', { say: 'You passed.' }]
   ]);
-  B('sneakers', 'custom_station', '🎨', 'A sneaker customization station', 'Customers want to design their own sneakers: pick colors, add names, add stickers!', [
-    ['🎨 Build it in every store', { cash: -0.8, extra: [0.3, 26, 'Custom sneakers'], fans: 20, say: 'Everyone has one-of-a-kind shoes! 🎨' }],
-    ['🌐 Online designer', { cash: -0.5, extra: [0.25, 26, 'Online custom'], say: 'Design at home! 🌐' }],
-    ['🏆 Design contest', { fans: 30, say: 'The winner\'s design became a real shoe! 🏆' }],
-    ['🙅 Too complicated', { say: 'Standard colors. 🙅' }]
-  ]);
-  B('sneakers', 'light_up', '💡', 'Light-up soles?', '{a} built sneakers with lights in the soles that flash with every step. They look AMAZING at night.', [
-    ['💡 Launch them!', { cash: -0.5, extra: [0.35, 8, 'Light-up sneakers'], fans: 30, say: 'Every kid (and some adults) wants them! 💡' }],
-    ['🌈 Rainbow color mode', { cash: -0.6, extra: [0.4, 8, 'Rainbow sneakers'], fans: 35, say: 'Rainbow steps everywhere! 🌈' }],
-    ['🔋 Test the batteries first', { cash: -0.1, rep: 3, say: 'Safe and long-lasting! 🔋' }],
-    ['🙅 "They\'re for babies"', { a: -6, say: '{a} is sad. 🙅' }]
+  B('sneakers', 'worker_design', '✏️', '{a} designed a new sneaker', 'At home, on their own time. It\'s really good.', [
+    ['🚀 Produce it, credit {a}', { cash: -0.4, demand: [1.1, 8, 'New design'], a: 18, say: 'A hit. {a} is proud.' }],
+    ['💵 Buy the design', { cash: -0.2, demand: [1.1, 8, 'New design'], a: 8, say: 'Fair deal.' }],
+    ['🗳️ Let fans vote', { fans: 30, a: 10, say: 'Fans loved it.' }],
+    ['🙅 Not our style', { a: -10, say: '{a} feels ignored.' }]
   ], FRONT);
-  B('sneakers', 'factory_trouble', '🏭', 'Problems at the shoe factory', 'The factory that makes your shoes says the workers are paid very little and work too many hours.', [
-    ['❤️ Pay for fair wages', { cash: -1, rep: 10, fans: 15, say: 'Fair shoes! Customers are proud to wear them! ❤️' }],
-    ['🔍 Visit and check yourself', { cash: -0.2, rep: 5, say: 'You saw it and made changes. 🔍' }],
-    ['🏭 Find a better factory', { cash: -0.6, rep: 7, say: 'A new factory with happy workers! 🏭' }],
-    ['🙈 Not my problem', { rep: -10, say: 'The news found out. Big scandal. 😱' }]
-  ]);
 
   // 🎂 CAKE FACTORY
-  B('bakerychain', 'cake_collapse', '🎂', 'The tallest cake COLLAPSED', 'You were building a 3-meter birthday cake for a celebrity party. It fell over. Frosting everywhere. The party is in 4 hours!', [
-    ['⚡ Rebuild it FAST', { team: -8, chance: { p: 0.6, win: { rep: 5, fans: 20, say: 'Rebuilt in 3 hours! Heroes! ⚡' }, lose: { rep: -4, say: 'Only 1.5 meters. Still a big cake. 😅' } } }],
-    ['🧁 Make 1,000 cupcakes instead', { rep: 3, fans: 15, say: 'A cupcake mountain! They loved it! 🧁' }],
-    ['📹 Film the rescue for social media', { fans: 25, say: 'The "cake disaster" video got millions of views! 📹' }],
-    ['😭 Tell the truth', { rep: 1, say: 'They were sad, but understood. 😭' }]
+  B('bakerychain', 'wrong_name', '🎂', 'A birthday cake had the wrong name', 'It said "Happy Birthday Steve". The kid\'s name is Stella. She cried.', [
+    ['🎂 A new cake, free, now', { cash: -0.05, rep: 5, say: 'Stella got a bigger cake.' }],
+    ['🎁 Free cake and a gift', { cash: -0.1, rep: 8, fans: 15, say: 'The mom posted a thank you.' }],
+    ['📋 Double-check system', { capacity: [0.97, 8, 'Checks'], rep: 2, say: 'Never again.' }],
+    ['🤷 Refund only', { rep: -4, say: 'The mom posted about it.' }]
   ]);
-  B('bakerychain', 'baking_show', '📺', 'Invited to a TV baking show!', 'The biggest baking show on TV wants one of your cake artists as a contestant!', [
-    ['🏆 Send your best artist', { chance: { p: 0.45, win: { fans: 50, rep: 8, say: 'YOUR ARTIST WON THE SHOW! 🏆' }, lose: { fans: 20, say: 'Out in round 3. Still great for business! 📺' } } }],
-    ['🎤 Be a guest judge', { fans: 30, rep: 4, say: 'You were funny and strict. Viewers loved you! 🎤' }],
-    ['🎂 Offer to make the final cake', { cash: -0.2, fans: 25, say: 'Your cake was on TV! 🎂' }],
-    ['🙅 Too much drama', { say: 'No TV. 🙅' }]
+  B('bakerychain', 'supermarket_order', '🛒', 'A supermarket chain wants your cakes', 'In 200 stores. Mass production needed.', [
+    ['🏭 Build a bigger line', { cash: -1.5, capacity: [1.2, 20, 'Big line'], extra: [0.12, 12, 'Supermarket'], say: 'Your cakes are everywhere.' }],
+    ['🤝 Half the stores', { extra: [0.07, 12, 'Supermarket'], say: 'Manageable.' }],
+    ['📈 Premium price', { chance: { p: 0.4, win: { extra: [0.14, 12, 'Supermarket'], say: 'They agreed.' }, lose: { say: 'They went elsewhere.' } } }],
+    ['🙅 Stay special', { rep: 2, say: 'Your cakes stay rare.' }]
+  ], { minWeek: 10 });
+  B('bakerychain', 'mold', '🦠', 'Mold found in a batch', 'A customer found it. The batch went to 30 stores.', [
+    ['📢 Recall the batch', { cash: -0.6, rep: 5, say: 'Handled.' }],
+    ['🔍 Find the cause', { cash: -0.3, equip: 0.01, say: 'A broken cooler. Fixed.' }],
+    ['🙏 Apologize to the customer', { rep: 1, say: 'Just one.' }],
+    ['🤐 Hope it\'s only one', { chance: { p: 0.4, win: { say: 'It was.' }, lose: { rep: -12, say: 'Dozens more.' } } }]
+  ]);
+  B('bakerychain', 'tv_bake_off', '📺', 'A TV baking show wants you as a judge', 'Millions watch. You\'d miss weeks at the factory.', [
+    ['📺 Yes', { fans: 80, rep: 6, capacity: [0.95, 6, 'Boss on TV'], say: 'You\'re a TV star now.' }],
+    ['🧑‍🍳 Send {a} instead', { fans: 40, a: 15, say: '{a} is a natural.' }],
+    ['🎂 Sponsor the show', { cash: -1, fans: 50, say: 'Your cakes on screen every week.' }],
+    ['🙅 Too busy', { say: 'You passed.' }]
+  ], FRONT);
+  B('bakerychain', 'sugar_price', '🍬', 'Sugar prices doubled', 'Every cake costs more to make.', [
+    ['📈 Raise prices', { price: 1, happy: -3, say: 'Customers accepted it.' }],
+    ['🍯 Less sugar recipes', { cash: -0.2, rep: 3, say: 'Healthier. Some liked it.' }],
+    ['😬 Absorb it', { supply: [0.05, 8, 'Sugar prices'], say: 'Thin profits.' }],
+    ['📦 Buy a year of sugar now', { cash: -1, supply: [-0.02, 20, 'Stocked sugar'], say: 'Smart bet.' }]
+  ], { kind: 'news' });
+  B('bakerychain', 'giant_cake', '🏆', 'Try for a world record cake', 'The biggest cake ever. Everyone would watch.', [
+    ['🎂 Go for it', { cash: -0.8, chance: { p: 0.6, win: { fans: 80, rep: 8, say: 'World record.' }, lose: { fans: 30, say: 'It collapsed. Live.' } } }],
+    ['🤝 With a charity', { cash: -0.5, rep: 10, fans: 50, say: 'Record and cake for the homeless.' }],
+    ['📺 Sell TV rights', { cash: 0.3, fans: 40, say: 'Paid to be famous.' }],
+    ['🙅 No', { say: 'You passed.' }]
   ], { rarity: 'rare' });
-  B('bakerychain', 'fake_food', '🥾', 'A cake that looks like a SHOE', '{a} made a cake that looks exactly like a real sneaker. A customer tried to put it on. 😂', [
-    ['📱 Post "Is it cake?"', { chance: { p: 0.5, win: { viral: [1, 4], say: '"Is it cake?!" went viral! 📱' }, lose: { fans: 15, say: 'People loved it! 📱' } } }],
-    ['🎨 Start a "realistic cakes" line', { cash: -0.3, extra: [0.25, 12, 'Realistic cakes'], say: 'Cakes that look like anything! 🎨' }],
-    ['🏆 Enter it in a cake contest', { chance: { p: 0.5, win: { fans: 30, rep: 5, say: 'First place! 🏆' }, lose: { fans: 8, say: 'Second place to a cake that looks like a cat. 🐈' } } }],
-    ['🍰 Just sell normal cakes', { a: -5, say: 'Boring but safe. 🍰' }]
-  ], FRONT);
-  B('bakerychain', 'wrong_names', '✍️', 'Wrong names on the birthday cakes!', 'Three cakes went out with mixed-up names. "Happy Birthday GRANDMA" went to a 5-year-old\'s party. 😅', [
-    ['🎁 Free cakes for all three', { cash: -0.2, rep: 4, happy: 4, say: 'Everyone forgave you! 🎁' }],
-    ['📋 Double-check system', { cash: -0.1, equip: 0.02, say: 'No more mix-ups! 📋' }],
-    ['😂 Post the funny mix-up', { fans: 20, say: 'Everyone laughed! 😂' }],
-    ['🤷 "Close enough"', { rep: -4, say: 'Not close enough. 🤷' }]
-  ]);
-  B('bakerychain', 'vegan_cakes', '🌱', 'Vegan cakes?', 'Many customers want cakes with no eggs or milk. {a} says they can make them just as tasty.', [
-    ['🌱 A full vegan line', { cash: -0.4, demand: [1.1, 26, 'Vegan cakes'], rep: 4, say: 'New customers everywhere! 🌱' }],
-    ['🎂 One vegan cake of the week', { cash: -0.1, demand: [1.04, 12, 'Vegan cake'], say: 'It sells out every week! 🎂' }],
-    ['🧪 Blind taste test', { fans: 15, chance: { p: 0.6, win: { rep: 4, say: 'Nobody could tell! 🧪' }, lose: { say: 'People could tell, but still liked it. 🧪' } } }],
-    ['🙅 Classic recipes only', { say: 'Butter forever. 🙅' }]
-  ], FRONT);
-  B('bakerychain', 'cake_smash', '👶', 'Cake smash photos for babies!', 'Parents want mini cakes for "cake smash" photo shoots: babies smash the cake with their hands. Messy and SO cute.', [
-    ['👶 Cake smash packages!', { cash: -0.2, extra: [0.2, 20, 'Cake smash'], fans: 25, say: 'The cutest (messiest) business idea ever! 👶' }],
-    ['📸 Add a photo studio', { cash: -0.6, extra: [0.3, 26, 'Cake smash studio'], say: 'Cake and photos in one place! 📸' }],
-    ['🐶 Dog cake smashes too', { cash: -0.2, extra: [0.15, 20, 'Dog cakes'], fans: 20, say: 'Dogs love it even more! 🐶' }],
-    ['🙅 Too messy', { say: 'Clean cakes only. 🙅' }]
-  ]);
-  B('bakerychain', 'frosting_shortage', '🧈', 'No butter for the frosting!', 'A butter shortage! You need butter for frosting. The shelves are empty.', [
-    ['💸 Buy butter at crazy prices', { cash: -0.5, say: 'Very expensive butter. 💸' }],
-    ['🍫 Chocolate ganache instead', { fans: 10, say: 'Ganache is a hit! 🍫' }],
-    ['🐄 Buy a cow', { cash: -0.4, supply: [-0.02, 52, 'Own cow'], fans: 25, pet: '🐄', say: 'Meet Buttercup, your new cow! 🐄' }],
-    ['😬 Less frosting', { happy: -4, say: 'Customers noticed. 😬' }]
-  ]);
+  B('bakerychain', 'night_shift', '🌙', 'The night shift wants more pay', 'They bake from midnight to 6 AM. They say it\'s unfair.', [
+    ['💵 Night bonus', { teamRaise: 0.05, team: 12, say: 'Fair.' }],
+    ['🔄 Rotate shifts', { team: 6, say: 'Everyone shares it.' }],
+    ['🤖 More machines at night', { cash: -1, equip: 0.03, say: 'Fewer night workers.' }],
+    ['🙅 No', { team: -12, say: 'They\'re angry.' }]
+  ], { who: { a: 'any' } });
 
-  // 🕹️ ESPORTS TEAM
-  B('esports', 'rage_quit', '😡', '{a} rage-quit on live stream', '{a} lost a match, screamed, and threw their keyboard. 200,000 people were watching live. 😬', [
-    ['🧘 Mental coach for the team', { cash: -0.3, team: 6, a: 8, say: 'Calm gamers win more! 🧘' }],
-    ['🙏 {a} says sorry on stream', { rep: 3, fans: 10, say: 'Fans respect the apology. 🙏' }],
-    ['😂 Sell "Keyboard Throw" shirts', { fans: 20, rep: -2, say: 'Funny... but maybe not nice. 😂' }],
-    ['🚪 Bench {a} for a month', { a: -12, rep: 2, say: '{a} is watching from the bench. 🚪' }]
+  // 🎮 ESPORTS TEAM
+  B('esports', 'cheating', '🕹️', '{a} was caught cheating', 'In a pro tournament. The whole team is disqualified.', [
+    ['🚪 Drop {a}', { fire: 'a', rep: 4, say: 'Clean team.' }],
+    ['🙏 Public apology', { rep: -2, a: -10, say: 'Fans are split.' }],
+    ['🛡️ Defend {a}', { chance: { p: 0.2, win: { say: 'The evidence was wrong.' }, lose: { rep: -12, say: 'The evidence was clear.' } } }],
+    ['⏸️ Suspend {a} for a season', { rep: 2, a: -15, say: 'A second chance.' }]
   ], FRONT);
-  B('esports', 'worlds', '🌍', 'Qualified for the World Championship!', 'Your team made it to the World Championship! The winner gets a HUGE prize.', [
-    ['💪 Train 12 hours a day', { team: -8, chance: { p: 0.35, win: { cash: 5, fans: 60, rep: 10, say: 'WORLD CHAMPIONS!!! 🌍🏆' }, lose: { fans: 25, say: 'Top 8 in the world! Amazing! 🌍' } } }],
-    ['😌 Rest and stay calm', { team: 5, chance: { p: 0.3, win: { cash: 5, fans: 60, say: 'Calm and CHAMPIONS! 🏆' }, lose: { fans: 20, say: 'Top 16! Great run! 🌍' } } }],
-    ['🧑‍🏫 Hire a legendary coach', { cash: -0.6, chance: { p: 0.45, win: { cash: 5, fans: 60, say: 'The coach made the difference! CHAMPIONS! 🏆' }, lose: { fans: 25, say: 'Semifinals! 🌍' } } }],
-    ['🎉 Just enjoy the trip', { team: 10, fans: 15, say: 'Great memories! 🎉' }]
-  ], { rarity: 'rare' });
-  B('esports', 'energy_sponsor', '⚡', 'An energy drink wants to sponsor you', 'A big energy drink brand wants their logo on your jerseys. They pay a lot. But their drink tastes like batteries.', [
-    ['💰 Take the deal', { cash: 1.5, say: 'Big money! 💰' }],
-    ['🧃 Ask for a juice brand instead', { chance: { p: 0.4, win: { cash: 1.2, rep: 4, say: 'A healthy juice brand signed you! 🧃' }, lose: { say: 'No juice deal. 🧃' } } }],
-    ['📈 Ask for more money', { chance: { p: 0.5, win: { cash: 2.2, say: 'They paid more! 📈' }, lose: { say: 'They signed another team. 📈' } } }],
-    ['🙅 No energy drinks for young players', { rep: 5, say: 'Parents of fans love this. 🙅' }]
+  B('esports', 'sponsor_energy', '⚡', 'An energy drink wants to sponsor you', 'Big money. But your fans are young.', [
+    ['✍️ Sign', { cash: 1.5, rep: -3, say: 'Money in. Parents grumbled.' }],
+    ['🥤 Only their water brand', { cash: 0.8, rep: 2, say: 'Clever.' }],
+    ['🔍 Find a tech sponsor', { chance: { p: 0.6, win: { cash: 1.2, say: 'A headset brand signed.' }, lose: { say: 'No luck yet.' } } }],
+    ['🙅 No', { rep: 3, say: 'Fans respect it.' }]
   ]);
-  B('esports', 'lag', '📶', 'LAG during the final!', 'In the most important match of the year, your internet started lagging. Your players are frozen on screen! 📶😱', [
-    ['⏸️ Ask for a pause', { chance: { p: 0.7, win: { fans: 15, say: 'Fixed during the pause. You won! 🏆' }, lose: { say: 'The pause was denied. Lost. 😭' } } }],
-    ['🌐 Buy super-fast backup internet', { cash: -0.5, equip: 0.03, say: 'Never again! 🌐' }],
-    ['😂 Joke about it on stream', { fans: 20, say: 'Everyone laughed. You lost, but fans love you. 😂' }],
-    ['😡 Blame the other team', { rep: -5, say: 'Bad sport. 😡' }]
+  B('esports', 'world_finals', '🏆', 'You made the world finals', 'One match for the world title. Millions watching.', [
+    ['🧠 Study the enemy all week', { team: -4, chance: { p: 0.55, win: { fans: 150, cash: 3, say: 'WORLD CHAMPIONS.' }, lose: { fans: 40, say: 'Second in the world.' } } }],
+    ['😌 Rest and stay calm', { team: 8, chance: { p: 0.5, win: { fans: 150, cash: 3, say: 'WORLD CHAMPIONS.' }, lose: { fans: 40, say: 'So close.' } } }],
+    ['🧑‍🏫 Hire a legend coach', { cash: -0.5, chance: { p: 0.65, win: { fans: 150, cash: 3, say: 'WORLD CHAMPIONS.' }, lose: { fans: 40, say: 'Second.' } } }],
+    ['📺 Focus on the show', { fans: 60, say: 'You lost, but fans loved the show.' }]
+  ], { rarity: 'rare', minWeek: 20 });
+  B('esports', 'toxic_player', '😡', '{a} is toxic online', 'Rude to fans, rude to other teams. Sponsors noticed.', [
+    ['🎓 Media training', { cash: -0.2, rep: 3, say: 'Better.' }],
+    ['⚠️ Final warning', { a: -8, say: '{a} calmed down.' }],
+    ['🚪 Drop {a}', { fire: 'a', rep: 5, say: 'Sponsors happy.' }],
+    ['🤷 He wins games', { rep: -6, say: 'A sponsor left.' }]
+  ], FRONT);
+  B('esports', 'game_patch', '🔧', 'A game update ruined your strategy', 'Everything you practiced is useless now.', [
+    ['🧠 Learn the new meta fast', { team: -6, say: 'Adapted in a week.' }],
+    ['🧑‍🏫 Hire an analyst', { cash: -0.3, say: 'Ahead of everyone.' }],
+    ['🎲 Try something crazy', { chance: { p: 0.4, win: { fans: 40, say: 'Nobody saw it coming.' }, lose: { fans: 5, say: 'It didn\'t work.' } } }],
+    ['😤 Complain online', { rep: -2, say: 'Fans called it whining.' }]
   ]);
-  B('esports', 'gaming_house', '🏠', 'Buy a gaming house?', 'Top teams live and train together in a big "gaming house". It\'s expensive but players get much better!', [
-    ['🏠 Buy a big house', { cash: -2, capacity: [1.15, 104, 'Gaming house'], team: 10, say: 'Pizza, games and teamwork! 🏠' }],
-    ['🏢 Rent an office instead', { cash: -0.5, capacity: [1.08, 52, 'Gaming office'], say: 'Train together, sleep at home. 🏢' }],
-    ['📹 Make a reality show there', { cash: -1.8, fans: 50, team: 5, say: 'Fans watch your players cook and fight over the TV! 📹' }],
-    ['🙅 Online training is fine', { say: 'Everyone stays home. 🙅' }]
+  B('esports', 'streaming_deal', '🎥', 'A platform wants exclusive streams', 'Your players can only stream there. Good money.', [
+    ['✍️ Sign', { extra: [0.12, 12, 'Streaming deal'], fans: -10, say: 'Money in. Some fans didn\'t follow.' }],
+    ['🤝 Non-exclusive', { chance: { p: 0.5, win: { extra: [0.08, 12, 'Streaming deal'], say: 'Deal.' }, lose: { say: 'They walked.' } } }],
+    ['🎥 Build your own channel', { fans: 30, say: 'Your fans, your rules.' }],
+    ['🙅 No', { say: 'You passed.' }]
   ]);
-  B('esports', 'prodigy', '🧒', 'A 14-year-old gaming genius', 'A 14-year-old is beating pro players online. Other teams are trying to sign them!', [
-    ['✍️ Sign them (with parents\' OK)', { cash: -0.4, hireSpecial: { role: 'front', skill: 85 }, fans: 25, say: 'The youngest pro in the country! ✍️' }],
-    ['🎓 Academy team first', { cash: -0.2, rep: 5, say: 'School first, then games. Parents love it! 🎓' }],
-    ['🎮 Invite them to a friendly match', { fans: 15, chance: { p: 0.5, win: { say: 'Your pros won! Barely. 🎮' }, lose: { fans: 10, say: 'The kid beat your whole team. 😳' } } }],
-    ['🙅 Too young', { say: 'Another team signed them. 🙅' }]
-  ]);
-  B('esports', 'fan_meetup', '🤝', 'Fans want a meet-up!', 'Thousands of fans want to meet your players in real life, get autographs and play with them!', [
-    ['🎪 Big fan festival', { cash: -0.5, fans: 40, extra: [0.3, 1, 'Fan festival'], say: 'The best day for fans ever! 🎪' }],
-    ['✍️ Autograph signing at a mall', { fans: 25, say: 'The line went around the mall! ✍️' }],
-    ['🎮 Fans play vs the pros', { fans: 35, team: 4, say: 'One fan beat a pro! The crowd went WILD! 🎮' }],
-    ['🙅 Players need rest', { team: 5, say: 'Rested players. 🙅' }]
+  B('esports', 'gaming_house', '🏠', 'A team house?', 'All players live and train together. Expensive but powerful.', [
+    ['🏠 Buy one', { cash: -2, team: 12, capacity: [1.1, 20, 'Team house'], say: 'The team is closer than ever.' }],
+    ['🏢 Rent one', { rent: 0.1, team: 8, say: 'Good team vibes.' }],
+    ['🧑‍💻 Just a training room', { cash: -0.5, team: 4, say: 'A good middle ground.' }],
+    ['🙅 Everyone trains at home', { say: 'Same as before.' }]
   ]);
 
   // 🎵 MUSIC LABEL
-  B('music', 'blew_up', '🔥', 'A song BLEW UP online', 'A song from one of your small artists is suddenly everywhere. Everyone is dancing to it online!', [
-    ['📀 Push it to radio stations', { cash: -0.3, extra: [0.5, 6, 'Hit song'], fans: 30, say: 'It\'s #1 on the radio! 📀' }],
-    ['🎬 Make a music video fast', { cash: -0.5, extra: [0.6, 6, 'Hit song'], fans: 40, say: 'The music video has 100 million views! 🎬' }],
-    ['🎤 Book a big tour', { cash: -0.4, extra: [0.4, 12, 'Tour'], say: 'Sold-out shows! 🎤' }],
-    ['😎 Let it grow naturally', { extra: [0.3, 6, 'Hit song'], say: 'Nice and steady. 😎' }]
+  B('music', 'leaked_album', '🔓', 'An album leaked a month early', 'Your biggest artist. Fans are listening to it free.', [
+    ['🚀 Release it now', { extra: [0.2, 3, 'Surprise release'], fans: 20, say: 'Fans bought it anyway.' }],
+    ['⚖️ Chase the leaks', { cash: -0.3, chance: { p: 0.4, win: { say: 'Mostly removed.' }, lose: { demand: [0.85, 4, 'Leak'], say: 'Everywhere.' } } }],
+    ['🎁 Bonus songs for buyers', { cash: -0.1, extra: [0.15, 3, 'Bonus tracks'], say: 'Fans paid for extras.' }],
+    ['🕵️ Find the leaker', { chance: { p: 0.5, win: { rep: 2, say: 'A studio intern. Fired.' }, lose: { team: -6, say: 'Everyone felt accused.' } } }]
   ]);
-  B('music', 'diva', '💅', 'A singer\'s crazy demands', 'Your biggest star says: "I need a room with 500 blue candies, a live flamingo and a golden microphone, or I won\'t sing."', [
-    ['🦩 Give them everything', { cash: -0.8, extra: [0.4, 4, 'Happy star'], say: 'They sang like an angel. The flamingo stole the show. 🦩' }],
-    ['🍬 Just the candy', { cash: -0.05, chance: { p: 0.6, win: { say: 'That was enough! They sang! 🍬' }, lose: { say: 'They cancelled the show. 😤' } } }],
-    ['🗣️ "Be reasonable, please"', { chance: { p: 0.5, win: { rep: 3, say: 'They laughed and agreed. 🗣️' }, lose: { say: 'They\'re thinking about leaving your label. 😬' } } }],
-    ['🚪 "Find another label"', { cash: -0.5, rep: 2, say: 'They left. 🚪' }]
+  B('music', 'viral_song', '🎵', 'An unknown song you own went viral', 'An old song is suddenly the soundtrack to a dance trend.', [
+    ['📢 Push it everywhere', { extra: [0.2, 4, 'Viral song'], fans: 40, say: 'Top of the charts.' }],
+    ['🎤 Get the singer back', { cash: -0.3, fans: 50, say: 'A comeback nobody expected.' }],
+    ['🔁 Remix it', { cash: -0.2, extra: [0.25, 4, 'Remix'], say: 'Even bigger.' }],
+    ['😌 Enjoy it', { extra: [0.1, 4, 'Viral song'], say: 'Nice money.' }]
   ]);
-  B('music', 'album_leak', '💿', 'The new album LEAKED', 'Your star\'s new album leaked online two weeks before release!', [
-    ['🚀 Release it NOW', { extra: [0.4, 4, 'Surprise release'], fans: 20, say: 'Surprise release! Fans loved it! 🚀' }],
-    ['🎁 Add 3 bonus songs to the real one', { cash: -0.2, extra: [0.4, 4, 'Deluxe album'], fans: 15, say: 'Fans bought the real one for the bonus songs! 🎁' }],
-    ['🕵️ Find the leaker', { chance: { p: 0.5, win: { rep: 3, say: 'Caught! 🕵️' }, lose: { say: 'Never found. 🕵️' } } }],
-    ['😭 Cancel the release', { rep: -4, say: 'Fans are confused. 😭' }]
+  B('music', 'artist_leaving', '🎤', 'Your top artist wants to leave', 'A bigger label offered them triple.', [
+    ['💰 Match the offer', { supply: [0.06, 16, 'Artist deal'], say: 'They stayed. Expensive.' }],
+    ['❤️ Remind them who found them', { chance: { p: 0.5, win: { rep: 3, say: 'They stayed.' }, lose: { demand: [0.85, 8, 'Lost artist'], say: 'They left.' } } }],
+    ['🎨 More creative freedom', { chance: { p: 0.6, win: { fans: 20, say: 'They stayed for the freedom.' }, lose: { demand: [0.85, 8, 'Lost artist'], say: 'Freedom wasn\'t enough.' } } }],
+    ['👋 Wish them well', { demand: [0.85, 8, 'Lost artist'], rep: 2, say: 'Classy. Painful.' }]
   ]);
-  B('music', 'grandma_rapper', '👵', 'A 90-year-old rapper wants a record deal', 'Grandma Rose, 90 years old, walked in and rapped for 3 minutes. It was... actually SUPER good. 👵🎤', [
-    ['✍️ Sign her!', { cash: -0.2, fans: 50, extra: [0.3, 8, 'Grandma Rose'], say: 'Grandma Rose is the most viral rapper of the year! 👵🔥' }],
-    ['🎤 A duet with your biggest star', { fans: 40, rep: 4, say: 'The duet is a hit! 🎤' }],
-    ['📹 Film her story', { fans: 30, say: 'Everyone cried and danced. 📹' }],
-    ['🙅 "Too old for this"', { rep: -3, say: 'Another label signed her. She\'s #1 now. 😩' }]
+  B('music', 'new_talent', '🌟', 'A teenager sends you a demo', 'Recorded in a bedroom. It\'s incredible.', [
+    ['✍️ Sign them now', { cash: -0.3, chance: { p: 0.5, win: { fans: 60, extra: [0.12, 10, 'New star'], say: 'A new star.' }, lose: { say: 'Slow start.' } } }],
+    ['🎧 Studio time first', { cash: -0.1, fans: 15, say: 'Promising.' }],
+    ['📢 Post the demo', { fans: 30, say: 'The internet loves them.' }],
+    ['🙅 Too young', { say: '{rival} signed them.' }]
+  ], { init: rival });
+  B('music', 'tour_disaster', '🎪', 'Your artist\'s tour is losing money', 'Half-empty arenas. Big costs.', [
+    ['✂️ Cancel some shows', { cash: -0.4, rep: -3, say: 'Stopped the bleeding.' }],
+    ['🏟️ Move to smaller venues', { cash: -0.2, rep: 2, say: 'Sold out small shows.' }],
+    ['📢 Big ad push', { cash: -0.6, chance: { p: 0.5, win: { extra: [0.2, 3, 'Tour'], say: 'Tickets sold.' }, lose: { say: 'Still empty.' } } }],
+    ['🤞 Keep going', { cash: -0.8, say: 'Expensive lesson.' }]
   ]);
-  B('music', 'tour', '🚌', 'A world tour?', 'Your top artist wants to go on a 50-city world tour. It\'s a huge risk and a huge reward.', [
-    ['🌍 Book the whole world tour!', { cash: -1.5, chance: { p: 0.6, win: { cash: 5, fans: 50, say: 'Sold out everywhere! 🌍' }, lose: { cash: -1, say: 'Half the shows were empty. 😩' } } }],
-    ['🚌 A smaller national tour', { cash: -0.5, extra: [0.3, 8, 'National tour'], fans: 20, say: 'Great shows all over the country! 🚌' }],
-    ['📺 One giant livestream concert', { cash: -0.3, extra: [0.4, 2, 'Livestream concert'], fans: 30, say: 'Millions watched from home! 📺' }],
-    ['🙅 Stay in the studio', { say: 'More songs, fewer shows. 🙅' }]
+  B('music', 'streaming_pay', '💸', 'Streaming pays almost nothing', 'Your artists complain they earn less than a coffee per thousand plays.', [
+    ['💿 Vinyl and merch', { cash: -0.3, extra: [0.1, 12, 'Vinyl'], say: 'Fans pay for real things.' }],
+    ['🎤 More live shows', { extra: [0.12, 10, 'Live shows'], team: -4, say: 'Live money is real money.' }],
+    ['🤝 Better artist share', { supply: [0.03, 16, 'Artist share'], rep: 6, say: 'Artists love you.' }],
+    ['🤷 That\'s the business', { rep: -3, say: 'Artists are unhappy.' }]
   ]);
-  B('music', 'copied_song', '©️', 'Another label copied your song!', 'A big new hit sounds EXACTLY like your artist\'s song from last year. Same melody. Different words.', [
-    ['⚖️ Sue them!', { cash: -0.5, chance: { p: 0.55, win: { cash: 3, say: 'You won! Big payment! ⚖️' }, lose: { say: 'The judge said "melodies are similar sometimes". ⚖️' } } }],
-    ['🎶 Make a mashup of both songs', { fans: 30, say: 'The mashup is even bigger than both! 🎶' }],
-    ['📱 Show both songs side by side online', { fans: 20, rep: 2, say: 'Everyone knows yours was first! 📱' }],
-    ['🤷 Music is for everyone', { say: 'Very chill of you. 🤷' }]
+  B('music', 'sample_lawsuit', '⚖️', 'You\'re sued over a sample', 'A hit song used three seconds of an old track without permission.', [
+    ['🤝 Settle', { cash: -0.8, say: 'Done.' }],
+    ['⚖️ Fight', { cash: -0.4, chance: { p: 0.5, win: { say: 'Fair use. Won.' }, lose: { cash: -1.5, say: 'Lost big.' } } }],
+    ['🎵 Give them credit and share', { supply: [0.03, 16, 'Shared royalties'], rep: 3, say: 'Fair solution.' }],
+    ['🗑️ Pull the song', { demand: [0.85, 4, 'Song pulled'], say: 'Fans were upset.' }]
   ]);
-  B('music', 'vinyl', '💿', 'Vinyl records are back!', 'Young people are buying old-school vinyl records again. {a} wants to press your top albums on vinyl.', [
-    ['💿 Press them all!', { cash: -0.5, extra: [0.25, 20, 'Vinyl sales'], fans: 15, say: 'Vinyl sold out! Retro is cool! 💿' }],
-    ['🌈 Colorful limited vinyl', { cash: -0.4, extra: [0.3, 12, 'Colorful vinyl'], fans: 20, say: 'Glitter vinyl! Collectors went crazy! 🌈' }],
-    ['📼 Cassette tapes too?!', { cash: -0.2, fans: 12, say: 'Some people love cassettes. Who knew? 📼' }],
-    ['🙅 Streaming only', { a: -4, say: 'Modern and simple. 🙅' }]
-  ], FRONT);
 
   // 🦁 ZOO
-  B('zoo', 'panda_loan', '🐼', 'A panda is coming to visit!', 'Another country wants to lend your zoo two giant pandas for a year! It costs a lot, but pandas are SUPER popular.', [
-    ['🐼 Yes! Build a bamboo home', { cash: -1.5, demand: [1.3, 52, 'Pandas!'], fans: 50, say: 'The panda line is 2 hours long! 🐼' }],
-    ['🎋 Grow your own bamboo', { cash: -1.2, supply: [-0.01, 52, 'Own bamboo'], demand: [1.25, 52, 'Pandas!'], fans: 40, say: 'Pandas + your own bamboo! 🎋' }],
-    ['📹 24/7 Panda Cam', { cash: -1.3, demand: [1.25, 52, 'Pandas'], fans: 60, say: 'Millions watch the pandas nap online! 📹' }],
-    ['🙅 Too expensive', { say: 'No pandas. 🙅' }]
+  B('zoo', 'baby_panda', '🐼', 'A baby panda was born', 'The first one ever in {city}. The whole city is excited.', [
+    ['📹 Live panda cam', { fans: 80, demand: [1.12, 12, 'Baby panda'], say: 'Millions watch it sleep.' }],
+    ['🗳️ Let the city name it', { fans: 60, rep: 5, say: 'Everyone voted.' }],
+    ['🎟️ Special panda tours', { extra: [0.15, 8, 'Panda tours'], say: 'Sold out every day.' }],
+    ['🤫 Keep it quiet for its safety', { rep: 6, say: 'The vets thanked you.' }]
   ], { rarity: 'rare' });
-  B('zoo', 'penguin_parade', '🐧', 'A daily penguin parade?', '{a} says the penguins love walking in a line. What if they walked through the zoo every day at noon?', [
-    ['🐧 Daily penguin parade!', { fans: 30, demand: [1.12, 26, 'Penguin parade'], say: 'The cutest parade in the world! 🐧' }],
-    ['🎵 Parade with music', { cash: -0.1, fans: 35, say: 'The penguins waddle to music. People cry happy tears. 🎵' }],
-    ['🐧 Only on weekends', { fans: 15, demand: [1.05, 26, 'Weekend parade'], say: 'Weekend fun! 🐧' }],
-    ['🙅 Let penguins be penguins', { rep: 3, say: 'Happy, relaxed penguins. 🙅' }]
-  ], FRONT);
-  B('zoo', 'giraffe_selfie', '🦒', 'The giraffe photobombs everyone', 'A giraffe keeps sticking its head into visitors\' selfies. Every photo has a surprised giraffe in it. 🦒📸', [
-    ['📸 "Giraffe Selfie Spot"', { fans: 35, demand: [1.08, 12, 'Giraffe selfies'], say: 'People come just for giraffe selfies! 📸' }],
-    ['🏆 Best giraffe photobomb contest', { fans: 30, say: 'Thousands of hilarious photos! 🏆' }],
-    ['🥬 Giraffe feeding tickets', { extra: [0.15, 12, 'Giraffe feeding'], fans: 15, say: 'Feed a giraffe! Kids love it! 🥬' }],
-    ['🦒 Move the giraffe back', { say: 'No more photobombs. The giraffe seems sad. 🦒' }]
+  B('zoo', 'escape', '🦁', 'A lion got out of its enclosure', 'It\'s in a staff area. Visitors are inside the zoo.', [
+    ['🚨 Lock down the zoo', { closed: [1, 'Lockdown'], rep: 4, say: 'Nobody hurt. Lion back safe.' }],
+    ['🧑‍⚕️ Call the vet team', { chance: { p: 0.7, win: { rep: 3, say: 'Calmly caught.' }, lose: { rep: -5, closed: [1, 'Lockdown'], say: 'It took hours. Panic.' } } }],
+    ['🔧 Fix every fence after', { cash: -1, rep: 5, say: 'Safer than ever.' }],
+    ['🤫 Keep visitors calm, say nothing', { chance: { p: 0.5, win: { say: 'Nobody noticed.' }, lose: { rep: -15, say: 'A visitor filmed it. Scandal.' } } }]
   ]);
-  B('zoo', 'sick_lion', '🦁', 'The old lion is sick', 'Leo, your oldest lion, is sick and not eating. He is the zoo\'s most famous animal.', [
-    ['🩺 The best animal doctors', { cash: -0.5, chance: { p: 0.7, win: { rep: 5, fans: 15, say: 'Leo is roaring again! 🦁' }, lose: { rep: 3, say: 'Leo is resting now. The vets did everything they could. 🕊️' } } }],
-    ['🌴 A quiet, peaceful area for Leo', { cash: -0.3, rep: 6, say: 'Leo is calm and comfortable. ❤️' }],
-    ['💌 Fans send get-well cards', { fans: 25, rep: 4, say: 'Thousands of cards from kids! 💌' }],
-    ['🙈 Keep him on show', { rep: -6, say: 'Visitors were sad to see him like that. 🙈' }]
+  B('zoo', 'animal_rights', '📢', 'Activists say your animals are unhappy', 'Protest at the gate. Videos of a sad elephant.', [
+    ['🌳 Bigger enclosures', { cash: -1.5, rep: 10, say: 'Happier animals, happier visitors.' }],
+    ['🔬 Invite experts to check', { chance: { p: 0.6, win: { rep: 5, say: 'Experts said the animals are fine.' }, lose: { rep: -4, say: 'They found problems.' } } }],
+    ['🐘 Move her to a sanctuary', { rep: 8, fans: 20, say: 'A beautiful move.' }],
+    ['🙅 Ignore them', { rep: -8, say: 'The protest grew.' }]
   ]);
-  B('zoo', 'night_zoo', '🌙', 'Night zoo tours?', 'Many animals are awake at night. You could do flashlight tours after dark!', [
-    ['🔦 Night tours!', { cash: -0.3, extra: [0.25, 20, 'Night tours'], fans: 20, say: 'Glowing eyes everywhere! Spooky and fun! 🔦' }],
-    ['⛺ Sleepovers at the zoo', { cash: -0.4, extra: [0.3, 20, 'Zoo sleepovers'], fans: 30, say: 'Kids sleep next to the aquarium! ⛺' }],
-    ['🌟 Only on full moon nights', { extra: [0.1, 20, 'Full moon tours'], fans: 15, say: 'Magical full moon tours! 🌟' }],
-    ['🙅 Animals need sleep', { rep: 3, say: 'Quiet nights. 🙅' }]
+  B('zoo', 'sick_animal', '🏥', 'Your oldest giraffe is very sick', 'The vet says there\'s a risky operation, or peaceful goodbye.', [
+    ['🩺 Try the operation', { cash: -0.5, chance: { p: 0.5, win: { fans: 30, rep: 5, say: 'She survived. The city cheered.' }, lose: { rep: 2, say: 'She didn\'t make it.' } } }],
+    ['🕊️ Let her go peacefully', { rep: 4, fans: 10, say: 'Visitors left flowers.' }],
+    ['🔬 Call a world expert', { cash: -1, chance: { p: 0.7, win: { fans: 40, rep: 6, say: 'Saved.' }, lose: { rep: 3, say: 'Even the expert couldn\'t save her.' } } }],
+    ['🤫 Keep it private', { say: 'Quietly handled.' }]
   ]);
-  B('zoo', 'monkey_phone', '🐒', 'A monkey stole a tourist\'s phone!', 'A monkey grabbed a tourist\'s phone and is now taking selfies with it at the top of a tree. 🐒📱', [
-    ['🍌 Trade a banana for the phone', { fans: 15, say: 'The monkey made the trade! Fair deal. 🍌' }],
-    ['📸 Post the monkey\'s selfies', { fans: 40, say: 'The monkey selfies went viral! 📸🐒' }],
-    ['🪜 Climb up and get it', { chance: { p: 0.5, win: { fans: 10, say: 'Got it! 🪜' }, lose: { rep: -2, say: 'The monkey threw the phone into the pond. 💦' } } }],
-    ['🎁 Buy the tourist a new phone', { money: -800, rep: 5, say: 'The tourist loved you! 🎁' }]
+  B('zoo', 'breeding_program', '🌍', 'A world breeding program wants you', 'Help save a rare tiger. Very expensive, very important.', [
+    ['🐯 Join', { cash: -1.5, rep: 12, fans: 40, say: 'Your zoo saves species now.' }],
+    ['🤝 Join with a sponsor', { chance: { p: 0.6, win: { cash: -0.5, rep: 12, fans: 40, say: 'A sponsor paid most.' }, lose: { cash: -1.5, rep: 12, say: 'No sponsor. You paid.' } } }],
+    ['💰 Donate instead', { cash: -0.5, rep: 5, say: 'You helped from afar.' }],
+    ['🙅 Too expensive', { say: 'You passed.' }]
   ]);
-  B('zoo', 'elephant_art', '🐘', 'The elephant paints ART', 'Ellie the elephant holds a paintbrush with her trunk and paints colorful pictures. People want to buy them!', [
-    ['🖼️ Sell Ellie\'s paintings', { extra: [0.2, 20, 'Elephant art'], fans: 25, say: 'Ellie\'s art sells for a lot! Money goes to animal care. 🖼️' }],
-    ['🏛️ An art show at a museum', { fans: 35, rep: 5, say: 'Ellie is a famous artist now! 🏛️' }],
-    ['🎨 Kids paint with Ellie', { cash: -0.1, fans: 30, extra: [0.12, 20, 'Paint with Ellie'], say: 'The happiest art class ever! 🎨' }],
-    ['🐘 Let Ellie paint just for fun', { rep: 4, say: 'Ellie is happy. That\'s what matters. 🐘' }]
+  B('zoo', 'visitor_fell', '😱', 'A kid climbed into the gorilla area', 'The gorilla is standing over him. Everyone is screaming.', [
+    ['🧑‍⚕️ Keepers calm the gorilla', { chance: { p: 0.7, win: { rep: 6, say: 'The keepers got him out safely.' }, lose: { rep: -5, say: 'The kid was hurt. Everyone is shaken.' } } }],
+    ['🍎 Distract with food', { chance: { p: 0.6, win: { rep: 5, say: 'It worked. Kid safe.' }, lose: { rep: -5, say: 'Too slow.' } } }],
+    ['🚨 Clear the area', { rep: 2, say: 'Calm, and the kid was saved.' }],
+    ['🔧 Higher fences everywhere', { cash: -1, rep: 5, say: 'Never again.' }]
+  ]);
+  B('zoo', 'night_zoo', '🌙', 'Open the zoo at night?', 'Night tours to see animals when they\'re most awake.', [
+    ['🌙 Monthly night tours', { cash: -0.4, extra: [0.1, 12, 'Night tours'], fans: 20, say: 'A big hit.' }],
+    ['🎉 A special night event', { cash: -0.2, extra: [0.15, 2, 'Night event'], say: 'Sold out.' }],
+    ['🧪 Ask the vets first', { rep: 2, say: 'Only quiet animals. Smart.' }],
+    ['🙅 Animals need rest', { rep: 3, say: 'Keepers appreciated it.' }]
   ]);
 })();

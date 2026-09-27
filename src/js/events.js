@@ -1,6 +1,9 @@
-// All events, part 1: team, business and customers. The rest live in events-more.js, events-fun.js, events-life.js
-// and the events-biz*.js files (events for one kind of business).
+// All events, part 1: your team. The rest live in events-more.js (customers, business, money, social media),
+// events-fun.js (rivals, world news, lucky breaks, mini-games, legendary), events-life.js (your life, shady deals,
+// trouble, goodbyes) and the events-biz*.js files (events for one kind of business).
 // Every event that asks the player something has exactly 4 responses.
+// Style: short and simple. Titles have no emoji, text is 1-2 short sentences, every answer starts with one emoji,
+// and results say what happened in one sentence. tools/check-events.js enforces this.
 //
 // Common fields:
 //   id, cat (see CS.CATS), icon, kind, rarity (common|rare|epic|legendary), w (weight), cd (cooldown weeks),
@@ -52,837 +55,433 @@ var CS = globalThis.CS = globalThis.CS || {};
     hasRole: function (r) { return function (g) { return g.employees.some(function (e) { return e.role === r; }); }; },
     season: function (from, to) { return function (g) { var w = ((g.week - 1) % 52) + 1; return w >= from && w <= to; }; },
     busy: function (g) { var h = g.history[g.history.length - 1]; return h && h.demand > h.capacity * 1.08; },
-    isInd: function (id) { return function (g) { return g.company.industry === id; }; }
+    isInd: function (id) { return function (g) { return g.company.industry === id; }; },
+    person: function (g, c) { c.name = U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST); }
   };
-  var rival = H.rival, amt = H.amt, noCams = H.noCams, season = H.season, busy = H.busy;
-  var FOOD = H.tag('food'), TECH = H.tag('tech');
+  // Short way to write a normal event: CS.E(id, category, icon, title, text, [[answer, effect] x4], extra fields).
+  CS.E = function (id, cat, icon, title, text, choices, o) {
+    var d = { id: id, cat: cat, icon: icon, title: title, text: text };
+    if (choices) d.choices = choices.map(function (c) { return { t: c[0], fx: c[1] }; });
+    if (o) for (var k in o) d[k] = o[k];
+    CS.ev(d);
+  };
+  var E = CS.E, rival = H.rival, noCams = H.noCams, busy = H.busy;
+  var loyalP = function (hi, lo) { return function (g, c) { var e = G.emp(g, c.a); return e && G.has(e, 'loyal') ? hi : lo; }; };
 
   // =====================================================================
   // 👥 TEAM
   // =====================================================================
 
-  ev({ id: 'fight', cat: 'team', icon: '🥊', w: 4, cd: 5, need: 2, who: { a: 'aggressive', b: 'any' },
-    title: '{a} and {b} had a big fight!',
-    text: 'They yelled at each other in front of customers. 😤 Now they won\'t talk.',
-    choices: [
-      { t: '🤝 Help them make up', fx: { chance: { p: 0.6, win: { rel: ['a', 'b', 35], team: 2, say: 'They shook hands! 🤗' }, lose: { rel: ['a', 'b', -10], say: 'It didn\'t work. {b} is still angry.', next: ['feud', 1, 2] } } } },
-      { t: '🪶 Settle it with a pillow fight', fx: { team: 6, rel: ['a', 'b', 20], say: 'Feathers EVERYWHERE. They laughed so hard they forgot the fight. 🪶😂' } },
-      { t: '🚪 Fire {a}', fx: { fire: 'a', say: 'Everyone got the message. No fighting!' } },
-      { t: '🙈 Ignore it', fx: { rel: ['a', 'b', -30], next: ['feud', 1, 1], say: 'You hope it goes away...' } }
-    ] });
-
-  ev({ id: 'feud', cat: 'team', icon: '🔥', chainOnly: true,
-    title: 'The fight got WORSE!',
-    text: '{a} and {b} are still fighting. Now the whole team is picking sides. {b} says: "Me or them!"',
-    choices: [
-      { t: '💵 Give {b} a raise to stay', fx: { raise: ['b', 0.1], a: -6, say: '{b} stays. {a} is jealous.' } },
-      { t: '🚪 Fire {a}', fx: { fire: 'a', team: 3, say: 'Peace at last! 😌' } },
-      { t: '🏕️ Send them on a camping trip together', fx: { cash: -0.2, chance: { p: 0.6, win: { rel: ['a', 'b', 60], say: 'They got lost in the woods together and came back best friends! 🏕️' }, lose: { rel: ['a', 'b', -20], say: 'They argued about the tent all night. ⛺😤' } } } },
-      { t: '👋 Let {b} leave', fx: { quit: 'b', say: '{b} packed up and left.' } }
-    ] });
-
-  ev({ id: 'joined_rival', cat: 'rivals', icon: '🕵️', kind: 'news', chainOnly: true,
-    title: '{name} now works for {rival}!',
-    text: 'Your old worker {name} joined your rival {rival}. They know all your secrets! 😱',
-    choices: [
-      { t: '📞 Ask {name} to come back', fx: { chance: { p: 0.35, win: { hireSpecial: { role: 'front', skill: 70 }, say: 'They came back! "It was SO boring over there." 😅' }, lose: { say: 'They say they\'re happy there. Hmm.', next: ['idea_stolen', 3, 6, 0.5] } } } },
-      { t: '🔐 Change all the secret recipes', fx: { cash: -0.2, say: 'New secrets! Nothing they know works now. 🔐' } },
-      { t: '💐 Send a "good luck" gift', fx: { rep: 2, next: ['idea_stolen', 4, 8, 0.25], say: 'Classy move. People noticed. ✨' } },
-      { t: '🤷 Whatever', fx: { rival: 0.05, next: ['idea_stolen', 3, 6, 0.6], say: 'You move on. {rival} looks happy though... 😬' } }
-    ] });
-
-  ev({ id: 'idea_stolen', cat: 'rivals', icon: '💡', kind: 'news', chainOnly: true,
-    title: '{rival} stole your idea!',
-    text: '{rival} launched a new product. It was {name}\'s idea when they worked for YOU! Customers are going there.',
-    choices: [
-      { t: '⚖️ Sue them', fx: { cash: -1.5, chance: { p: 0.5, win: { cash: 4, rep: 3, rival: -0.15, say: 'You WON in court! 🎉' }, lose: { demand: [0.9, 4, 'Rival copied you'], say: 'You lost the case. 😩' } } } },
-      { t: '🚀 Make a better version', fx: { cash: -0.8, fans: 12, rival: -0.05, say: 'Yours is better! Customers noticed. 😎' } },
-      { t: '😂 Post "Copying is a compliment"', fx: { fans: 15, rep: 2, say: 'Everyone laughed at {rival}. Savage but classy. 🔥' } },
-      { t: '🤷 Let it go', fx: { demand: [0.88, 5, 'Rival copied you'], rival: 0.08, say: 'Some customers go to {rival} for a while.' } }
-    ] });
-
-  ev({ id: 'late', cat: 'team', icon: '⏰', kind: 'chat', w: 3, who: { a: 'unreliable' }, from: 'a',
-    title: '{a} is late again',
-    msgs: ['sorry boss 😬', 'overslept AGAIN', 'be there in 20 min!!'],
-    choices: [
-      { t: '💬 "Is everything okay?"', fx: { chance: { p: 0.5, win: { loyal: { a: 15 }, reliable: { a: 12 }, say: '{a} had problems at home. They promise to do better. ❤️' }, lose: { say: '{a} says thanks... and is late again on Friday. 🙄' } } } },
-      { t: '⏰ "I\'m buying you 5 alarm clocks"', fx: { money: -60, reliable: { a: 20 }, a: 4, say: 'RING RING RING RING RING. {a} is never late again. 😂' } },
-      { t: '⚠️ "Last warning!"', fx: { reliable: { a: 12 }, a: -10, say: '{a} is on time now. Not happy about it though.' } },
-      { t: '🚪 "You\'re fired."', fx: { fire: 'a', say: 'Bye {a}! 👋' } }
-    ] });
-
-  ev({ id: 'raise_request', cat: 'team', icon: '💵', kind: 'chat', w: 4, who: { a: 'greedy' }, from: 'a',
-    title: '{a} wants more money',
-    msgs: ['hey boss 👋', 'can I get a raise?', 'I work really hard 💪'],
-    choices: [
-      { t: '💵 "Sure! +10%"', fx: { raise: ['a', 0.1], say: '{a} is super happy! 😁' } },
-      { t: '🤏 "I can do +5%"', fx: { raise: ['a', 0.05], say: '{a} takes it.' } },
-      { t: '📅 "Ask me in 2 months"', fx: { next: ['raise_promise', 8, 8], say: '{a} will remember that...' } },
-      { t: '❌ "No."', fx: { a: -15, loyal: { a: -10 }, next: ['resign', 2, 5, 0.4], say: '{a} is sad. 😞 They might look for a new job.' } }
-    ] });
-
-  ev({ id: 'raise_promise', cat: 'team', icon: '📅', kind: 'chat', chainOnly: true, from: 'a',
-    title: '{a} remembers your promise',
-    msgs: ['hey boss', 'it\'s been 2 months 👀', 'what about my raise?'],
-    choices: [
-      { t: '✅ "A promise is a promise!"', fx: { raise: ['a', 0.1], loyal: { a: 15 }, say: '{a} trusts you now. 🙌' } },
-      { t: '🎁 "How about a big bonus?"', fx: { bonus: 'a', say: '{a} takes the bonus. Not bad! 💰' } },
-      { t: '🍕 "Free pizza forever?"', fx: { money: -80, a: 5, say: '{a} thinks about it... and says yes?! 🍕' } },
-      { t: '🙊 "Hmm... wait longer?"', fx: { a: -25, loyal: { a: -20 }, next: ['resign', 1, 1, 0.5], say: '{a} is really upset. 😠' } }
-    ] });
-
-  ev({ id: 'dating', cat: 'team', icon: '💘', w: 2, need: 3, who: { a: 'any', b: 'any' },
-    cond: function (g) { return Object.keys(g.dating).length < 3; },
-    title: '{a} and {b} are dating!',
-    text: 'Everyone knows. They hold hands in the break room. 🥰 Is that okay?',
-    choices: [
-      { t: '🎉 "Congrats!"', fx: { date: true, a: 8, b: 8, next: ['breakup', 6, 14, 0.35], say: 'They are so happy! 💕' } },
-      { t: '💐 Buy them flowers', fx: { money: -50, date: true, a: 12, b: 12, team: 2, say: 'Cutest couple award goes to... 💐' } },
-      { t: '🚫 "No dating at work!"', fx: { a: -12, b: -12, team: -2, say: 'They are sad. They date anyway. 🙃' } },
-      { t: '🤐 Stay out of it', fx: { date: true, next: ['breakup', 5, 12, 0.3], say: 'Love is in the air! 💘' } }
-    ] });
-
-  ev({ id: 'breakup', cat: 'team', icon: '💔', chainOnly: true, start: { breakup: true },
-    title: '{a} and {b} broke up',
-    text: 'It ended badly. 💔 They sit far apart and the team picked sides.',
-    choices: [
-      { t: '📆 Give them different shifts', fx: { cash: -0.05, rel: ['a', 'b', -20], say: 'Out of sight, out of mind.' } },
-      { t: '🎳 Team bowling night!', fx: { cash: -0.3, team: 8, say: 'Bowling helped! 🎳' } },
-      { t: '🍦 Ice cream for both of them', fx: { money: -20, a: 8, b: 8, say: 'Ice cream fixes broken hearts. A little. 🍦' } },
-      { t: '🤷 Let them deal with it', fx: { a: -15, b: -15, rel: ['a', 'b', -60], say: 'The office is freezing cold. 🥶' } }
-    ] });
-
-  ev({ id: 'resign', cat: 'team', icon: '📝', chainOnly: true,
-    title: '{a} wants to quit!',
-    text: '{a} gives you a letter. "I found a better job. Bye!" 😢',
-    choices: [
-      { t: '💰 Offer 20% more money', fx: { chance: { p: function (g, c) { var e = G.emp(g, c.a); return e && G.has(e, 'loyal') ? 0.9 : 0.6; }, win: { raise: ['a', 0.2], a: 30, say: '{a} rips up the letter! 🎉' }, lose: { quit: 'a', say: '{a} already said yes to the new job.' } } } },
-      { t: '💬 Ask what\'s wrong', fx: { chance: { p: 0.35, win: { a: 30, loyal: { a: 10 }, say: 'You talked it out. {a} will stay! 🤗' }, lose: { quit: 'a', say: '{a} was unhappy for a long time. They leave.' } } } },
-      { t: '🥺 Beg dramatically on your knees', fx: { chance: { p: 0.45, win: { a: 25, team: 3, say: '{a} laughed so hard they decided to stay! 😂' }, lose: { quit: 'a', say: '{a} filmed it... and still left. 🎥' } } } },
-      { t: '👋 "Good luck!"', fx: { quit: 'a', say: '{a} leaves on good terms.' } }
-    ] });
-
-  ev({ id: 'jealous', cat: 'team', icon: '😒', chainOnly: true,
-    title: '{a} is jealous!',
-    text: '{a} is mad that {b} got promoted instead of them. "Not fair!" 😤',
-    choices: [
-      { t: '💬 Explain why', fx: { chance: { p: 0.55, win: { say: '{a} understands. Phew.' }, lose: { a: -10, rel: ['a', 'b', -25], say: '{a} doesn\'t believe you.' } } } },
-      { t: '🤞 "You\'re next!"', fx: { a: 8, next: ['promotion_request', 6, 12], say: '{a} will hold you to that!' } },
-      { t: '🏅 Give {a} a funny title', fx: { a: 6, say: '{a} is now "Chief Vibes Officer". They love it. 😎' } },
-      { t: '😑 "Get over it"', fx: { a: -18, loyal: { a: -10 }, rel: ['a', 'b', -35], say: '{a} slams the door. 🚪💥' } }
-    ] });
-
-  ev({ id: 'theft', cat: 'team', icon: '🫳', w: 2, minWeek: 4, who: { a: 'greedy' }, cond: noCams, init: amt(0.15), start: { cash: -0.15 },
-    title: 'Money is missing! 😱',
-    text: '{amt} is gone from the cash register. The camera is blurry... but it looks like {a}!',
-    choices: [
-      { t: '🔍 Ask {a} about it', fx: { chance: { p: function (g, c) { var e = G.emp(g, c.a); return e && G.has(e, 'greedy') ? 0.85 : 0.3; }, win: { fire: 'a', cash: 0.07, say: '{a} said sorry and paid half back. You fired them.' }, lose: { a: -20, loyal: { a: -20 }, say: 'It wasn\'t {a}! They are very hurt. 😢' } } } },
-      { t: '✨ Set a glitter trap', fx: { chance: { p: 0.6, win: { fire: 'a', team: 4, say: 'The next day {a} was COVERED in glitter. Caught! ✨😂' }, lose: { team: -2, say: 'The only person covered in glitter... was you. ✨🤦' } } } },
-      { t: '📹 Buy better cameras', fx: { cash: -0.2, say: 'No more missing money! Probably.' } },
-      { t: '🤷 Forget it', fx: { next: ['theft_again', 3, 6, 0.5], say: 'You let it go.' } }
-    ] });
-
-  ev({ id: 'theft_again', cat: 'team', icon: '🫳', chainOnly: true, start: { cash: -0.3 },
-    title: 'MORE money is missing!',
-    text: 'The thief is back. Letting it go last time was a mistake. 😬',
-    choices: [
-      { t: '📹 Buy cameras NOW', fx: { cash: -0.2, say: 'Nobody will steal again. 📹' } },
-      { t: '🐕 Get a guard dog', fx: { cash: -0.1, pet: '🐕', team: 3, say: 'Meet Tank, the guard dog. He is a very good boy. 🐕' } },
-      { t: '👮 Call the police', fx: { rep: 1, team: -3, say: 'The police are looking into it. Everyone is nervous.' } },
-      { t: '🔒 Lock the register', fx: { money: -40, say: 'Click. Should have done that from the start. 🔒' } }
-    ] });
-
-  ev({ id: 'spy', cat: 'rivals', icon: '🕵️', w: 1.5, minWeek: 8, need: 4, rarity: 'rare', who: { a: 'greedy', b: 'any' }, init: rival,
-    title: '{a} is a SPY! 🕵️',
-    text: '{b} found secret messages. {a} is sending your plans to {rival}!',
-    choices: [
-      { t: '🚪 Fire them right now', fx: { fire: 'a', loyal: { b: 10 }, say: 'Security walks {a} out. 👮' } },
-      { t: '🎭 Send them FAKE plans', fx: { chance: { p: 0.6, win: { fans: 15, fire: 'a', rival: -0.15, say: '{rival} fell for it and wasted tons of money! 😂 Then you fired {a}.' }, lose: { demand: [0.9, 4, 'Plans leaked'], say: '{rival} figured it out. 😩' } } } },
-      { t: '🔄 Make {a} a DOUBLE agent', fx: { chance: { p: 0.5, win: { rival: -0.2, a: 10, say: '{a} now spies on {rival} for YOU! 🕵️🕵️' }, lose: { rival: 0.1, quit: 'a', say: '{a} ran off to {rival}. Triple agent?! 😵' } } } },
-      { t: '🏅 Fire them + reward {b}', fx: { bonus: 'b', fire: 'a', team: 3, say: 'Everyone sees that honesty pays! ✨' } }
-    ] });
-
-  ev({ id: 'broke_equipment', cat: 'team', icon: '💥', w: 3, who: { a: 'front' }, init: amt(0.35),
-    title: '{a} broke something expensive!',
-    text: 'CRASH! 💥 {a} dropped an important machine. A new one costs {amt}.',
-    choices: [
-      { t: '💳 Company pays', fx: { cash: -0.35, loyal: { a: 8 }, say: 'Accidents happen. {a} is thankful. 🙏' } },
-      { t: '🧾 {a} pays half', fx: { cash: -0.17, a: -20, say: '{a} pays. They are NOT happy.' } },
-      { t: '🩹 Fix it with duct tape', fx: { chance: { p: 0.5, win: { say: 'It WORKS! Duct tape fixes everything. 🩹😎' }, lose: { capacity: [0.85, 3, 'Duct-taped machine'], say: 'It works... badly. 🐢' } } } },
-      { t: '🔧 Work without it', fx: { capacity: [0.85, 3, 'Broken machine'], say: 'Work is slower for 3 weeks. 🐢' } }
-    ] });
-
-  ev({ id: 'customer_argument', cat: 'team', icon: '🗯️', w: 3, who: { a: 'aggressive' },
-    title: '{a} yelled at a customer!',
-    text: 'A rude customer yelled at {a}. {a} yelled back! People were filming. 📱',
-    choices: [
-      { t: '🛡️ Stand up for {a}', fx: { a: 10, loyal: { a: 10 }, rep: -2, next: ['complaint_viral', 1, 1, 0.35], say: 'Your team loves you. The customer posts an angry review.' } },
-      { t: '🙏 Say sorry to the customer', fx: { a: -8, rep: 1, say: 'The customer is happy. {a} feels bad.' } },
-      { t: '🧘 Send {a} to a calm-down class', fx: { cash: -0.08, reliable: { a: 5 }, say: '{a} now says "woosah" before every sentence. 🧘' } },
-      { t: '🚪 Fire {a}', fx: { fire: 'a', rep: 1, say: 'The customer is happy. The team is nervous. 😬' } }
-    ] });
-
-  ev({ id: 'star', cat: 'team', icon: '🌟', w: 3, who: { a: 'star' },
-    title: '{a} is a superstar!',
-    text: '{a} is doing the work of TWO people! Customers ask for {a} by name. 🤩',
-    choices: [
-      { t: '💰 Give a bonus', fx: { bonus: 'a', say: '{a} is beaming! 😁' } },
-      { t: '🎖️ Promote {a}', fx: { promote: 'a', say: 'Congrats {a}! 🎉' } },
-      { t: '🖼️ Hang their photo on the wall', fx: { a: 8, team: 2, fans: 3, say: '"Worker of the Month: {a}" Everyone wants to be next! 🖼️' } },
-      { t: '👏 Say "Great job!"', fx: { a: 4, say: '{a} smiles.' } }
-    ] });
-
-  ev({ id: 'promotion_request', cat: 'team', icon: '🪜', kind: 'chat', w: 2, minWeek: 6, who: { a: 'ambitious' }, from: 'a',
-    title: '{a} wants a promotion',
-    msgs: ['boss, can we talk? 🙂', 'I want to move up', 'I\'m ready for more!'],
-    choices: [
-      { t: '🎖️ "You got it!"', fx: { promote: 'a', next: ['out_of_depth', 2, 5, 0.25], say: '{a} got promoted! 🥳' } },
-      { t: '📚 "Take a course first"', fx: { cash: -0.15, skill: { a: 8 }, a: 4, say: '{a} learned a lot! Skill +8 📈' } },
-      { t: '🎯 "Beat a challenge first!"', fx: { chance: { p: 0.5, win: { promote: 'a', skill: { a: 3 }, say: '{a} crushed the challenge and got the promotion! 🏆' }, lose: { a: -5, say: '{a} almost did it. Next time! 💪' } } } },
-      { t: '⏳ "Not yet"', fx: { a: -12, next: ['resign', 3, 8, 0.3], say: '{a} is disappointed. 😔' } }
-    ] });
-
-  ev({ id: 'out_of_depth', cat: 'boss', icon: '🫠', chainOnly: true,
-    title: '{a} is struggling',
-    text: 'Since the promotion, {a} is confused and making mistakes. 😵',
-    choices: [
-      { t: '🧑‍🏫 Get {a} a coach', fx: { cash: -0.2, skill: { a: 12 }, say: '{a} is getting better every day! 💪' } },
-      { t: '🤝 Give {a} a buddy', fx: { team: 2, skill: { a: 6 }, say: 'Teamwork makes the dream work! 🤝' } },
-      { t: '⬇️ Move {a} back down', fx: { demote: 'a', say: 'Awkward... but it helps.' } },
-      { t: '⏳ Give it time', fx: { team: -4, capacity: [0.93, 4, 'Team confused'], say: 'Things are a bit messy for a while.' } }
-    ] });
-
-  ev({ id: 'rumors', cat: 'team', icon: '🗣️', w: 2, need: 3, who: { a: 'any', b: 'any' },
-    title: '{a} is spreading rumors',
-    text: '{a} is telling everyone that {b} will be fired soon. It\'s not true! {b} is upset. 😢',
-    choices: [
-      { t: '📣 Tell everyone the truth', fx: { b: 10, a: -6, say: 'Rumor stopped! {b} feels better.' } },
-      { t: '🤫 Talk to {a} alone', fx: { rel: ['a', 'b', 5], say: '{a} promises to stop.' } },
-      { t: '🪴 Start a FUNNY rumor instead', fx: { team: 5, say: 'Now everyone thinks the office plant is a secret millionaire. 🪴💰' } },
-      { t: '🙈 Ignore it', fx: { b: -15, rel: ['a', 'b', -30], say: 'The rumor keeps growing... 😬' } }
-    ] });
-
-  ev({ id: 'best_friends', cat: 'team', icon: '🫶', w: 2, need: 2, who: { a: 'friendly', b: 'any' },
-    title: '{a} and {b} are BEST friends!',
-    text: 'They eat lunch together, laugh all day and even wear matching socks. 🧦🧦',
-    choices: [
-      { t: '👯 Let them work together', fx: { rel: ['a', 'b', 50], capacity: [1.05, 3, 'Best-friend teamwork'], say: 'They work faster together! 🚀' } },
-      { t: '🧦 Matching socks for EVERYONE', fx: { money: -60, team: 6, say: 'The whole team is a sock family now. 🧦❤️' } },
-      { t: '📸 Post a friendship photo', fx: { fans: 6, rel: ['a', 'b', 40], say: 'Everyone loves a friendship story! 📸' } },
-      { t: '😐 Split them up (too much chatting)', fx: { a: -8, b: -8, capacity: [1.03, 2, 'Less chatting'], say: 'Less talking, a bit more work.' } }
-    ] });
-
-  ev({ id: 'hot_streak', cat: 'team', icon: '📈', w: 2, who: { a: 'front' },
-    title: '{a} found a secret trick!',
-    text: '{a} figured out a way to work twice as fast. "It\'s all in the wrist!" 🚀',
-    choices: [
-      { t: '📚 Teach it to everyone', fx: { capacity: [1.08, 4, 'Secret trick'], skill: { a: 3 }, say: 'Everyone is faster now! 🚀' } },
-      { t: '💰 Pay {a} for the idea', fx: { bonus: 'a', equip: 0.02, say: 'Now it\'s company magic forever. ✨' } },
-      { t: '🏁 Make it a speed contest', fx: { team: 5, capacity: [1.05, 2, 'Speed contest'], say: 'Speed contest! Everyone is racing. 🏁' } },
-      { t: '👍 Nice, keep going', fx: { skill: { a: 3 }, say: '{a} keeps crushing it. Skill +3!' } }
-    ] });
-
-  ev({ id: 'team_quit_threat', cat: 'team', icon: '🪧', w: function (g) { return G.avgMorale(g) < 42 ? 6 : 0; }, cd: 10, need: 4,
-    title: 'The team is angry!',
-    text: 'Your workers say they will ALL quit if things don\'t get better. 😡',
-    choices: [
-      { t: '💵 Everyone gets +5%', fx: { teamRaise: 0.05, say: 'Crisis over! Everyone is happier. 😌' } },
-      { t: '🎁 Everyone gets a bonus', fx: { teamBonus: true, team: 5, say: 'Money helps! 💸' } },
-      { t: '🛝 Buy a slide for the office', fx: { cash: -0.6, team: 14, say: 'Nobody is angry on a SLIDE! 🛝😂' } },
-      { t: '😤 "Go ahead, quit!"', fx: { run: function (g) { var gone = []; g.employees.slice().forEach(function (e) { if (e.morale < 40 && U.chance(0.35)) { gone.push(G.first(e)); G.removeEmp(g, e, 'quit', true); } }); return gone.length ? gone.join(', ') + ' walked out! 🚶🚶' : 'Nobody left... this time.'; } } }
-    ] });
-
-  ev({ id: 'day_off', cat: 'team', icon: '💒', kind: 'chat', w: 3, who: { a: 'any' }, from: 'a',
-    title: '{a} needs a day off',
-    msgs: ['hi boss!! 😊', 'my sister is getting married on friday 💒', 'can I have the day off? 🙏'],
-    choices: [
-      { t: '🎉 "Of course! Have fun!"', fx: { a: 12, loyal: { a: 8 }, capacity: [0.97, 1, 'Someone on a day off'], say: '{a} sends you a wedding cake photo! 🎂' } },
-      { t: '🎁 "Take a gift from us!"', fx: { money: -80, a: 18, loyal: { a: 12 }, say: 'The bride LOVED the gift. {a} is so proud. 💝' } },
-      { t: '🕐 "Half a day?"', fx: { a: -3, say: '{a} runs to the wedding in work clothes. 🏃💒' } },
-      { t: '😐 "Sorry, we\'re too busy"', fx: { a: -15, loyal: { a: -10 }, say: '{a} is very sad. 😞' } }
-    ] });
-
-  ev({ id: 'sick', cat: 'team', icon: '🤒', kind: 'chat', w: 3, who: { a: 'any' }, from: 'a',
-    title: '{a} feels sick',
-    msgs: ['boss I feel terrible 🤒', 'achoo!! 🤧', 'can I stay home?'],
-    choices: [
-      { t: '🛌 "Stay home and rest!"', fx: { loyal: { a: 6 }, capacity: [0.96, 1, 'Someone is sick'], say: '{a} gets better fast. 💚' } },
-      { t: '🍲 "I\'ll send you soup!"', fx: { money: -25, a: 10, loyal: { a: 10 }, say: 'Best boss ever! The soup worked. 🍲' } },
-      { t: '💻 "Work from bed?"', fx: { a: -5, say: '{a} answers emails in pajamas. 🤧💻' } },
-      { t: '😬 "Come in anyway"', fx: { chance: { p: 0.5, win: { a: -8, say: '{a} came in. They look awful. 🥴' }, lose: { team: -5, capacity: [0.85, 2, 'Half the team is sick'], say: 'Now HALF the team is sick! 🤧🤧🤧' } } } }
-    ] });
-
-  ev({ id: 'idea', cat: 'team', icon: '💡', kind: 'chat', w: 2, who: { a: 'creative' }, from: 'a',
-    init: function (g, c) { c.thing = U.pick(['a glow-in-the-dark menu', 'a secret menu', 'a loyalty card with stickers', 'rainbow packaging', 'a mascot costume', 'a late-night opening', 'a pet-friendly day']); },
-    title: '{a} has an idea!',
-    msgs: ['BOSS 💡💡💡', 'what if we tried {thing}?!', 'trust me it will be amazing'],
-    choices: [
-      { t: '🚀 "Let\'s try it!"', fx: { cash: -0.5, a: 10, chance: { p: 0.55, win: { demand: [1.15, 6, 'Great new idea'], fans: 10, say: 'Customers LOVE it! 🤩' }, lose: { say: 'Nobody cared. Oh well! 🤷' } } } },
-      { t: '🧪 "Test it for one day"', fx: { cash: -0.1, chance: { p: 0.5, win: { demand: [1.07, 4, 'Small new idea'], say: 'The test worked! 👍' }, lose: { say: 'The test flopped, but it was cheap. 😅' } } } },
-      { t: '🤪 "Make it even CRAZIER!"', fx: { cash: -0.6, chance: { p: 0.35, win: { viral: [1, 4], fans: 15, say: 'It was SO crazy it went viral! 🤯' }, lose: { rep: -2, say: 'Too crazy. People were confused. 😵' } } } },
-      { t: '🙅 "Maybe later"', fx: { a: -6, say: '{a} writes it in their notebook anyway. 📓' } }
-    ] });
-
-  ev({ id: 'training_request', cat: 'team', icon: '📚', kind: 'chat', w: 2, who: { a: 'ambitious' }, from: 'a',
-    title: '{a} wants to learn',
-    msgs: ['there\'s a cool course online 📚', 'can the company pay for it?', 'I\'ll get way better!'],
-    choices: [
-      { t: '✅ "Yes, go for it!"', fx: { cash: -0.15, skill: { a: 10 }, a: 8, say: '{a} learned so much! Skill +10 🧠' } },
-      { t: '👥 "Take the whole team!"', fx: { cash: -0.5, run: function (g) { g.employees.forEach(function (e) { e.skill += 4; }); return 'Everyone got smarter! Skill +4 for all. 🎓'; } } },
-      { t: '📺 "Watch free videos instead"', fx: { skill: { a: 3 }, say: '{a} learned a bit from videos. 📺' } },
-      { t: '❌ "Too expensive"', fx: { a: -6, say: '{a} is a bit disappointed.' } }
-    ] });
-
-  ev({ id: 'pizza_party', cat: 'team', icon: '🍕', kind: 'chat', w: 2, need: 3, who: { a: 'friendly' }, from: 'a',
-    title: 'Pizza party?',
-    msgs: ['boss!! 🍕', 'the team worked super hard this month', 'pizza party??? pleeeease'],
-    choices: [
-      { t: '🍕 "PIZZA TIME!"', fx: { cash: -0.08, team: 8, say: 'Best Friday ever! 🍕🎉' } },
-      { t: '🎮 "Pizza AND video games!"', fx: { cash: -0.2, team: 14, say: 'Pizza AND video games?! Legendary. 🎮🍕' } },
-      { t: '🥗 "How about salad?"', fx: { team: -2, say: 'The team laughs... a little sadly. 🥗' } },
-      { t: '❌ "Nope"', fx: { team: -4, say: 'Everybody is a bit disappointed.' } }
-    ] });
-
-  ev({ id: 'overworked', cat: 'team', icon: '😩', kind: 'chat', w: 5, cond: busy, who: { a: 'front' }, from: 'a',
-    title: 'The team is exhausted',
-    msgs: ['boss we are SO busy 😩', 'there are too many customers!', 'we need more people!!'],
-    choices: [
-      { t: '⏰ Pay for extra hours', fx: { cash: -0.3, capacity: [1.15, 2, 'Extra hours'], say: 'More work gets done! 💪' } },
-      { t: '👔 "I\'ll help out myself!"', fx: { capacity: [1.08, 1, 'Boss helping'], team: 6, say: 'The boss is working too! Everyone cheers. 👔💪' } },
-      { t: '🤝 "I\'ll hire more soon!"', fx: { team: -2, say: 'Tip: Go to the Team tab to hire people!' } },
-      { t: '😤 "Just work harder!"', fx: { team: -8, capacity: [1.05, 1, 'Pushing hard'], say: 'They work harder... and grumble. 😒' } }
-    ] });
-
-  ev({ id: 'anniversary', cat: 'team', icon: '🎂', w: 1, who: { a: 'veteran' },
-    title: '{a}\'s 1-year work birthday!',
-    text: '{a} has worked here for over a year! 🎉',
-    choices: [
-      { t: '🎂 Cake for everyone!', fx: { money: -60, a: 8, team: 3, say: 'Happy work birthday, {a}! 🎂' } },
-      { t: '💰 Loyalty bonus', fx: { bonus: 'a', loyal: { a: 10 }, say: '{a} feels super valued. 💖' } },
-      { t: '🏆 Give a golden trophy', fx: { money: -40, a: 10, say: 'The trophy says "Legend". {a} cried a little. 🏆' } },
-      { t: '👍 Say congrats', fx: { a: 3, say: '"Thanks boss!" 😊' } }
-    ] });
-
-  ev({ id: 'talent_show', cat: 'team', icon: '🎤', w: 1.5, need: 3, who: { a: 'funny' },
-    title: 'Talent show?',
-    text: 'The team wants to do a talent show after work! 🎤',
-    choices: [
-      { t: '🎭 Let\'s do it!', fx: { cash: -0.05, team: 6, chance: { p: 0.35, win: { viral: [0.5, 2], say: '{a} did an AMAZING magic trick. Someone posted it! 🪄' }, lose: { say: 'Everyone had fun! 🎉' } } } },
-      { t: '🎟️ Sell tickets to customers', fx: { team: 4, extra: [0.08, 1, 'Talent show tickets'], fans: 6, say: 'Customers paid to watch! 🎟️' } },
-      { t: '🕺 YOU perform too!', fx: { team: 10, chance: { p: 0.5, win: { fans: 12, say: 'Your dance moves were... unforgettable. 🕺🔥' }, lose: { team: -3, say: 'You fell off the stage. Everyone clapped anyway. 😅' } } } },
-      { t: '🙅 Not at work', fx: { team: -3, say: 'Maybe next time.' } }
-    ] });
-
-  ev({ id: 'secret_skill', cat: 'team', icon: '🤹', w: 1.5, who: { a: 'any' },
-    init: function (g, c) { c.skillx = U.pick(['can juggle 6 balls', 'speaks 5 languages', 'is a chess champion', 'was a child actor', 'can draw amazing portraits', 'can beatbox']); },
-    title: '{a} has a secret talent!',
-    text: 'Fun fact: {a} {skillx}! 🤩',
-    choices: [
-      { t: '🎪 Show it to customers', fx: { fans: 8, a: 5, say: 'Customers LOVE it! 👏' } },
-      { t: '🎥 Film it for social media', fx: { chance: { p: 0.3, win: { viral: [0.5, 2], say: 'The video went viral! 🔥' }, lose: { fans: 5, say: 'A nice little video. 📱' } } } },
-      { t: '🎩 Make it {a}\'s job title', fx: { a: 8, say: '{a} is now "Official Office Entertainer". 🎩' } },
-      { t: '😄 Cool!', fx: { a: 2, say: 'Nice to know! 😄' } }
-    ] });
-
-  ev({ id: 'phone_addict', cat: 'team', icon: '📱', w: 2, who: { a: 'lazy' },
-    title: '{a} is always on their phone',
-    text: 'Every time you look, {a} is scrolling videos. 📱😴',
-    choices: [
-      { t: '📵 No phones at work!', fx: { team: -3, capacity: [1.05, 4, 'No phones rule'], say: 'Work gets faster. People miss their phones.' } },
-      { t: '💬 Talk to {a}', fx: { chance: { p: 0.5, win: { reliable: { a: 10 }, say: '{a} puts the phone away. 👍' }, lose: { say: '{a} just hides it better now. 🙄' } } } },
-      { t: '📱 Make {a} run your social media', fx: { fans: 10, a: 8, say: '{a} is GREAT at it! Finally, useful scrolling. 📱🔥' } },
-      { t: '🤷 Ignore it', fx: { capacity: [0.97, 3, 'Phone scrolling'], say: 'A little slower... but whatever.' } }
-    ] });
-
-  ev({ id: 'mentor', cat: 'team', icon: '🧑‍🏫', w: 1.5, need: 3, who: { a: 'star', b: 'any' },
-    title: '{a} wants to teach {b}',
-    text: '{a} is really good at the job. They want to teach {b} their tricks. It will slow {a} down a bit.',
-    choices: [
-      { t: '👍 Great idea!', fx: { skill: { b: 10 }, rel: ['a', 'b', 25], capacity: [0.97, 2, 'Training time'], say: '{b} learned a lot! Skill +10 🎓' } },
-      { t: '🏫 Start a mini school for everyone', fx: { cash: -0.2, run: function (g) { g.employees.forEach(function (e) { e.skill += 3; }); return 'The company school is open! Everyone +3 skill. 🏫'; } } },
-      { t: '💰 Pay {a} extra to teach', fx: { raise: ['a', 0.05], skill: { b: 12 }, say: 'Best teacher ever! 🍎' } },
-      { t: '🙅 {a} should just work', fx: { a: -5, say: 'Okay...' } }
-    ] });
-
-  ev({ id: 'poached', cat: 'rivals', icon: '🎣', w: 2, minWeek: 8, who: { a: 'star' }, init: rival,
-    title: '{rival} wants to steal {a}!',
-    text: '{rival} offered {a} 30% more money. {a} came to you first. 😬',
-    choices: [
-      { t: '💰 Match the offer', fx: { raise: ['a', 0.3], loyal: { a: 15 }, say: '{a} stays! 🙌' } },
-      { t: '❤️ "We\'re a family!"', fx: { chance: { p: function (g, c) { var e = G.emp(g, c.a); return e && e.loyalty > 60 ? 0.8 : 0.3; }, win: { loyal: { a: 5 }, say: '{a} says no to {rival}! 🥹' }, lose: { quit: 'a', rival: 0.05, say: '{a} goes to {rival}. 😢' } } } },
-      { t: '🎖️ Promote {a} instead', fx: { promote: 'a', loyal: { a: 10 }, say: 'A promotion beats more money! {a} stays. 🎖️' } },
-      { t: '👋 Let {a} go', fx: { quit: 'a', rival: 0.05, say: '{a} leaves for {rival}.' } }
-    ] });
-
-  ev({ id: 'lottery_win', cat: 'team', icon: '🎰', w: 0.6, rarity: 'rare', who: { a: 'any' },
-    title: '{a} won the lottery! 🎰',
-    text: '{a} won $2 million! They are screaming and dancing on the tables. 💃',
-    choices: [
-      { t: '🥳 Throw a party for {a}', fx: { cash: -0.1, team: 8, chance: { p: 0.6, win: { quit: 'a', say: '{a} retires to a beach. They send a thank-you postcard. 🏖️' }, lose: { a: 20, say: '{a} decides to stay! "I love this job!" 🥹' } } } },
-      { t: '💼 Ask {a} to invest in the company', fx: { chance: { p: 0.5, win: { cash: 3, say: '{a} invests! Cha-ching! 💰' }, lose: { quit: 'a', say: '{a} laughs and quits. 😂' } } } },
-      { t: '🍕 "Buy everyone pizza?"', fx: { team: 12, say: '{a} bought pizza for the WHOLE street. Legend. 🍕🍕🍕' } },
-      { t: '😐 "Back to work, please"', fx: { a: -5, chance: { p: 0.5, win: { say: '{a} shrugs and keeps working. Rich AND humble. 😎' }, lose: { quit: 'a', say: '{a} quit on the spot. 💸👋' } } } }
-    ] });
-
-  ev({ id: 'nap_pod', cat: 'team', icon: '😴', kind: 'chat', w: 1.5, who: { a: 'lazy' }, from: 'a',
-    title: '{a} has a suggestion',
-    msgs: ['boss hear me out 🙏', 'NAP PODS', 'we\'d work way better after a nap 😴'],
-    choices: [
-      { t: '😴 "Buy nap pods!"', fx: { cash: -0.4, team: 6, capacity: [1.04, 8, 'Well rested team'], say: 'Everyone is so rested! 😌' } },
-      { t: '🛋️ "One beanbag chair."', fx: { money: -90, team: 3, say: 'There is now a line for the beanbag. 😂' } },
-      { t: '☕ "Drink coffee instead"', fx: { a: -3, say: '{a} sighs and grabs a coffee.' } },
-      { t: '😂 "Nice try"', fx: { team: 1, say: 'It was worth a shot. 😴' } }
-    ] });
-
-  ev({ id: 'new_worker_great', cat: 'team', icon: '🐣', w: 2, who: { a: 'new' },
-    title: 'New worker {a} is amazing!',
-    text: '{a} just started, and everyone already loves them. 🐣✨',
-    choices: [
-      { t: '🎉 Welcome party!', fx: { money: -50, a: 10, team: 3, say: 'Welcome to the family, {a}! 🎉' } },
-      { t: '🧑‍🏫 Give extra training', fx: { cash: -0.05, skill: { a: 8 }, say: '{a} is learning fast! 📈' } },
-      { t: '🏷️ Give a cool nickname', fx: { a: 6, say: 'Everyone calls {a} "The Rookie" now. 😎' } },
-      { t: '👍 Great!', fx: { a: 3, say: 'Good hire! 👍' } }
-    ] });
-
-  ev({ id: 'secret_santa', cat: 'team', icon: '🎁', w: 3, need: 3, cd: 50, cond: season(48, 52),
-    title: 'Holiday gift swap! 🎁',
-    text: 'The team wants to do a holiday gift swap. Should the company add a gift for everyone?',
-    choices: [
-      { t: '🎁 Yes! Gifts for all', fx: { cash: -0.2, team: 10, say: 'Everyone loves their gift! 🎄' } },
-      { t: '🎅 Dress up as Santa', fx: { cash: -0.05, team: 8, fans: 6, say: 'Ho ho ho! Customers took photos with Santa Boss. 🎅' } },
-      { t: '🎄 Just the swap', fx: { team: 4, say: '{company} has the best holiday vibes. ✨' } },
-      { t: '💸 Holiday bonus instead', fx: { teamBonus: true, say: 'Money! The best gift. 💸' } }
-    ] });
-
-  // =====================================================================
-  // 🏪 BUSINESS
-  // =====================================================================
-
-  ev({ id: 'flood', cat: 'business', icon: '🌊', w: 1.5, cd: 20,
-    title: 'The shop is flooding!',
-    text: 'A pipe broke in the night. There is water EVERYWHERE! 💦',
-    choices: [
-      { t: '🚨 Emergency plumber', fx: { cash: -0.7, say: 'Fixed by morning! 🔧' } },
-      { t: '🩹 Cheap quick fix', fx: { cash: -0.25, next: ['flood_again', 3, 8, 0.45], say: 'The leak stopped. For now...' } },
-      { t: '🏄 Turn it into a pool party', fx: { cash: -0.3, fans: 15, team: 5, say: 'SPLASH DAY! Then you fixed it. 🏄💦' } },
-      { t: '🔒 Close a week, fix it right', fx: { cash: -0.3, closed: [1, 'Closed for repairs'], say: 'You are closed next week.' } }
-    ] });
-
-  ev({ id: 'flood_again', cat: 'business', icon: '🌊', chainOnly: true, start: { cash: -0.5 },
-    title: 'FLOOD, PART 2! 🌊🌊',
-    text: 'The cheap fix broke! Even MORE water this time!',
-    choices: [
-      { t: '🚨 Call the BEST plumber', fx: { cash: -0.6, say: 'Fixed for real this time. 🔧✅' } },
-      { t: '🦆 Rubber ducks for everyone', fx: { money: -50, fans: 10, demand: [0.85, 1, 'Flood'], say: 'Customers floated rubber ducks. It went a bit viral. 🦆' } },
-      { t: '🔒 Close for a week', fx: { closed: [1, 'Flood repairs'], say: 'Closed while it dries.' } },
-      { t: '🪣 Everyone grab a bucket!', fx: { team: -4, demand: [0.8, 1, 'Flood damage'], say: 'Bucket brigade! Tiring but it worked. 🪣' } }
-    ] });
-
-  ev({ id: 'power_outage', cat: 'business', icon: '🔌', w: 2,
-    title: 'The power went out!',
-    text: 'The whole street is dark. 🌑 No lights, no machines.',
-    choices: [
-      { t: '⚡ Rent a generator', fx: { cash: -0.12, say: 'You are the only shop with lights! 💡' } },
-      { t: '🕯️ Candlelight special!', fx: { money: -40, fans: 8, happy: 3, say: 'Super cozy. Customers LOVED it. 🕯️' } },
-      { t: '🔦 Flashlight party', fx: { team: 5, demand: [0.9, 1, 'Power outage'], say: 'Shadow puppets all afternoon! 🔦🐰' } },
-      { t: '🏠 Send everyone home', fx: { demand: [0.85, 1, 'Power outage'], team: 3, say: 'Fewer sales. Staff enjoyed the free time!' } }
-    ] });
-
-  ev({ id: 'equipment_fail', cat: 'business', icon: '🛠️', w: 2.5,
-    title: 'A machine broke!',
-    text: 'Your most important machine stopped working. 😩',
-    choices: [
-      { t: '🔧 Repair it', fx: { cash: -0.2, say: 'Good as new!' } },
-      { t: '✨ Buy a better one', d: 'Work faster forever', fx: { cash: -1.2, equip: 0.04, say: 'New machine! Everyone works faster! 🚀' } },
-      { t: '👊 Give it a smack', fx: { chance: { p: 0.4, win: { say: 'BONK. It works again! 👊😎' }, lose: { cash: -0.3, say: 'BONK. Now it\'s REALLY broken. 😬' } } } },
-      { t: '🐢 Work without it', fx: { capacity: [0.85, 2, 'Broken machine'], say: 'Slow weeks ahead...' } }
-    ] });
-
-  ev({ id: 'break_in', cat: 'business', icon: '🚨', w: 1.5, minWeek: 5, cond: noCams, init: amt(0.4), start: { cash: -0.4 },
-    title: 'Someone broke in!',
-    text: 'A thief broke in at night and took {amt} of stuff! 😱',
-    choices: [
-      { t: '🚨 Buy an alarm', fx: { cash: -0.3, say: 'Nobody will get in again! 🔒' } },
-      { t: '📄 Ask insurance to pay', fx: { chance: { p: 0.6, win: { cash: 0.28, say: 'Insurance paid you back! 🙌' }, lose: { say: 'Insurance said no. Tiny print. 😑' } } } },
-      { t: '🕵️ Play detective', fx: { chance: { p: 0.4, win: { cash: 0.3, rep: 3, fans: 8, say: 'You found the thief with a magnifying glass! 🔍 The news loved it.' }, lose: { say: 'You found... a sock. No thief. 🧦' } } } },
-      { t: '🐕 Get a guard dog', fx: { cash: -0.1, pet: '🐕', say: 'Meet Rex! 🐕 Nobody will try that again.' } }
-    ] });
-
-  ev({ id: 'damaged_shipment', cat: 'business', icon: '📦', w: 2.5, init: amt(0.18),
-    title: 'A delivery arrived smashed!',
-    text: 'Half of this week\'s supplies are squished. 📦💥 They cost {amt}.',
-    choices: [
-      { t: '📞 Ask for a refund', fx: { chance: { p: 0.6, win: { say: 'The supplier said sorry and paid you back! 👍' }, lose: { cash: -0.18, say: 'They blamed the truck driver. You pay.' } } } },
-      { t: '🎨 Sell it as "squished edition"', fx: { chance: { p: 0.5, win: { fans: 10, say: 'People LOVED the squished stuff! 😂' }, lose: { cash: -0.18, rep: -1, say: 'Nobody wanted squished stuff. 🥴' } } } },
-      { t: '🔁 Switch delivery company', fx: { cash: -0.18, supply: [-0.01, 6, 'Better delivery'], say: 'The new company is careful AND cheaper. 🚚' } },
-      { t: '🤷 Accept it', fx: { cash: -0.18, say: 'Oh well.' } }
-    ] });
-
-  ev({ id: 'supplier_prices', cat: 'business', icon: '🚚', kind: 'chat', w: 2, from: { name: 'Sam from Supplies', face: '🚚' },
-    title: 'Your supplier has news',
-    msgs: ['hello! 👋', 'bad news...', 'our prices go up 5% starting today 😬'],
-    choices: [
-      { t: '👌 "Okay, fine"', fx: { supply: [0.02, 12, 'Higher supply prices'], say: 'You make a bit less on each sale for a while.' } },
-      { t: '🔄 Find a new supplier', fx: { chance: { p: 0.6, win: { supply: [-0.015, 12, 'Cheaper supplier'], say: 'The new one is CHEAPER! 🎉' }, lose: { supply: [0.01, 6, 'New supplier'], rep: -2, say: 'The new one is worse. Customers noticed. 😕' } } } },
-      { t: '🤝 "Let\'s negotiate"', fx: { chance: { p: 0.5, win: { say: 'Sam agrees to keep the old price! 🤝' }, lose: { supply: [0.03, 8, 'Angry supplier'], say: 'Sam got annoyed and raised prices MORE. 😤' } } } },
-      { t: '🍪 Send Sam cookies', fx: { money: -30, chance: { p: 0.6, win: { say: 'Sam loved the cookies. "Fine, old price." 🍪❤️' }, lose: { supply: [0.02, 12, 'Higher supply prices'], say: 'Sam ate the cookies AND raised prices. 😑' } } } }
-    ] });
-
-  ev({ id: 'inspection', cat: 'business', icon: '📋', w: 2, cd: 15,
-    title: 'Surprise inspection!',
-    text: 'A city inspector walks in with a clipboard. 📋 They want to check everything.',
-    choices: [
-      { t: '✅ Show them everything', fx: { chance: { p: function (g) { return g.reputation / 200 + (g.employees.some(function (e) { return e.role === 'mgr'; }) ? 0.3 : 0.15) + 0.15; }, win: { rep: 3, say: 'You passed! Perfect score! 💯' }, lose: { cash: -0.4, say: 'They found a few problems. You pay a fine. 😬' } } } },
-      { t: '🧹 Clean super fast first', fx: { team: -3, chance: { p: 0.7, win: { rep: 4, say: 'Sparkling clean! The inspector is impressed. ✨' }, lose: { cash: -0.3, say: 'They saw you hiding a mop in the ceiling. Fine! 🧹😬' } } } },
-      { t: '💰 Offer them a "gift"', d: 'Very risky!', fx: { cash: -0.2, next: ['bribe_scandal', 2, 6, 0.4], say: 'They took it and left... Was that a good idea? 😰' } },
-      { t: '🙏 "Can you come back later?"', fx: { rep: -1, next: ['inspection', 2, 4], say: 'They will be back. And they will look harder.' } }
-    ] });
-
-  ev({ id: 'bribe_scandal', cat: 'trouble', icon: '📰', kind: 'news', chainOnly: true,
-    title: 'SCANDAL: {company} bribed an inspector!',
-    text: 'A reporter found out about the "gift". It\'s on the front page! 😱',
-    choices: [
-      { t: '🙇 Say sorry + pay the fine', fx: { cash: -2, rep: -12, say: 'It hurts. But people forgive you slowly.' } },
-      { t: '🎁 Give lots to charity', fx: { cash: -1.5, rep: -5, fans: 5, say: 'People are starting to forgive you. 🙏' } },
-      { t: '🙈 Hide for a week', fx: { rep: -15, closed: [1, 'Hiding from reporters'], say: 'You hid under your desk. It didn\'t help much. 🙈' } },
-      { t: '🤥 Deny everything', fx: { chance: { p: 0.4, win: { rep: -5, say: 'No proof. The story fades.' }, lose: { rep: -25, cash: -3, demand: [0.75, 6, 'Boycott'], say: 'Then they showed the video. Customers are boycotting you! 😭' } } } }
-    ] });
-
-  ev({ id: 'repairs', cat: 'business', icon: '🏚️', w: 1.5, cd: 12,
-    title: 'The building is falling apart',
-    text: 'The roof leaks, the door squeaks, and two letters fell off your sign. 🏚️',
-    choices: [
-      { t: '✨ Fix everything', fx: { cash: -0.8, rep: 3, team: 4, say: 'It looks brand new! ✨' } },
-      { t: '🩹 Fix the worst stuff', fx: { cash: -0.15, say: 'Good enough.' } },
-      { t: '🌈 Paint it all bright colors', fx: { cash: -0.3, fans: 10, happy: 3, say: 'It looks like a rainbow exploded. People LOVE it. 🌈' } },
-      { t: '⏳ Later', fx: { rep: -2, next: ['repairs', 4, 8], say: 'It won\'t fix itself...' } }
-    ] });
-
-  ev({ id: 'late_delivery', cat: 'business', icon: '🐢', w: 2.5,
-    title: 'Your delivery is late',
-    text: 'The supplies you need are stuck in traffic somewhere. 🚛🚗🚙',
-    choices: [
-      { t: '⚡ Pay for super-fast shipping', fx: { cash: -0.15, say: 'It arrives just in time! 😅' } },
-      { t: '🛵 Send a worker on a scooter', fx: { money: -30, team: 2, say: 'Zoom zoom! They made it back just in time. 🛵💨' } },
-      { t: '🎲 Sell a "surprise menu" today', fx: { chance: { p: 0.5, win: { fans: 8, say: 'Customers loved the surprise! 🎲' }, lose: { happy: -3, say: 'Customers were confused. 🤔' } } } },
-      { t: '⏳ Wait for it', fx: { capacity: [0.8, 1, 'Missing supplies'], say: 'You run out of stuff for a few days.' } }
-    ] });
-
-  ev({ id: 'systems_down', cat: 'business', icon: '🖥️', w: 1.5,
-    title: 'The computers crashed!',
-    text: 'The card machine, the orders, the schedule... all DOWN! 💻💀',
-    choices: [
-      { t: '🧑‍💻 Call IT experts', fx: { cash: -0.25, say: 'Fixed in 2 hours! 🛠️' } },
-      { t: '🔌 Turn it off and on again', fx: { chance: { p: 0.6, win: { say: 'It worked! The oldest trick in the book. 🔌😎' }, lose: { capacity: [0.85, 1, 'Computers down'], say: 'Nope. Still broken. 💀' } } } },
-      { t: '💵 Cash only today!', fx: { demand: [0.9, 1, 'Cash only'], say: 'Some customers didn\'t have cash. 💵' } },
-      { t: '📝 Use pen and paper', fx: { capacity: [0.85, 1, 'Computers down'], team: -2, say: 'Chaotic, but you survive the week.' } }
-    ] });
-
-  ev({ id: 'big_contract', cat: 'lucky', icon: '🤝', w: 1.5, cd: 14, minWeek: 5, init: function (g, c) { c.weeks = 6; c.amt = U.nice(G.scale(g) * 0.25); },
-    title: 'A big client wants a deal!',
-    text: 'A big company wants to buy from you for {weeks} weeks. They pay {amt} extra every week! It will keep your team busy.',
-    choices: [
-      { t: '✍️ Sign it!', fx: { extra: [0.25, 6, 'Big client deal'], team: -5, say: 'Deal signed! Money starts next week. 💰' } },
-      { t: '💪 Ask for 30% more', fx: { chance: { p: 0.5, win: { extra: [0.33, 6, 'Big client deal'], team: -5, say: 'They said YES to more money! 🤑' }, lose: { say: 'They walked away. Too greedy! 😅' } } } },
-      { t: '📅 Ask for a longer deal', fx: { chance: { p: 0.6, win: { extra: [0.2, 12, 'Long client deal'], team: -4, say: '12 weeks of extra money! 📅💰' }, lose: { extra: [0.25, 6, 'Big client deal'], say: 'They said no, but signed the normal deal. 👍' } } } },
-      { t: '🙅 No thanks', fx: { say: 'You stay focused on your normal customers.' } }
-    ] });
-
-  ev({ id: 'tax_refund', cat: 'lucky', icon: '🧾', w: 1.5, cd: 26,
-    title: 'Surprise money from taxes!',
-    text: 'The tax office made a mistake. They are sending you money back! 💸',
-    choices: [
-      { t: '💰 Keep it in the bank', fx: { cash: 0.3, say: 'Nice, a little safety money. 💰' } },
-      { t: '🎉 Share it with the team', fx: { cash: 0.1, team: 8, say: 'Everyone got a little bonus! 🎉' } },
-      { t: '📢 Spend it on ads', fx: { fans: 15, say: 'More people know about you now! 📢' } },
-      { t: '🛠️ Fix up the shop', fx: { happy: 5, rep: 2, say: 'The shop looks shiny now. ✨' } }
-    ] });
-
-  ev({ id: 'award', cat: 'lucky', icon: '🏆', w: function (g) { return g.reputation > 70 ? 2 : 0; }, cd: 26,
-    title: 'You won an award! 🏆',
-    text: 'You won "Best {industry} in {city}"! There is a fancy dinner tonight.',
-    choices: [
-      { t: '🎤 Give a funny speech', fx: { rep: 4, fans: 15, say: 'Everyone laughed. Best speech of the night! 🎤' } },
-      { t: '🙏 Thank your whole team', fx: { rep: 4, team: 10, say: 'Your team cried happy tears. 🥹' } },
-      { t: '🏆 Put the trophy in the window', fx: { rep: 5, demand: [1.1, 6, 'Award winner'], say: 'Customers come to see the trophy! 🏆' } },
-      { t: '😎 Act cool', fx: { rep: 4, say: '"Yeah, we know." 😎' } }
-    ] });
-
-  ev({ id: 'heatwave', cat: 'business', icon: '🥵', w: 3, cd: 20, cond: season(24, 34),
-    title: 'HEATWAVE! 🥵',
-    text: 'It\'s super hot outside and your air conditioner just broke. Everyone is melting! 🫠',
-    choices: [
-      { t: '❄️ Buy a new AC', fx: { cash: -0.35, say: 'Ahhh, cool air! Customers come in to chill. 😎' } },
-      { t: '🍦 Give out free ice pops', fx: { cash: -0.08, fans: 8, happy: 4, say: 'Everyone loves the free ice pops! 🍦' } },
-      { t: '💦 Water gun fight!', fx: { team: 10, fans: 6, capacity: [0.95, 1, 'Water fight'], say: 'SPLASH! Best workday ever. 💦🔫' } },
-      { t: '🫠 Just sweat it out', fx: { happy: -5, team: -5, say: 'Sweaty customers. Sweaty staff. Not great. 💦' } }
-    ] });
-
-  ev({ id: 'snowstorm', cat: 'business', icon: '❄️', w: 3, cd: 20, cond: function (g) { var w = ((g.week - 1) % 52) + 1; return w <= 8 || w >= 49; },
-    title: 'Giant snowstorm!',
-    text: 'There is SO much snow. ☃️ The roads are closed.',
-    choices: [
-      { t: '🔒 Close for a week', fx: { closed: [1, 'Snowstorm'], team: 4, say: 'Snow day for everyone! ⛄' } },
-      { t: '💪 Stay open!', fx: { chance: { p: 0.5, win: { fans: 12, rep: 2, say: 'Brave customers loved that you were open! ❤️' }, lose: { capacity: [0.6, 1, 'Staff snowed in'], say: 'Half the staff couldn\'t get there. ❄️' } } } },
-      { t: '☃️ Snowman contest outside', fx: { fans: 10, team: 5, demand: [0.9, 1, 'Snowstorm'], say: 'A giant snowman! People came to take photos. ☃️📸' } },
-      { t: '☕ Free hot chocolate', fx: { cash: -0.08, happy: 6, rep: 2, say: 'Warm and happy customers! ☕❤️' } }
-    ] });
-
-  ev({ id: 'road_works', cat: 'business', icon: '🚧', w: 2, cd: 20,
-    title: 'Road work outside!',
-    text: 'The city is fixing the road in front of your shop for 3 weeks. It\'s loud and hard to get in. 🚧',
-    choices: [
-      { t: '😂 Put up a funny sign', fx: { demand: [0.95, 3, 'Road work'], fans: 8, say: '"We\'re still open! Bring earplugs 🎧" People love it.' } },
-      { t: '📞 Complain to the city', fx: { chance: { p: 0.4, win: { say: 'They finish super fast! 🏎️' }, lose: { demand: [0.85, 3, 'Road work'], say: 'Nobody listened. 😑' } } } },
-      { t: '🦺 Sell to the road workers!', fx: { extra: [0.1, 3, 'Road workers buying'], demand: [0.9, 3, 'Road work'], say: 'The workers are your best customers now! 🦺' } },
-      { t: '🤷 Deal with it', fx: { demand: [0.85, 3, 'Road work'], say: 'Fewer customers for a while.' } }
-    ] });
-
-  ev({ id: 'mouse', cat: 'business', icon: '🐭', w: 2,
-    title: 'A MOUSE! 🐭',
-    text: 'A customer screamed. A little mouse ran across the floor!',
-    choices: [
-      { t: '🧑‍🔬 Call pest control', fx: { cash: -0.12, say: 'The mouse moved out. Bye mouse! 👋' } },
-      { t: '🐈 Adopt a shop cat', fx: { cash: -0.05, fans: 12, happy: 3, pet: '🐈', say: 'Meet Whiskers, the new shop cat! Customers LOVE her. 🐈' } },
-      { t: '🧀 Make it the mascot', fx: { chance: { p: 0.5, win: { fans: 18, say: '"Squeaky the Mouse" is a hit! 🐭⭐' }, lose: { rep: -5, say: 'Customers did NOT want a mouse mascot. 😬' } } } },
-      { t: '🙈 Pretend it didn\'t happen', fx: { chance: { p: 0.5, win: { say: 'Nobody posted about it. Lucky!' }, lose: { rep: -8, say: 'Someone posted a video. "MOUSE AT {company}!" 😱' } } } }
-    ] });
-
-  ev({ id: 'rent_up', cat: 'business', icon: '🏠', kind: 'chat', w: 1, cd: 40, minWeek: 20, from: { name: 'Your Landlord', face: '🧓' },
-    title: 'The landlord wants more rent',
-    msgs: ['hello tenant 🧓', 'rent is going up 10%', 'starting next week'],
-    choices: [
-      { t: '😩 "Okay..."', fx: { rent: 0.1, say: 'Rent is higher now.' } },
-      { t: '🤝 "Can we meet in the middle?"', fx: { chance: { p: 0.5, win: { rent: 0.05, say: 'Deal at +5%. 🤝' }, lose: { rent: 0.1, say: 'The landlord said no.' } } } },
-      { t: '🍰 "Free cake every week?"', fx: { chance: { p: 0.45, win: { say: 'The landlord LOVES cake. Rent stays the same! 🍰' }, lose: { rent: 0.1, say: 'The landlord is on a diet. +10%. 😑' } } } },
-      { t: '📦 "Then I\'ll move out!"', fx: { chance: { p: 0.4, win: { say: 'The landlord panics. Rent stays the same! 😎' }, lose: { rent: 0.15, say: 'The landlord called your bluff. +15%! 😱' } } } }
-    ] });
-
-  ev({ id: 'found_money', cat: 'lucky', icon: '💵', w: 1.5, cd: 20,
-    title: 'Money behind the counter!',
-    text: 'Someone found a bundle of cash stuck behind the counter. 💵 Where did it come from?',
-    choices: [
-      { t: '💰 Keep it', fx: { cash: 0.12, say: 'Finders keepers! 💵' } },
-      { t: '🍩 Buy donuts for the team', fx: { team: 5, say: 'Donut day! 🍩' } },
-      { t: '❤️ Give it to charity', fx: { rep: 3, say: 'Good karma! ✨' } },
-      { t: '🔍 Find the owner', fx: { rep: 2, chance: { p: 0.5, win: { cash: 0.05, say: 'It was a customer\'s! They gave you a reward. 😇' }, lose: { cash: 0.12, say: 'Nobody claimed it. It\'s yours! 💵' } } } }
-    ] });
-
-  ev({ id: 'charity', cat: 'business', icon: '🏫', w: 2, cd: 12,
-    title: 'A school needs help',
-    text: 'The local school asks for money for new books. 📚',
-    choices: [
-      { t: '❤️ Donate', fx: { cash: -0.25, rep: 5, fans: 8, say: 'The kids made you a giant thank-you card! 💌' } },
-      { t: '📦 Donate some {unit} instead', fx: { cash: -0.1, rep: 3, say: 'They loved it! 😊' } },
-      { t: '🧑‍🏫 Teach a class about business', fx: { rep: 4, fans: 5, say: 'The kids asked 400 questions. You loved it. 🧑‍🏫' } },
-      { t: '🙅 Not this time', fx: { rep: -1, say: 'Maybe next time.' } }
-    ] });
-
-  ev({ id: 'festival', cat: 'lucky', icon: '🎪', w: 2, cd: 15,
-    title: 'City festival this weekend!',
-    text: 'Thousands of people are coming to the {city} festival! 🎪🎡',
-    choices: [
-      { t: '⛺ Set up a stand', fx: { cash: -0.3, extra: [0.35, 1, 'Festival stand'], fans: 15, say: 'Your stand was packed! 🎉' } },
-      { t: '🎈 Hand out balloons', fx: { cash: -0.05, fans: 8, say: 'Kids everywhere have your balloons! 🎈' } },
-      { t: '🎭 Join the costume parade', fx: { cash: -0.08, fans: 12, team: 5, say: 'Your team marched in giant costumes. People cheered! 🎭' } },
-      { t: '😴 Skip it', fx: { say: 'You rest this weekend.' } }
-    ] });
-
-  ev({ id: 'holiday_rush', cat: 'business', icon: '🎄', w: 5, cd: 40, cond: season(47, 52),
-    title: 'HOLIDAY RUSH! 🎄',
-    text: 'It\'s the holidays! Tons of shoppers are coming. Are you ready?',
-    choices: [
-      { t: '👷 Hire extra helpers', fx: { cash: -0.4, demand: [1.3, 2, 'Holiday rush'], capacity: [1.25, 2, 'Holiday helpers'], say: 'You\'re ready for the crowds! 🛍️' } },
-      { t: '🎅 Just decorate', fx: { cash: -0.05, demand: [1.3, 2, 'Holiday rush'], happy: 3, say: 'It looks so cozy! 🎄' } },
-      { t: '🎁 Free gift wrapping', fx: { cash: -0.1, demand: [1.35, 2, 'Holiday rush'], happy: 5, say: 'Everyone loves free wrapping! 🎁' } },
-      { t: '😴 Business as usual', fx: { demand: [1.25, 2, 'Holiday rush'], say: 'Busy week! 🛍️' } }
-    ] });
-
-  ev({ id: 'back_to_school', cat: 'world', icon: '🎒', w: 3, cd: 40, cond: season(33, 36),
-    title: 'Back to school week! 🎒',
-    text: 'Kids and parents are out shopping everywhere.',
-    choices: [
-      { t: '✏️ Student discount', fx: { demand: [1.15, 2, 'Back to school'], happy: 3, say: 'Students LOVE you! 🎒' } },
-      { t: '🎒 Free pencil with every sale', fx: { money: -60, demand: [1.12, 2, 'Back to school'], fans: 5, say: 'Your pencils are all over town. ✏️' } },
-      { t: '📚 Donate school supplies', fx: { cash: -0.1, rep: 4, demand: [1.08, 2, 'Back to school'], say: 'Parents love you now! ❤️' } },
-      { t: '😌 Just enjoy the rush', fx: { demand: [1.1, 2, 'Back to school'], say: 'Busy week! 📈' } }
-    ] });
-
-  ev({ id: 'tax_audit', cat: 'trouble', icon: '🧾', w: 0.8, minWeek: 15, cd: 40,
-    title: 'Tax check!',
-    text: 'The tax office wants to check all your money records. 🧾🔍',
-    choices: [
-      { t: '🧮 Pay an expert to help', fx: { cash: -0.4, say: 'Everything was perfect! ✅' } },
-      { t: '💪 Do it yourself', fx: { chance: { p: function (g) { return g.employees.some(function (e) { return e.role === 'acct'; }) ? 0.85 : 0.5; }, win: { say: 'You passed! 📊' }, lose: { cash: -1, say: 'You made mistakes. Big fine! 😖' } } } },
-      { t: '📦 Bring ALL the papers (500 boxes)', fx: { chance: { p: 0.6, win: { say: 'The tax officer gave up after box 12. You passed! 😂📦' }, lose: { cash: -0.6, say: 'They read ALL 500 boxes. Found a mistake. 😩' } } } },
-      { t: '🍪 Bring cookies', fx: { money: -20, chance: { p: 0.55, win: { say: 'Happy tax officer = quick check. Passed! 🍪' }, lose: { cash: -0.5, say: 'Cookies don\'t work on taxes. Small fine. 🍪😅' } } } }
-    ] });
-
-  // =====================================================================
-  // 🛍️ CUSTOMERS
-  // =====================================================================
-
-  var REVIEWERS = ['Karen B.', 'Mike T.', 'Sofia L.', 'Grandpa Joe', 'Jenny K.', 'Tom W.', 'Lily P.', 'Carlos M.', 'Anna S.', 'Big Dave'];
-  function reviewer(g, c) { c.who2 = U.pick(REVIEWERS); }
-
-  ev({ id: 'review_5', cat: 'customers', icon: '⭐', kind: 'review', w: function (g) { return g.satisfaction > 60 ? 4 : 1; }, stars: 5, init: reviewer,
-    title: 'New 5-star review!',
-    text: 'BEST {industry} in {city}!!! The staff are amazing. I come here every day! 😍😍',
-    choices: [
-      { t: '💖 Reply "Thank you!!"', fx: { fans: 5, say: 'They liked your reply! 💕' } },
-      { t: '🎁 Send them a free gift', fx: { cash: -0.03, rep: 2, fans: 8, say: 'They posted a photo of your gift! 📸' } },
-      { t: '🖼️ Frame it on the wall', fx: { rep: 2, happy: 2, say: 'Now every customer reads it. ⭐' } },
-      { t: '👀 Just enjoy it', fx: { say: 'Nice. 😊' } }
-    ] });
-
-  ev({ id: 'review_1', cat: 'customers', icon: '😡', kind: 'review', w: function (g) { return g.satisfaction < 50 ? 4 : 1.2; }, stars: 1, init: reviewer,
-    title: 'Ouch! 1-star review',
-    text: 'I waited FOREVER and nobody said hi. Never coming back. 😡👎',
-    choices: [
-      { t: '🙏 Say sorry nicely', fx: { rep: 2, say: 'Other people see your kind reply. 👍' } },
-      { t: '🎟️ Offer a free visit', fx: { cash: -0.02, rep: 3, chance: { p: 0.5, win: { say: 'They came back and changed it to 5 stars! ⭐⭐⭐⭐⭐' }, lose: { say: 'They never replied.' } } } },
-      { t: '🎵 Reply with a sorry song', fx: { chance: { p: 0.5, win: { fans: 15, rep: 2, say: 'Your sorry song went viral! 🎵😂' }, lose: { rep: -2, say: 'The song was... not good. 🎵😬' } } } },
-      { t: '😤 Argue with them', fx: { chance: { p: 0.3, win: { fans: 10, say: 'Your funny reply went a little viral! 😂' }, lose: { rep: -6, say: 'People think you\'re rude. 😬' } } } }
-    ] });
-
-  ev({ id: 'review_weird', cat: 'customers', icon: '🤔', kind: 'review', w: 2, stars: 3, init: reviewer,
-    title: 'A strange review',
-    text: 'Pretty good. But the chair I sat on made a fart noise every time I moved. 3 stars. 🪑💨',
-    choices: [
-      { t: '🪑 Fix the chair', fx: { cash: -0.02, happy: 2, say: 'No more fart chair. 😌' } },
-      { t: '😂 Make it famous', fx: { fans: 14, say: 'People come JUST to sit in the fart chair! 😂🪑' } },
-      { t: '💨 Buy 10 more fart chairs', fx: { money: -100, chance: { p: 0.5, win: { fans: 20, say: 'The Fart Chair Corner is TRENDING. 💨🔥' }, lose: { happy: -3, say: 'Too many farts. Customers left. 💨😷' } } } },
-      { t: '🤐 Ignore it', fx: { say: 'The chair keeps farting. 🪑' } }
-    ] });
-
-  ev({ id: 'review_kid', cat: 'customers', icon: '🧒', kind: 'review', w: 1.5, stars: 5, init: function (g, c) { c.who2 = 'Timmy (age 8)'; },
-    title: 'A review from a kid',
-    text: 'I LOVE THIS PLACE. the lady gave me a sticker. 10/10 would come again. my mom says i have to stop typing now',
-    choices: [
-      { t: '🌟 Send Timmy a surprise', fx: { cash: -0.02, fans: 15, rep: 3, say: 'Timmy\'s mom posted his happy face online. Everyone melted! 🥹' } },
-      { t: '🏅 "Customer of the Year!"', fx: { fans: 12, rep: 2, say: 'Timmy got a medal. The local news covered it! 🏅📺' } },
-      { t: '💖 Reply with a heart', fx: { fans: 4, say: 'Timmy is very proud. 😊' } },
-      { t: '🎨 Ask Timmy to draw your logo', fx: { fans: 8, say: 'Timmy\'s logo drawing is now on the menu. 🎨❤️' } }
-    ] });
-
-  ev({ id: 'vip', cat: 'customers', icon: '🕶️', w: 1.2, cd: 20, rarity: 'rare',
-    init: function (g, c) { c.celeb = U.pick(['a famous singer', 'a pro soccer player', 'a movie star', 'a famous YouTuber', 'a TV chef']); },
-    title: 'A celebrity walked in!',
-    text: 'Wait... is that {celeb}?! 😱 Everyone is staring.',
-    choices: [
-      { t: '👑 Give them VIP treatment', fx: { cash: -0.1, chance: { p: 0.6, win: { viral: [1, 4], rep: 4, say: 'They posted about you! 🌟' }, lose: { rep: 1, say: 'They said thanks and left. Still cool! 😎' } } } },
-      { t: '📸 Ask for a selfie', fx: { chance: { p: 0.5, win: { fans: 20, say: 'Selfie on the wall! 🤳' }, lose: { rep: -2, say: 'They didn\'t like that. Awkward. 😬' } } } },
-      { t: '🎤 Ask them to show a trick', fx: { chance: { p: 0.4, win: { viral: [2, 5], say: 'THEY DID IT! The whole shop went crazy! 🎤🔥' }, lose: { rep: -3, say: 'They said "no thanks" and left fast. 😅' } } } },
-      { t: '😌 Treat them like anyone else', fx: { rep: 2, say: 'They liked being treated normally. Classy! ✨' } }
-    ] });
-
-  ev({ id: 'kid_customer', cat: 'customers', icon: '🧸', w: 1.5, cd: 20,
-    title: 'A little customer',
-    text: 'A tiny kid wants to buy something. They only have $1.50 and a toy car. 🚗',
-    choices: [
-      { t: '🥰 "That\'s enough!"', fx: { rep: 4, chance: { p: 0.3, win: { viral: [0.5, 3], say: 'Their dad filmed it. The internet is crying happy tears! 🥹' }, lose: { say: 'The kid is SO happy! 😊' } } } },
-      { t: '🚗 Trade for the toy car', fx: { rep: 3, say: 'The toy car is now your desk decoration. Vroom! 🚗' } },
-      { t: '🎁 Give it free + a sticker', fx: { rep: 5, fans: 5, say: 'The kid told their WHOLE school. 🧒📣' } },
-      { t: '🙅 "Sorry, not enough"', fx: { rep: -3, say: 'The kid walks away sadly. 😢' } }
-    ] });
-
-  ev({ id: 'regulars', cat: 'customers', icon: '🤗', w: 2,
-    title: 'Your best customer is back!',
-    text: 'Your favorite regular customer brought 5 friends! 👯👯',
-    choices: [
-      { t: '🎟️ Give them all a discount', fx: { demand: [1.08, 3, 'New friends'], happy: 3, say: 'Now they ALL come every week! 👯' } },
-      { t: '🏷️ Name something after them', fx: { fans: 6, happy: 4, say: '"The Big Bob Special" is on the menu. Bob cried. 😭❤️' } },
-      { t: '📸 Take a group photo', fx: { fans: 5, say: 'Photo on the wall of fame! 📸' } },
-      { t: '👋 Say hi', fx: { demand: [1.04, 2, 'Friends of regulars'], say: 'Nice to see new faces! 👋' } }
-    ] });
-
-  ev({ id: 'special_order', cat: 'customers', icon: '🦖', w: 2,
-    title: 'A super special order',
-    text: 'A customer wants something very special. "Can you make it purple and shaped like a dinosaur?" 🦖💜',
-    choices: [
-      { t: '🦖 "Challenge accepted!"', fx: { cash: -0.04, happy: 4, fans: 6, say: 'They LOVED it! They told everyone. 💜' } },
-      { t: '🦕 Make it GIANT', fx: { cash: -0.1, chance: { p: 0.5, win: { viral: [0.5, 2], say: 'A 2-meter purple dinosaur. The internet went WILD. 🦕🔥' }, lose: { say: 'It didn\'t fit through the door. 😂' } } } },
-      { t: '💰 "It costs double"', fx: { cash: 0.05, say: 'They paid it! Weird but profitable. 💜' } },
-      { t: '🙅 "Sorry, we can\'t"', fx: { say: 'They go somewhere else.' } }
-    ] });
-
-  ev({ id: 'lost_kid', cat: 'customers', icon: '😢', w: 1.2, cd: 30,
-    title: 'A lost kid',
-    text: 'A little kid is crying. They can\'t find their parents! 😢',
-    choices: [
-      { t: '🔍 Help find the parents', fx: { rep: 3, team: 3, say: 'Found them! Big happy hug. 🤗' } },
-      { t: '📢 Announce it on the speaker', fx: { rep: 2, say: 'Mom came running in 30 seconds! 🏃‍♀️' } },
-      { t: '🍭 Give a treat while waiting', fx: { rep: 3, happy: 2, say: 'The kid stopped crying and started smiling. 🍭' } },
-      { t: '👮 Call the police', fx: { rep: 1, say: 'The police helped. All good.' } }
-    ] });
-
-  ev({ id: 'proposal', cat: 'customers', icon: '💍', w: 1, cd: 30, rarity: 'rare',
-    title: 'A marriage proposal!',
-    text: 'A customer wants to propose to their partner in YOUR shop. 💍 They need your help!',
-    choices: [
-      { t: '🌹 Go all out!', fx: { cash: -0.08, chance: { p: 0.8, win: { viral: [0.5, 3], rep: 3, say: 'They said YES! 💍 The video is everywhere!' }, lose: { say: 'They said... "let me think about it." Oof. 😬' } } } },
-      { t: '💍 Hide the ring in their order', fx: { chance: { p: 0.7, win: { fans: 15, say: 'They found it! YES! 💍🎉' }, lose: { say: 'They almost ate the ring. Then said yes! 😂💍' } } } },
-      { t: '🎶 Just play a love song', fx: { fans: 5, say: 'So romantic! 🎶' } },
-      { t: '🙅 "Not here, sorry"', fx: { rep: -2, say: 'They proposed at the place next door. 😕' } }
-    ] });
-
-  ev({ id: 'influencer_freebie', cat: 'customers', icon: '🤳', w: 1.5, cd: 15,
-    title: 'An influencer wants free stuff',
-    text: '"I have 200K followers. Give me free stuff and I\'ll post about you!" 💅',
-    choices: [
-      { t: '🎁 Okay, here you go', fx: { cash: -0.1, chance: { p: 0.6, win: { fans: 30, say: 'They posted! New followers everywhere! 📈' }, lose: { say: 'They never posted. Hmm. 🤨' } } } },
-      { t: '🤝 "Post first, then free stuff"', fx: { chance: { p: 0.5, win: { fans: 25, cash: -0.05, say: 'They posted first! Deal! 🤝' }, lose: { say: 'They walked away. 💅' } } } },
-      { t: '🔍 Check if the followers are real', fx: { chance: { p: 0.5, win: { say: 'FAKE followers! You caught them. 😎' }, lose: { fans: 20, cash: -0.1, say: 'They were real! You gave them stuff. Nice post! 📈' } } } },
-      { t: '🙅 "Please pay like everyone"', fx: { chance: { p: 0.5, win: { rep: 2, say: 'Other customers respect that! 💪' }, lose: { rep: -4, say: 'They posted a mean video about you. 🙄' } } } }
-    ] });
-
-  ev({ id: 'grumpy_grandpa', cat: 'customers', icon: '👴', kind: 'chat', w: 1.5, from: { name: 'Grandpa Joe', face: '👴' },
-    title: 'Grandpa Joe has a complaint',
-    msgs: ['HELLO', 'THE MUSIC IS TOO LOUD', 'IN MY DAY WE HAD QUIET SHOPS'],
-    choices: [
-      { t: '🔉 Turn it down', fx: { happy: 2, say: 'Grandpa Joe gives you a thumbs up. 👍' } },
-      { t: '🎸 Play his favorite oldies', fx: { happy: 4, fans: 4, say: 'Grandpa Joe is DANCING. 🕺' } },
-      { t: '🎧 Give him free headphones', fx: { money: -30, happy: 3, say: 'Grandpa Joe is now listening to heavy metal. 🤘👴' } },
-      { t: '🔊 Keep it loud', fx: { happy: -2, say: 'Grandpa Joe leaves. Grumpy. 😤' } }
-    ] });
-
-  ev({ id: 'hair_in_food', cat: 'customers', icon: '🤢', w: 2, cond: FOOD,
-    title: 'Hair in the food! 🤢',
-    text: 'A customer found a hair in their food. They are VERY upset.',
-    choices: [
-      { t: '🙏 Free meal + big sorry', fx: { cash: -0.03, rep: 1, say: 'They forgive you. 😌' } },
-      { t: '🧢 Hairnets for everyone!', fx: { cash: -0.05, team: -2, happy: 2, say: 'The team looks silly. But no more hair! 😂' } },
-      { t: '👨‍🦲 Everyone wears a funny bald cap!', fx: { team: -4, fans: 15, say: 'The whole team in bald caps. It went viral. 👨‍🦲😂' } },
-      { t: '🤷 "Not ours!"', fx: { rep: -5, say: 'They left a 1-star review. 😬' } }
-    ] });
-
-  ev({ id: 'food_critic', cat: 'customers', icon: '🧐', w: 1.2, cond: FOOD, cd: 30, rarity: 'rare',
-    title: 'A food critic is here!',
-    text: 'A famous food critic is secretly eating here. 🧐 Your staff noticed!',
-    choices: [
-      { t: '👨‍🍳 Make everything perfect', fx: { cash: -0.1, chance: { p: function (g) { return g.satisfaction / 100 + 0.1; }, win: { rep: 8, fans: 25, say: '"A hidden gem!" ⭐⭐⭐⭐⭐ Critics love you!' }, lose: { rep: -4, say: '"It was... fine." Ouch. 😐' } } } },
-      { t: '🎩 Serve it with a magic trick', fx: { chance: { p: 0.5, win: { rep: 6, fans: 20, say: '"Food AND a show!" ⭐⭐⭐⭐⭐' }, lose: { rep: -2, say: 'The trick went wrong. Soup everywhere. 🎩🍲' } } } },
-      { t: '😎 Act normal', fx: { chance: { p: function (g) { return g.satisfaction / 100; }, win: { rep: 6, say: 'They loved the normal you! ⭐⭐⭐⭐' }, lose: { rep: -3, say: 'Not their favorite. 😕' } } } },
-      { t: '🙈 Hide in the kitchen', fx: { chance: { p: 0.5, win: { rep: 3, say: '"Nice food, strange boss." ⭐⭐⭐' }, lose: { rep: -3, say: '"Where was the boss?" ⭐⭐' } } } }
-    ] });
-
-  ev({ id: 'streamer', cat: 'customers', icon: '🎮', w: 2, cond: TECH, cd: 20, rarity: 'rare',
-    title: 'A big streamer is using your stuff!',
-    text: 'A famous streamer is using your product live in front of 50,000 people! 🎮',
-    choices: [
-      { t: '💬 Send them a message', fx: { chance: { p: 0.5, win: { viral: [1, 4], say: 'They shouted you out LIVE! 🎉' }, lose: { fans: 10, say: 'They didn\'t see it, but lots of viewers did.' } } } },
-      { t: '🎁 Send free stuff for the fans', fx: { cash: -0.2, fans: 30, say: 'Viewers go crazy for the giveaway! 🎁' } },
-      { t: '🎮 Challenge them to a game', fx: { chance: { p: 0.4, win: { viral: [2, 5], say: 'You WON on stream! Legendary! 🏆🎮' }, lose: { fans: 15, say: 'You lost badly, but it was hilarious. 😂' } } } },
-      { t: '👀 Just watch', fx: { fans: 5, say: 'Cool! 😎' } }
-    ] });
-
-  ev({ id: 'bug_found', cat: 'business', icon: '🐛', w: 2, cond: TECH,
-    title: 'A big bug was found!',
-    text: 'Users found a bug. When you press a button, everything turns upside down. 🙃',
-    choices: [
-      { t: '🧑‍💻 Fix it now', fx: { cash: -0.15, say: 'Fixed! 🔧' } },
-      { t: '😂 Call it a "feature"', fx: { chance: { p: 0.4, win: { fans: 20, say: 'People LOVE the upside-down mode! 🙃' }, lose: { rep: -5, say: 'People did not find it funny. 😑' } } } },
-      { t: '🏆 Reward whoever finds bugs', fx: { cash: -0.1, rep: 3, fans: 8, say: 'Bug hunters everywhere! 🐛🏆' } },
-      { t: '🙈 Hope nobody notices', fx: { chance: { p: 0.4, win: { say: 'Nobody noticed. Phew. 😅' }, lose: { rep: -8, say: 'EVERYONE noticed. 😬' } } } }
-    ] });
+  E('fight', 'team', '🥊', '{a} and {b} had a screaming match', 'It happened in front of customers. Now they refuse to work together.', [
+    ['🤝 Sit them down and talk', { chance: { p: 0.6, win: { rel: ['a', 'b', 30], team: 2, say: 'They shook hands. For now.' }, lose: { rel: ['a', 'b', -10], next: ['feud', 1, 2], say: 'It got worse. {b} stormed out.' } } }],
+    ['⚠️ Warn them both', { a: -6, b: -6, rel: ['a', 'b', 5], say: 'Both are mad at you now, but it\'s quiet.' }],
+    ['🚪 Fire {a}', { fire: 'a', say: 'The shouting stopped. So did {a}\'s job.' }],
+    ['🙈 Stay out of it', { rel: ['a', 'b', -25], next: ['feud', 1, 2, 0.7], say: 'You pretended not to hear it.' }]
+  ], { w: 4, cd: 6, need: 2, who: { a: 'aggressive', b: 'any' } });
+
+  E('feud', 'team', '🔥', '{b}: "It\'s me or {a}"', 'The fight between {a} and {b} split the team into two sides.', [
+    ['💵 Pay {b} more to stay', { raise: ['b', 0.1], a: -8, say: '{b} stays. {a} is furious.' }],
+    ['🚪 Fire {a}', { fire: 'a', team: 4, say: 'Peace returns. Mostly.' }],
+    ['🔀 Put them on split shifts', { capacity: [0.95, 6, 'Split shifts'], rel: ['a', 'b', 15], say: 'Awkward, but it works.' }],
+    ['👋 Let {b} walk', { quit: 'b', say: '{b} quit and slammed the door.' }]
+  ], { chainOnly: true });
+
+  E('joined_rival', 'rivals', '🕵️', '{name} now works for {rival}', 'Your old worker {name} just joined {rival}. They know how you do everything.', [
+    ['📞 Try to win them back', { chance: { p: 0.35, win: { hireSpecial: { role: 'front', skill: 70 }, say: 'They came back. "Their boss is a nightmare."' }, lose: { next: ['idea_stolen', 3, 6, 0.6], say: 'They laughed and hung up.' } } }],
+    ['🔐 Change your secret recipes', { cash: -0.3, say: 'Their inside info is useless now.' }],
+    ['⚖️ Remind them of their contract', { chance: { p: 0.5, win: { rival: -0.05, say: 'They got scared and kept quiet.' }, lose: { cash: -0.4, say: 'Their lawyers were better than yours.' } } }],
+    ['🤷 Let it go', { rival: 0.05, next: ['idea_stolen', 3, 6, 0.5], say: '{rival} just got stronger.' }]
+  ], { kind: 'news', chainOnly: true });
+
+  E('idea_stolen', 'rivals', '💡', '{rival} copied your best idea', '{rival} launched your idea as their own. Customers think they invented it.', [
+    ['⚖️ Sue them', { cash: -1, chance: { p: 0.5, win: { cash: 3, rep: 3, rival: -0.15, say: 'You won in court. They had to pay.' }, lose: { demand: [0.9, 4, 'Idea copied'], say: 'You lost the case.' } } }],
+    ['🚀 Launch a better version', { cash: -0.6, fans: 12, rival: -0.05, say: 'Yours is better, and people noticed.' }],
+    ['📢 Tell the true story online', { chance: { p: 0.6, win: { fans: 20, rep: 3, say: 'People took your side.' }, lose: { rep: -2, say: 'People called you a sore loser.' } } }],
+    ['🤷 Move on', { demand: [0.9, 5, 'Idea copied'], rival: 0.08, say: 'Some customers switched to them.' }]
+  ], { kind: 'news', chainOnly: true });
+
+  E('late', 'team', '⏰', '{a} is late. Again.', null, [
+    ['💬 "Is everything okay?"', { chance: { p: 0.5, win: { loyal: { a: 15 }, reliable: { a: 12 }, say: 'Things were rough at home. {a} is grateful.' }, lose: { say: '{a} said thanks. And was late again Friday.' } } }],
+    ['⚠️ "Final warning."', { reliable: { a: 12 }, a: -10, say: '{a} is on time now. Barely.' }],
+    ['💸 Cut their pay', { raise: ['a', -0.1], reliable: { a: 8 }, a: -15, say: '{a} is on time. And bitter.' }],
+    ['🚪 "Don\'t come back."', { fire: 'a', say: 'You fired {a} by text.' }]
+  ], { kind: 'chat', from: 'a', msgs: ['sorry boss', 'overslept again', 'there in 30 min'], w: 3, who: { a: 'unreliable' } });
+
+  E('raise_request', 'team', '💵', '{a} wants a big raise', null, [
+    ['💵 Give 20%', { raise: ['a', 0.2], a: 20, loyal: { a: 10 }, say: 'Done. {a} is staying.' }],
+    ['🤝 Offer 10%', { chance: { p: 0.55, win: { raise: ['a', 0.1], a: 8, say: '{a} took the deal.' }, lose: { quit: 'a', say: '{a} took the other offer.' } } }],
+    ['📅 "Ask me in 6 months"', { a: -6, next: ['raise_promise', 20, 26], say: '{a} marked the date.' }],
+    ['🚪 "Then go."', { quit: 'a', say: '{a} walked out and didn\'t look back.' }]
+  ], { kind: 'chat', from: 'a', msgs: ['can we talk about money?', '{rival} offered me a job', '20% more or I leave'], w: 3, who: { a: 'greedy' }, init: rival });
+
+  E('raise_promise', 'team', '📅', '{a} remembers your promise', null, [
+    ['💵 Keep your word', { raise: ['a', 0.12], a: 15, loyal: { a: 10 }, say: '{a} trusts you now.' }],
+    ['🙏 "Next month, I swear"', { chance: { p: 0.4, win: { a: -2, say: '{a} sighed and agreed.' }, lose: { quit: 'a', say: '{a} had enough and quit.' } } }],
+    ['🎁 A bonus instead', { bonus: 'a', a: 6, say: 'A one-time bonus. {a} takes it.' }],
+    ['🤥 "I never promised that"', { a: -25, loyal: { a: -20 }, team: -3, say: '{a} told everyone you lied.' }]
+  ], { kind: 'chat', from: 'a', msgs: ['it\'s been 6 months', 'you promised me a raise'], chainOnly: true });
+
+  E('dating', 'team', '💕', '{a} and {b} are dating', 'Everyone knows. They hold hands in the break room.', [
+    ['💕 Wish them well', { date: true, team: 2, say: 'The team thinks it\'s sweet.' }],
+    ['📜 Ban dating at work', { team: -4, a: -8, b: -8, say: 'Nobody liked the new rule.' }],
+    ['🔀 Put them on different shifts', { date: true, capacity: [0.97, 4, 'Shift changes'], say: 'Love, but apart.' }],
+    ['😬 "This will end badly"', { date: true, next: ['breakup', 6, 14, 0.7], say: 'You have a bad feeling about this.' }]
+  ], { w: 2, cd: 20, need: 2, who: { a: 'notmgr', b: 'notmgr' } });
+
+  E('breakup', 'team', '💔', '{a} and {b} broke up', 'It was messy. Now they won\'t even look at each other.', [
+    ['🔀 Separate their shifts', { breakup: true, rel: ['a', 'b', 10], capacity: [0.96, 4, 'Separate shifts'], say: 'Cold, but calm.' }],
+    ['☕ Talk to both of them', { breakup: true, chance: { p: 0.5, win: { rel: ['a', 'b', 20], team: 2, say: 'They agreed to stay professional.' }, lose: { rel: ['a', 'b', -20], say: '{b} cried in the storage room.' } } }],
+    ['🚪 Let one of them go', { breakup: true, quit: 'b', a: 5, say: '{b} left. {a} is relieved.' }],
+    ['🙈 Ignore it', { breakup: true, team: -5, rel: ['a', 'b', -30], say: 'The whole team is walking on eggshells.' }]
+  ], { chainOnly: true });
+
+  E('theft', 'team', '💸', 'Money is missing from the register', 'It happened three times this month. {a} was working every time.', [
+    ['🔍 Confront {a}', { chance: { p: 0.5, win: { fire: 'a', rep: 1, say: '{a} confessed and was fired.' }, lose: { a: -20, team: -6, say: '{a} was innocent. The team is upset with you.' } } }],
+    ['📹 Install cameras', { cash: -0.4, next: ['theft_again', 3, 6, 0.5], say: 'Now you\'ll see everything.' }],
+    ['🪤 Set a trap with marked bills', { chance: { p: 0.6, win: { fire: 'a', rep: 2, say: 'Marked bills in {a}\'s bag. Busted.' }, lose: { say: 'Nothing. The thief got careful.' } } }],
+    ['🤷 Let it slide', { cash: -0.3, next: ['theft_again', 2, 5, 0.7], say: 'More money went missing.' }]
+  ], { w: 2, cd: 20, need: 2, who: { a: 'any' }, cond: noCams });
+
+  E('theft_again', 'team', '📹', 'The thief struck again', 'This time it\'s bigger. And this time you saw {a} do it.', [
+    ['👮 Call the police', { fire: 'a', rep: 3, say: '{a} was arrested.' }],
+    ['🚪 Fire {a} quietly', { fire: 'a', say: '{a} is gone. No drama.' }],
+    ['💬 One last chance', { chance: { p: 0.5, win: { a: 10, loyal: { a: 20 }, say: 'It never happened again.' }, lose: { cash: -0.4, fire: 'a', say: 'It happened again. You fired {a}.' } } }],
+    ['💸 Make {a} pay it all back', { a: -10, cash: 0.3, say: '{a} paid it back, week by week.' }]
+  ], { chainOnly: true });
+
+  E('spy', 'team', '🕵️', '{a} might be a spy for {rival}', 'You saw {a} texting {rival}\'s manager. Twice.', [
+    ['📱 Check {a}\'s work phone', { chance: { p: 0.5, win: { fire: 'a', rival: -0.05, say: 'It was true. You caught a spy.' }, lose: { a: -15, loyal: { a: -15 }, say: 'Innocent. {a} feels betrayed.' } } }],
+    ['🎭 Feed {a} fake plans', { chance: { p: 0.5, win: { rival: -0.1, say: '{rival} copied your fake plan. It flopped.' }, lose: { say: 'Nothing happened. Maybe it wasn\'t {a}.' } } }],
+    ['💬 Ask {a} straight out', { chance: { p: 0.6, win: { loyal: { a: 15 }, say: 'They were friends from school. Nothing more.' }, lose: { quit: 'a', say: '{a} quit on the spot. Suspicious.' } } }],
+    ['🙈 Do nothing', { next: ['idea_stolen', 3, 6, 0.4], say: 'You let it go.' }]
+  ], { w: 1.5, cd: 25, minWeek: 8, who: { a: 'any' }, init: rival });
+
+  E('broken_machine', 'team', '🔧', '{a} broke the main machine', 'It was an accident. Fixing it will not be cheap.', [
+    ['🔧 Pay for repairs', { cash: -0.5, say: 'Fixed in a day.' }],
+    ['💸 Take it out of {a}\'s pay', { cash: -0.25, a: -18, say: '{a} is paying for it. Unhappily.' }],
+    ['🆕 Buy a better one', { cash: -1.1, equip: 0.03, say: 'The new one is faster.' }],
+    ['🩹 Fix it yourself', { chance: { p: 0.5, win: { say: 'It works. Somehow.' }, lose: { capacity: [0.85, 3, 'Broken machine'], say: 'It broke again. Worse.' } } }]
+  ], { w: 2, cd: 15, who: { a: 'any' } });
+
+  E('customer_argument', 'team', '😤', '{a} yelled at a customer', 'The customer was rude first. Now they\'re filming.', [
+    ['🛡️ Defend {a}', { a: 12, loyal: { a: 10 }, rep: -3, say: 'Your team loves you. The internet doesn\'t.' }],
+    ['🙏 Apologize to the customer', { happy: 3, a: -8, say: 'The customer calmed down.' }],
+    ['🎓 Send {a} to training', { cash: -0.1, skill: { a: 3 }, say: '{a} learned to stay calm.' }],
+    ['🚪 Fire {a} on the spot', { fire: 'a', rep: 2, say: 'The video ends with {a} walking out.' }]
+  ], { w: 2, cd: 12, who: { a: 'front' } });
+
+  E('star', 'team', '⭐', '{a} is your best worker', 'Customers ask for {a} by name. Other shops are noticing.', [
+    ['🪜 Promote {a}', { promote: 'a', a: 15, say: '{a} is moving up.' }],
+    ['💵 Raise to keep them', { raise: ['a', 0.15], loyal: { a: 20 }, say: 'Nobody is stealing {a} now.' }],
+    ['🏅 Employee of the month', { a: 10, team: 3, say: '{a}\'s photo is on the wall.' }],
+    ['🤐 Say nothing', { next: ['poached', 4, 8, 0.6], say: '{a} feels invisible.' }]
+  ], { w: 2, cd: 15, who: { a: 'star' } });
+
+  E('poached', 'team', '🎣', '{rival} wants to hire {a}', 'They offered {a} double pay. {a} came to you first.', [
+    ['💰 Match the offer', { raise: ['a', 0.3], a: 20, loyal: { a: 20 }, say: '{a} stays. It cost you.' }],
+    ['❤️ Appeal to loyalty', { chance: { p: loyalP(0.85, 0.45), win: { loyal: { a: 25 }, say: '{a} turned them down.' }, lose: { quit: 'a', say: '{a} took the money.' } } }],
+    ['🪜 Offer a promotion', { promote: 'a', a: 15, say: 'A new title did the trick.' }],
+    ['👋 Wish them luck', { quit: 'a', say: 'Your best worker now works for {rival}.' }]
+  ], { w: 1.5, cd: 15, minWeek: 6, who: { a: 'star' }, init: rival });
+
+  E('promotion_request', 'team', '🪜', '{a} wants a promotion', '"I\'ve earned it," {a} says. Others might get jealous.', [
+    ['🪜 Promote {a}', { promote: 'a', a: 20, say: '{a} is thrilled.' }],
+    ['📋 "Show me results first"', { a: -5, skill: { a: 2 }, say: '{a} is working twice as hard.' }],
+    ['🎓 Pay for a course first', { cash: -0.2, skill: { a: 6 }, a: 8, say: '{a} came back sharper.' }],
+    ['❌ "Not yet."', { a: -15, next: ['resign', 4, 10, 0.4], say: '{a} is updating their CV.' }]
+  ], { w: 2, cd: 12, minWeek: 6, who: { a: 'ambitious' } });
+
+  E('resign', 'team', '📝', '{a} is quitting', '{a} hands you a letter. "I found another job."', [
+    ['💰 Offer 20% more', { chance: { p: loyalP(0.9, 0.6), win: { raise: ['a', 0.2], a: 25, say: '{a} tore up the letter.' }, lose: { quit: 'a', say: 'Too late. {a} already said yes.' } } }],
+    ['💬 Ask what went wrong', { chance: { p: 0.4, win: { a: 25, loyal: { a: 10 }, say: 'You fixed it together. {a} stays.' }, lose: { quit: 'a', say: '{a} had been unhappy for months.' } } }],
+    ['🎁 A going-away gift', { quit: 'a', rep: 2, team: 3, say: '{a} left on good terms.' }],
+    ['🚪 "Leave today."', { quit: 'a', team: -3, say: '{a} packed up in ten minutes.' }]
+  ], { chainOnly: true });
+
+  E('jealous', 'team', '😒', '{a} is jealous of {b}', '{b} got promoted. {a} thinks it was unfair.', [
+    ['💬 Explain your choice', { chance: { p: 0.55, win: { say: '{a} understands.' }, lose: { a: -10, rel: ['a', 'b', -25], say: '{a} doesn\'t buy it.' } } }],
+    ['🤞 "You\'re next"', { a: 8, next: ['promotion_request', 6, 12], say: '{a} will hold you to that.' }],
+    ['🎁 A small raise for {a}', { raise: ['a', 0.05], a: 10, say: '{a} feels valued.' }],
+    ['😑 "Deal with it"', { a: -18, loyal: { a: -10 }, rel: ['a', 'b', -35], say: '{a} slammed the door.' }]
+  ], { chainOnly: true });
+
+  E('burnout', 'team', '🥵', 'Your team is burning out', 'Too many customers, not enough hands. People are exhausted.', [
+    ['🍕 Buy dinner for everyone', { cash: -0.1, team: 6, say: 'It helped. A little.' }],
+    ['🧑‍💼 Hire help this week', { hireSpecial: { role: 'front', skill: 45 }, team: 5, say: 'Fresh hands. Everyone breathes again.' }],
+    ['🏖️ Close one day to rest', { closed: [1, 'Rest day'], team: 15, say: 'Everyone came back recharged.' }],
+    ['💪 "Push through"', { team: -12, capacity: [1.1, 2, 'Pushing hard'], say: 'Sales up. Morale down.' }]
+  ], { w: 3, cd: 10, need: 3, cond: busy });
+
+  E('sick', 'team', '🤒', '{a} called in sick', 'On the busiest day of the week.', [
+    ['🍲 "Get well soon!"', { a: 8, capacity: [0.95, 1, 'Short-staffed'], say: '{a} appreciated it.' }],
+    ['🤨 Ask for a doctor\'s note', { chance: { p: 0.6, win: { a: -3, say: '{a} really was sick.' }, lose: { a: -10, reliable: { a: -5 }, say: '{a} was at the beach. You saw the photos.' } } }],
+    ['😤 "Come in anyway"', { a: -15, team: -4, say: '{a} came in coughing. Two others got sick.' }],
+    ['🧑‍🍳 Cover the shift yourself', { team: 3, say: 'You worked the counter all day.' }]
+  ], { w: 3, cd: 6, who: { a: 'any' } });
+
+  E('idea', 'team', '💡', '{a} has a big idea', '{a} wants to launch something new. It could be huge, or a flop.', [
+    ['🚀 Go all in', { cash: -0.8, chance: { p: 0.5, win: { demand: [1.2, 6, 'New idea'], fans: 20, a: 10, say: 'It\'s a hit!' }, lose: { a: -5, say: 'Nobody wanted it.' } } }],
+    ['🧪 Test it small first', { cash: -0.2, chance: { p: 0.6, win: { demand: [1.08, 6, 'New idea'], say: 'A nice small win.' }, lose: { say: 'The test flopped. Cheap lesson.' } } }],
+    ['🏆 Credit and a bonus for {a}', { bonus: 'a', a: 12, loyal: { a: 10 }, say: '{a} feels like a star.' }],
+    ['❌ "Not now."', { a: -10, say: '{a} stopped sharing ideas.' }]
+  ], { w: 2, cd: 12, who: { a: 'creative' } });
+
+  E('training_request', 'team', '🎓', '{a} wants to take a course', 'It\'s expensive, but {a} would be much better at the job.', [
+    ['🎓 Pay for it', { cash: -0.3, skill: { a: 10 }, a: 10, say: '{a} came back a pro.' }],
+    ['🤝 Pay half', { cash: -0.15, skill: { a: 8 }, say: 'Fair deal.' }],
+    ['📺 "Watch free videos"', { skill: { a: 2 }, a: -4, say: 'Not quite the same.' }],
+    ['❌ "No budget."', { a: -8, next: ['resign', 5, 10, 0.2], say: '{a} looks disappointed.' }]
+  ], { w: 2, cd: 12, who: { a: 'ambitious' } });
+
+  E('mentor', 'team', '🧑‍🏫', '{b} keeps making mistakes', '{b} is new and struggling. {a} offered to help.', [
+    ['🤝 Let {a} mentor {b}', { skill: { b: 8 }, rel: ['a', 'b', 25], a: -3, say: '{b} is improving fast.' }],
+    ['💵 Pay {a} extra to do it', { cash: -0.1, skill: { b: 10 }, a: 5, say: 'Worth every cent.' }],
+    ['🎓 Send {b} to training', { cash: -0.2, skill: { b: 6 }, say: 'Better.' }],
+    ['🚪 Let {b} go', { fire: 'b', say: '{b} wasn\'t a fit.' }]
+  ], { w: 2, cd: 12, who: { a: 'star', b: 'new' } });
+
+  E('rumors', 'team', '🗣️', 'Rumor: you\'re selling the company', 'The team is worried. Some are looking for new jobs.', [
+    ['📢 Team meeting: tell the truth', { team: 8, rep: 1, say: 'Everyone calmed down.' }],
+    ['🤐 Say nothing', { team: -8, next: ['resign', 2, 4, 0.5], say: 'The rumors grew.' }],
+    ['💵 Surprise bonus for everyone', { teamBonus: true, team: 10, say: 'Money talks.' }],
+    ['🔍 Find who started it', { chance: { p: 0.5, win: { a: -10, team: 3, say: 'It was {a}. Awkward.' }, lose: { team: -5, say: 'A witch hunt. Bad vibes.' } } }]
+  ], { w: 1.5, cd: 25, need: 3, who: { a: 'any' } });
+
+  E('strike', 'team', '✊', 'Your team threatens a strike', 'They want better pay. If you say no, they walk out Monday.', [
+    ['💵 Give everyone 8% more', { teamRaise: 0.08, team: 18, say: 'Strike called off.' }],
+    ['🤝 Negotiate', { chance: { p: 0.5, win: { teamRaise: 0.04, team: 10, say: 'A fair deal for everyone.' }, lose: { closed: [1, 'Strike'], team: -5, say: 'Talks failed. They walked out for a week.' } } }],
+    ['🍕 Offer perks instead', { cash: -0.3, chance: { p: 0.5, win: { team: 8, say: 'Free lunches did the trick.' }, lose: { closed: [1, 'Strike'], say: '"We can\'t pay rent with pizza." They walked out.' } } }],
+    ['🚫 Refuse', { closed: [1, 'Strike'], team: -15, rep: -3, say: 'The shop sat empty for a week.' }]
+  ], { w: 1, cd: 40, need: 5, minWeek: 15 });
+
+  E('injured', 'team', '🩼', '{a} got hurt at work', '{a} slipped on a wet floor. Their lawyer is calling.', [
+    ['💵 Pay the medical bills', { cash: -0.6, a: 10, rep: 2, say: '{a} is grateful. No lawsuit.' }],
+    ['⚖️ Fight it in court', { chance: { p: 0.5, win: { cash: -0.3, say: 'You won. Barely.' }, lose: { cash: -2, rep: -4, say: 'You lost. It was expensive.' } } }],
+    ['🦺 Pay, and add safety rules', { cash: -0.9, a: 12, team: 5, equip: 0.01, say: 'Safer shop, happier team.' }],
+    ['🙅 "Not my problem."', { cash: -1.2, rep: -6, team: -8, say: 'The court disagreed.' }]
+  ], { w: 1.5, cd: 25, who: { a: 'any' } });
+
+  E('worker_viral', 'team', '📱', '{a} went viral', 'A video of {a} working super fast has 2 million views.', [
+    ['📱 Repost it', { fans: 20, a: 8, say: 'New fans are pouring in.' }],
+    ['🎥 Put {a} in your ads', { raise: ['a', 0.1], fans: 30, a: 15, say: '{a} is a local star.' }],
+    ['🤐 Keep it low-key', { a: -3, say: 'It faded in a week.' }],
+    ['🔒 Sign {a} to a contract', { cash: -0.2, loyal: { a: 20 }, fans: 10, say: 'Nobody can steal {a} now.' }]
+  ], { w: 1.5, cd: 25, who: { a: 'front' } });
+
+  E('second_job', 'team', '🌙', '{a} works for another company', 'You found out {a} works nights at a competitor.', [
+    ['🚪 Fire {a}', { fire: 'a', say: 'Loyalty matters.' }],
+    ['💬 Make {a} choose', { chance: { p: 0.6, win: { loyal: { a: 20 }, say: '{a} quit the other job.' }, lose: { quit: 'a', say: '{a} chose them.' } } }],
+    ['💵 Pay {a} enough to quit it', { raise: ['a', 0.15], loyal: { a: 15 }, say: '{a} quit the night job.' }],
+    ['🤷 "It\'s your life"', { a: 5, reliable: { a: -5 }, say: '{a} is tired, but grateful.' }]
+  ], { w: 1.5, cd: 25, who: { a: 'any' } });
+
+  E('bully', 'team', '😠', '{a} is bullying {b}', '{b} is afraid to come to work. Everyone knows why.', [
+    ['🚪 Fire {a}', { fire: 'a', b: 15, team: 6, say: 'The team feels safer.' }],
+    ['⚠️ Final warning for {a}', { a: -10, b: 5, say: '{a} backed off. For now.' }],
+    ['🔀 Separate them', { rel: ['a', 'b', -10], capacity: [0.97, 4, 'Separate shifts'], say: 'Out of sight, out of mind.' }],
+    ['🙈 "Sort it out yourselves"', { b: -20, chance: { p: 0.5, win: { say: '{b} is holding on. Barely.' }, lose: { quit: 'b', say: '{b} quit. Everyone knows why.' } } }]
+  ], { w: 1.5, cd: 20, need: 2, who: { a: 'aggressive', b: 'any' } });
+
+  E('new_star', 'team', '🌟', '{a} is a natural', 'Just started, and already the fastest on the team.', [
+    ['🪜 Fast-track a promotion', { promote: 'a', team: -3, say: '{a} is climbing fast. Some are jealous.' }],
+    ['💵 A raise to keep them', { raise: ['a', 0.1], loyal: { a: 15 }, say: '{a} is here to stay.' }],
+    ['🧑‍🏫 Let them train the others', { capacity: [1.05, 6, 'New tricks'], team: 3, say: 'Everyone got a bit faster.' }],
+    ['🤐 Don\'t let it go to their head', { a: -5, say: '{a} feels unappreciated.' }]
+  ], { w: 2, cd: 15, who: { a: 'new' } });
+
+  E('fake_cv', 'team', '📄', '{a} lied on their CV', '{a} never worked at the famous place they claimed.', [
+    ['🚪 Fire {a}', { fire: 'a', say: 'No liars here.' }],
+    ['💬 Give them a chance', { chance: { p: 0.5, win: { skill: { a: 5 }, loyal: { a: 20 }, say: '{a} works harder than anyone now.' }, lose: { rep: -2, say: '{a} kept messing up.' } } }],
+    ['📉 Cut their pay', { raise: ['a', -0.15], a: -10, say: '{a} took the pay cut.' }],
+    ['🤐 Ignore it', { rep: -1, say: 'Customers noticed the mistakes.' }]
+  ], { w: 1.5, cd: 20, who: { a: 'new' } });
+
+  E('manager_raise', 'team', '👔', 'Manager {m} wants a raise', null, [
+    ['💵 Give it', { raise: ['m', 0.15], m: 15, loyal: { m: 10 }, say: '{m} is happy. The team runs smoothly.' }],
+    ['📊 Tie it to results', { chance: { p: 0.6, win: { raise: ['m', 0.15], capacity: [1.05, 8, 'Motivated manager'], say: '{m} hit the goals. Raise earned.' }, lose: { m: -8, say: '{m} missed the goals. No raise.' } } }],
+    ['🎁 A bonus instead', { bonus: 'm', m: 5, say: 'Not what {m} wanted, but okay.' }],
+    ['❌ "No."', { m: -20, next: ['resign', 3, 6, 0.3], say: '{m} is quietly job hunting.' }]
+  ], { kind: 'chat', from: 'm', msgs: ['I run this place', 'I deserve to be paid like it', 'can we talk?'], w: 1.5, cd: 20, who: { m: 'mgr' } });
+
+  E('bad_manager', 'team', '😡', 'Your manager is a bully', 'Three workers complained. {m} yells at everyone.', [
+    ['🎓 Leadership training', { cash: -0.3, m: -5, team: 8, say: '{m} is calmer now.' }],
+    ['⬇️ Demote {m}', { demote: 'm', team: 10, say: 'The team cheered. Quietly.' }],
+    ['🚪 Fire {m}', { fire: 'm', team: 12, say: 'Nobody misses {m}.' }],
+    ['🤷 "Results matter more"', { team: -12, capacity: [1.05, 4, 'Strict manager'], say: 'Fast work. Miserable team.' }]
+  ], { w: 1.5, cd: 25, who: { m: 'mgr' } });
+
+  E('wants_manager', 'team', '👔', '{a} wants to be a manager', '{a} is ready to lead. Is the team ready for {a}?', [
+    ['👔 Make {a} manager', { mgr: 'a', a: 20, say: 'Meet your new manager.' }],
+    ['📋 A trial month first', { chance: { p: 0.6, win: { mgr: 'a', say: '{a} passed the test. Promoted!' }, lose: { a: -8, say: 'It didn\'t work out. {a} is back to normal work.' } } }],
+    ['🎓 Leadership course first', { cash: -0.3, skill: { a: 5 }, a: 5, say: '{a} is learning how to lead.' }],
+    ['❌ "Not you."', { a: -12, say: '{a} took it hard.' }]
+  ], { w: 1.5, cd: 25, need: 6, who: { a: 'ambitious' } });
+
+  E('team_building', 'team', '🎳', 'Your team barely talks', 'Everyone eats lunch alone. It\'s way too quiet.', [
+    ['🎳 Bowling night', { cash: -0.15, team: 10, say: 'They laughed all night.' }],
+    ['🏕️ A weekend trip', { cash: -0.5, team: 18, say: 'They came back as a real team.' }],
+    ['🍕 Pizza Fridays', { cash: -0.2, team: 7, say: 'Friday is everyone\'s favorite day now.' }],
+    ['🤷 "They\'re here to work"', { team: -5, say: 'The silence continues.' }]
+  ], { w: 1.5, cd: 25, need: 4 });
+
+  E('anniversary', 'team', '🎂', '{a}\'s first work anniversary', '{a} has been here a full year today. The team wants to celebrate.', [
+    ['🎉 Throw a party', { cash: -0.1, a: 15, team: 5, say: '{a} got a little emotional.' }],
+    ['💵 A raise as a thank you', { raise: ['a', 0.08], a: 15, loyal: { a: 15 }, say: '{a} is staying for years.' }],
+    ['🏅 A plaque on the wall', { a: 10, say: '{a} took a photo of it.' }],
+    ['😐 Forget about it', { a: -10, say: 'Nobody said anything. {a} noticed.' }]
+  ], { w: 1.5, cd: 30, who: { a: 'veteran' } });
+
+  E('secret_skill', 'team', '🎨', '{a} used to be a pro designer', '{a} designed for big brands before this job. They never mentioned it.', [
+    ['🎨 Let {a} redo your branding', { rep: 5, fans: 15, a: 10, say: 'Your shop looks amazing now.' }],
+    ['🪜 Give {a} a new role', { promote: 'a', a: 12, say: '{a} is your new head of design.' }],
+    ['💵 Pay extra for side projects', { cash: -0.2, fans: 10, a: 6, say: 'Beautiful new menus and posters.' }],
+    ['🤷 "Just do your job"', { a: -8, say: '{a} shrugged and went back to work.' }]
+  ], { w: 1, cd: 40, who: { a: 'creative' } });
+
+  E('phone_addict', 'team', '📵', '{a} is always on their phone', 'Customers wait while {a} scrolls.', [
+    ['📵 Phones go in a locker', { team: -3, capacity: [1.05, 6, 'No phones'], say: 'Service is faster already.' }],
+    ['⚠️ Warn {a}', { a: -5, reliable: { a: 5 }, say: '{a} put it away. Mostly.' }],
+    ['🎯 Set a goal with a bonus', { bonus: 'a', skill: { a: 2 }, say: '{a} hit the goal. Phone forgotten.' }],
+    ['🚪 Fire {a}', { fire: 'a', say: 'Maybe they\'ll go viral now.' }]
+  ], { w: 1.5, cd: 20, who: { a: 'lazy' } });
+
+  E('family_emergency', 'team', '🏥', '{a} has a family emergency', '{a}\'s mother is in the hospital in another city.', [
+    ['✈️ Paid leave and a plane ticket', { cash: -0.2, a: 25, loyal: { a: 30 }, capacity: [0.95, 1, '{a} away'], say: '{a} will never forget this.' }],
+    ['🗓️ Unpaid leave', { a: 10, capacity: [0.95, 1, '{a} away'], say: '{a} left right away.' }],
+    ['🤝 The team covers the shifts', { team: 5, a: 15, say: 'Everyone stepped up.' }],
+    ['😬 "Can it wait until Friday?"', { a: -20, loyal: { a: -15 }, say: '{a} left anyway. And won\'t forget it.' }]
+  ], { w: 1.5, cd: 25, who: { a: 'any' } });
+
+  E('trash_talk', 'team', '💬', '{a} trashed you online', 'An anonymous post says your shop is a terrible place to work. It was {a}.', [
+    ['🚪 Fire {a}', { fire: 'a', rep: -3, say: '{a} posted about that too.' }],
+    ['💬 Talk it out', { chance: { p: 0.5, win: { a: 15, rep: 2, say: '{a} deleted it and said sorry.' }, lose: { rep: -3, say: '{a} doubled down.' } } }],
+    ['🛠️ Fix what they complained about', { cash: -0.3, team: 10, rep: 3, say: 'Things really did get better.' }],
+    ['🤷 Ignore it', { rep: -4, say: 'People looking for jobs read it.' }]
+  ], { w: 1.5, cd: 25, who: { a: 'lowmood' } });
+
+  E('worker_baby', 'team', '👶', '{a} had a baby', '{a} is exhausted and very happy.', [
+    ['🍼 Two weeks of paid leave', { a: 20, loyal: { a: 25 }, capacity: [0.95, 2, '{a} with the baby'], say: '{a} will never forget this.' }],
+    ['🎁 A big gift basket', { cash: -0.1, a: 12, team: 3, say: '200 diapers. Very useful.' }],
+    ['🎈 A baby party at work', { cash: -0.1, team: 8, a: 10, say: 'The baby was the star.' }],
+    ['⏰ "See you Monday!"', { a: -12, team: -3, say: '{a} came back looking like a zombie.' }]
+  ], { w: 1.2, cd: 25, who: { a: 'any' } });
+
+  E('worker_wedding', 'team', '💍', '{a} is getting married', '{a} invited the whole team. That would leave the shop empty.', [
+    ['💒 Close and everyone goes', { closed: [1, 'Wedding'], team: 12, a: 20, say: 'You danced all night.' }],
+    ['🎁 Pay for the honeymoon', { cash: -0.6, a: 20, loyal: { a: 30 }, say: '{a} sent a postcard from the beach.' }],
+    ['🍰 Make the wedding cake', { cash: -0.1, a: 10, fans: 8, say: 'Your logo was on the cake. Free advertising.' }],
+    ['🙅 Only {a} can go', { a: -5, team: -5, say: 'Everyone was sad to miss it.' }]
+  ], { w: 1.2, cd: 30, who: { a: 'any' } });
+
+  E('worker_jackpot', 'team', '🎰', '{a} won the lottery', null, [
+    ['🎉 "Go live your dream!"', { quit: 'a', rep: 2, say: '{a} left happy. They bought a boat.' }],
+    ['💼 "Invest in our company!"', { chance: { p: 0.5, win: { cash: 4, quit: 'a', say: '{a} invested, then retired to a beach.' }, lose: { quit: 'a', say: '{a} said no thanks and left.' } } }],
+    ['🙏 "Please stay!"', { chance: { p: 0.35, win: { a: 20, say: '{a} stays because they love the job.' }, lose: { quit: 'a', say: '{a} said sorry and left.' } } }],
+    ['🤔 "Can I borrow some?"', { chance: { p: 0.3, win: { cash: 1, say: '{a} gave the company a gift.' }, lose: { quit: 'a', say: '{a} left without saying goodbye.' } } }]
+  ], { kind: 'chat', from: 'a', msgs: ['BOSS', 'I WON THE LOTTERY', 'like... A LOT', 'I don\'t need to work anymore'], rarity: 'rare', w: 1, cd: 50, who: { a: 'any' } });
+
+  E('cpr_hero', 'team', '🚑', '{a} saved a customer\'s life', 'A customer collapsed. {a} did CPR until the ambulance came.', [
+    ['🏅 A hero medal and a bonus', { bonus: 'a', a: 15, loyal: { a: 20 }, team: 4, say: '{a} is officially a hero.' }],
+    ['❤️ First-aid classes for everyone', { cash: -0.3, team: 5, rep: 4, say: 'Now your whole team can save lives.' }],
+    ['📱 Tell the world', { viral: [1, 3], rep: 4, a: 8, say: 'The news called {a} "The Hero of {city}".' }],
+    ['🪜 Promote {a}', { promote: 'a', a: 12, say: 'Heroes get promoted here.' }]
+  ], { w: 1, cd: 40, who: { a: 'any' } });
+
+  E('clique', 'team', '👯', 'The team split into two groups', 'The new people and the old people don\'t get along.', [
+    ['🎲 Mix everyone into new teams', { team: 5, capacity: [0.97, 2, 'New teams'], say: 'Awkward first week. Then it worked.' }],
+    ['🏆 A friendly competition', { cash: -0.1, team: 8, capacity: [1.05, 3, 'Competition'], say: 'Competing brought them together.' }],
+    ['👔 Let the manager handle it', { chance: { p: 0.5, win: { team: 6, say: 'The manager fixed it.' }, lose: { team: -6, say: 'The manager picked a side. Oops.' } } }],
+    ['🤷 Leave it', { team: -8, say: 'The groups still don\'t talk.' }]
+  ], { w: 1.2, cd: 30, need: 6 });
+
+  E('lazy_worker', 'team', '😴', '{a} is barely working', 'The others are doing {a}\'s work and they\'re angry about it.', [
+    ['⚠️ Warn {a}', { chance: { p: 0.5, win: { reliable: { a: 10 }, say: '{a} woke up. Finally.' }, lose: { team: -4, say: 'Nothing changed.' } } }],
+    ['📋 Give {a} clear daily goals', { skill: { a: 3 }, a: -4, say: 'Goals helped. {a} does more now.' }],
+    ['🚪 Fire {a}', { fire: 'a', team: 6, say: 'The team is relieved.' }],
+    ['🙈 Ignore it', { team: -8, say: 'The hard workers are losing motivation.' }]
+  ], { w: 2, cd: 15, need: 3, who: { a: 'lazy' } });
+
+  E('whistleblower', 'team', '📣', '{a} wants to report you', '{a} says you\'re breaking safety rules and wants to tell the city.', [
+    ['🛠️ Fix the problems now', { cash: -0.6, rep: 3, a: 15, say: 'You fixed everything. {a} is satisfied.' }],
+    ['🤝 Thank {a} for the warning', { cash: -0.4, loyal: { a: 20 }, say: 'You fixed it together.' }],
+    ['🤫 Pay {a} to keep quiet', { cash: -0.3, chance: { p: 0.5, win: { say: '{a} took the money. For now.' }, lose: { rep: -10, cash: -1, say: '{a} reported it anyway. Now you\'re fined for bribery too.' } } }],
+    ['🚪 Fire {a}', { fire: 'a', rep: -8, cash: -1, say: '{a} reported you anyway. The fine was huge.' }]
+  ], { w: 1, cd: 40, minWeek: 10, who: { a: 'serious' } });
+
+  E('overtime_request', 'team', '🕐', 'The team wants overtime pay', 'They\'ve been staying late for free. They want to be paid for it.', [
+    ['💵 Pay the overtime', { cash: -0.4, team: 12, say: 'Fair is fair.' }],
+    ['🕔 Send everyone home on time', { team: 6, capacity: [0.95, 4, 'No overtime'], say: 'Less done, happier team.' }],
+    ['🤝 Pay half', { cash: -0.2, team: 4, say: 'Nobody loved it, but they accepted.' }],
+    ['❌ "That\'s part of the job"', { team: -12, next: ['resign', 2, 5, 0.4], say: 'People are angry.' }]
+  ], { w: 1.5, cd: 25, need: 4, who: { a: 'any' } });
+
+  E('worker_drunk', 'team', '🍺', '{a} showed up drunk', 'Slurring words, dropping things. Customers are staring.', [
+    ['🏠 Send {a} home', { a: -5, capacity: [0.95, 1, '{a} sent home'], say: '{a} left, embarrassed.' }],
+    ['💬 Talk tomorrow, in private', { chance: { p: 0.6, win: { a: 10, loyal: { a: 15 }, say: '{a} is going through a divorce. You offered help.' }, lose: { say: '{a} brushed it off.' } } }],
+    ['🚪 Fire {a}', { fire: 'a', say: 'Zero tolerance.' }],
+    ['🙈 Pretend you didn\'t see', { rep: -4, say: 'A customer complained to the city.' }]
+  ], { w: 1.2, cd: 30, who: { a: 'any' } });
+
+  E('salary_leak', 'team', '📄', 'Everyone saw everyone\'s salary', 'A payslip was left on the printer. {a} earns much less than {b} for the same job.', [
+    ['💵 Raise {a} to match', { raise: ['a', 0.15], a: 15, team: 3, say: 'Fair pay. The team noticed.' }],
+    ['📋 Fair pay for everyone', { teamRaise: 0.04, team: 10, say: 'Expensive, but trust is back.' }],
+    ['💬 Explain the difference', { chance: { p: 0.4, win: { say: '{a} understood.' }, lose: { a: -15, rel: ['a', 'b', -20], say: '{a} doesn\'t buy it.' } } }],
+    ['🤐 Say nothing', { a: -20, team: -6, next: ['resign', 2, 5, 0.5], say: '{a} is furious.' }]
+  ], { w: 1.2, cd: 30, need: 3, who: { a: 'any', b: 'any' } });
+
+  E('manager_wants_fire', 'team', '👔', '{m} wants to fire {a}', '"{a} is slow and it\'s dragging everyone down."', [
+    ['✅ Let {m} decide', { fire: 'a', m: 8, say: '{m} fired {a}.' }],
+    ['🎓 One more chance with training', { cash: -0.1, skill: { a: 6 }, m: -4, say: '{a} is improving.' }],
+    ['🔍 See for yourself first', { chance: { p: 0.5, win: { a: 8, say: '{a} is fine. {m} was too harsh.' }, lose: { fire: 'a', say: '{m} was right.' } } }],
+    ['🛡️ Protect {a}', { m: -12, a: 10, say: '{m} feels undermined.' }]
+  ], { w: 1.2, cd: 25, need: 3, who: { m: 'mgr', a: 'lazy' } });
+
+  E('asleep_on_job', 'team', '😴', '{a} was asleep at the counter', 'A customer took a photo and posted it.', [
+    ['💬 Ask why', { chance: { p: 0.6, win: { a: 8, loyal: { a: 10 }, say: '{a} works two jobs to pay rent.' }, lose: { say: '{a} just stayed up gaming.' } } }],
+    ['⚠️ Written warning', { a: -8, reliable: { a: 8 }, say: 'It won\'t happen again.' }],
+    ['🚪 Fire {a}', { fire: 'a', say: 'Gone.' }],
+    ['☕ Free coffee for the team', { cash: -0.02, team: 4, say: 'Everyone is more awake.' }]
+  ], { w: 1.5, cd: 25, who: { a: 'lazy' } });
+
+  E('union', 'team', '✊', 'Your workers want a union', 'They say they need a voice. {a} is leading it.', [
+    ['🤝 Support it', { team: 12, teamRaise: 0.03, rep: 4, say: 'The team trusts you.' }],
+    ['💬 Talk first', { chance: { p: 0.5, win: { team: 8, say: 'You fixed their worries.' }, lose: { team: -5, say: 'They formed it anyway.' } } }],
+    ['💵 Raises to stop it', { teamRaise: 0.05, team: 6, say: 'They dropped the idea. For now.' }],
+    ['🚪 Fire {a}', { fire: 'a', team: -18, rep: -8, say: 'Illegal. The news found out.' }]
+  ], { w: 0.8, cd: 50, need: 6, minWeek: 20, who: { a: 'serious' } });
+
+  E('retirement', 'team', '🎣', '{a} wants to retire', 'After many years. "I\'m tired. I want to see my grandkids."', [
+    ['🎉 A big farewell party', { quit: 'a', cash: -0.1, team: 8, rep: 2, say: 'Everyone cried. Good tears.' }],
+    ['🎁 A retirement gift', { quit: 'a', cash: -0.3, team: 6, say: '{a} was very touched.' }],
+    ['🧑‍🏫 Train a replacement first', { skill: { b: 8 }, quit: 'a', say: '{b} learned everything from {a}.' }],
+    ['🙏 Ask {a} to stay a bit', { chance: { p: 0.5, win: { a: 5, say: 'One more year.' }, lose: { quit: 'a', say: '{a} said no, kindly.' } } }]
+  ], { w: 0.8, cd: 40, who: { a: 'old', b: 'any' } });
+
+  E('stalker', 'team', '😨', 'A customer follows {a} home', 'Every night. {a} is scared to leave work alone.', [
+    ['👮 Call the police', { a: 12, team: 4, say: 'He was warned. It stopped.' }],
+    ['🚗 Drive {a} home yourself', { a: 15, loyal: { a: 15 }, say: '{a} feels safe.' }],
+    ['🚫 Ban him from the shop', { a: 10, rep: 1, say: 'He hasn\'t come back.' }],
+    ['🤷 "Probably nothing"', { a: -20, next: ['resign', 1, 3, 0.6], say: '{a} feels alone.' }]
+  ], { w: 0.8, cd: 40, who: { a: 'front' } });
+
+  E('two_quit', 'team', '🚪', '{a} and {b} quit together', 'Same day. Same letter. They\'re opening their own shop.', [
+    ['💰 Big raises to stay', { raise: ['a', 0.2], chance: { p: 0.5, win: { raise: ['b', 0.2], say: 'Both stayed.' }, lose: { quit: 'b', say: '{a} stayed. {b} left.' } } }],
+    ['🤝 Invest in their shop', { quit: 'a', chance: { p: 1, win: { quit: 'b', cash: -0.5, extra: [0.05, 16, 'Their shop'], say: 'They left. You own a piece of their shop.' }, lose: { say: 'They left.' } } }],
+    ['👋 Wish them luck', { quit: 'a', chance: { p: 1, win: { quit: 'b', say: 'Two gone. A new rival.' }, lose: { say: 'They left.' } } }],
+    ['⚖️ Remind them of their contracts', { a: -20, b: -20, team: -6, say: 'They stayed. Angry.' }]
+  ], { w: 0.8, cd: 40, need: 4, minWeek: 15, who: { a: 'ambitious', b: 'any' } });
+
+  E('team_lunch_rumor', 'team', '🗣️', '{a} is spreading rumors about {b}', 'Nasty ones. {b} heard, and wants you to do something.', [
+    ['🗣️ Talk to both', { chance: { p: 0.6, win: { rel: ['a', 'b', 20], say: 'Cleared the air.' }, lose: { rel: ['a', 'b', -20], say: 'It got worse.' } } }],
+    ['⚠️ Warn {a}', { a: -8, b: 8, say: 'The rumors stopped.' }],
+    ['🚪 Fire {a}', { fire: 'a', b: 12, team: 4, say: 'The team feels safer.' }],
+    ['🙈 Stay out of it', { b: -15, team: -4, say: '{b} feels alone.' }]
+  ], { w: 1.2, cd: 25, need: 3, who: { a: 'any', b: 'any' } });
+
+  E('first_hire_loyal', 'team', '🤝', '{a} turned down a huge offer', 'A big company offered {a} double. {a} said no, for you.', [
+    ['💵 A raise to say thanks', { raise: ['a', 0.15], a: 15, loyal: { a: 15 }, say: '{a} was touched.' }],
+    ['🪜 Promote {a}', { promote: 'a', a: 18, say: '{a} deserves it.' }],
+    ['🎁 A big bonus', { bonus: 'a', a: 12, say: 'Thank you, {a}.' }],
+    ['😊 A heartfelt thank you', { a: 6, say: '{a} smiled.' }]
+  ], { w: 1, cd: 40, who: { a: 'loyal' } });
 })();

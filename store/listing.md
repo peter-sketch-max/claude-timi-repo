@@ -25,13 +25,13 @@ Company Simulator is a fun business life game. Pick a company, hire a team with 
 Lemonade stand, candy shop, pizza place, banana farm, chocolate factory, football academy, sneaker brand, oil company, football club, gold mine and many more. Every company has its own workers, customers and problems.
 
 🎲 700+ EVENTS, 4 ANSWERS EACH
-A customer yells at you. Someone SLAPS you. A bear walks into your shop. A cat gets stuck on your crane. Your rival's mascot starts a dance battle outside your door. Every business has its own events, so a football club and a banana farm feel totally different. Every event gives you 4 ways to react, and some come back weeks later with a twist.
+A customer screams at you. Someone slaps you. Your manager is stealing. A rival opens right next door. A billionaire wants to buy your company. Every business has its own events, so a football club and a banana farm feel totally different. Every event is short and gives you 4 ways to react. Some are safe, some are a gamble, and some come back weeks later with a twist.
 
 🥊 RIVALS WHO FIGHT BACK
-Rival companies copy your logo, steal your ideas, post fake reviews and challenge you to battles. Beat them in rock-paper-scissors showdowns, win the quarterly Business Cup and climb the leaderboard.
+Rival companies slash prices, steal your workers, post fake reviews and challenge you on live TV. Beat them in showdowns, win the quarterly Business Cup and climb the leaderboard.
 
 ⚔️ COMPANY WARS
-Attack rival companies in 3-round battles: Price Attack, Spy Mission, Iron Defense or Ad Blitz. Send your war code to friends and battle them too! Win trophies and climb from Recruit to Emperor.
+Every war is 5 rounds of different mini-games: Coin Rush, Perfect Stop, Whack-a-Rival, Quick Math and Memory Grid. The winner takes 10% of the loser's fans! Send your war code to friends, they play the same 5 games, and you can rematch with one tap. Win trophies and climb from Recruit to Emperor.
 
 📺 FREE ADS WITH STARS
 Try to get into 15 ads with superstars, from a radio DJ to a football superstar and a movie star. Will they say yes? The more famous you are, the better your chances!
@@ -59,7 +59,7 @@ Everyone gets the same company each day. Play 52 weeks and share your score with
 🚫 No ads
 
 👑 VIP (optional subscription)
-Unlock VIP companies like the Space Company, Theme Park, Zoo and Esports Team. You also get double daily gifts, faster Boss Powers, an extra mission slot, an extra ad try, more war energy and double offline earnings. Cancel anytime in Google Play.
+Unlock VIP companies like the Space Company, Theme Park, Zoo and Esports Team. You also get double daily gifts, faster Boss Powers, an extra mission slot, an extra ad try, unlimited Friend Wars and double offline earnings. Cancel anytime in Google Play.
 
 How big can YOUR company get? 💰
 ```

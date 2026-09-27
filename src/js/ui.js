@@ -500,54 +500,261 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   // ---------- wars ----------
 
-  function tacticBtn(t, action, v, extra) { return '<button class="btn in" data-a="' + action + '" data-v="' + v + '"' + (extra || '') + '><span>' + t.emoji + '</span>' + t.name + '</button>'; }
+  function friendTriesTxt() { var n = G.friendWarsLeft(); return n === Infinity ? '👑 Unlimited (VIP)' : n + ' left today'; }
   function warTab(g) {
-    var w = G.warInit(g), ri = G.warRankIndex(g), rk = CS.WAR_RANKS[ri], nx = CS.WAR_RANKS[ri + 1], pw = G.warPower(g);
+    var w = G.warInit(g), ri = G.warRankIndex(g), rk = CS.WAR_RANKS[ri], nx = CS.WAR_RANKS[ri + 1];
     var h = '<button class="btn small back-btn" data-a="tab" data-v="home">⬅ Back</button>';
     h += '<div class="section card war-hero in"><div class="wh-top"><span class="e">' + rk.emoji + '</span><div class="grow"><b>' + rk.name + '</b><small>🏆 ' + w.trophies + ' trophies' + (nx ? ' · ' + (nx.min - w.trophies) + ' more for ' + nx.emoji + ' ' + nx.name : ' · Top rank!') + '</small>' + (nx ? bar((w.trophies - rk.min) / (nx.min - rk.min) * 100) : '') + '</div></div>' +
-      '<div class="wh-stats"><span>⚔️ Power <b>' + pw + '</b></span><span>⚡ Energy <b>' + w.energy + '/' + G.warMaxEnergy() + '</b></span><span>✅ ' + w.wins + ' · ❌ ' + w.losses + '</span></div>' +
-      '<small class="muted">Power comes from your company value, team, fans, reputation, level and upgrades. Energy refills +1 every week.</small></div>';
+      '<div class="wh-stats"><span>📱 <b>' + U.num(g.followers) + '</b> fans</span><span>⚡ <b>' + w.energy + '/' + G.warMaxEnergy() + '</b> energy</span><span>✅ ' + w.wins + ' · ❌ ' + w.losses + '</span></div>' +
+      '<small class="muted">5 rounds, 5 different games. Win more rounds than them to win the war. <b>The winner takes 10% of the loser\'s fans!</b></small>' +
+      '<div class="wh-games">' + CS.WAR_GAMES.map(function (x) { return '<span>' + x.emoji + ' ' + x.name + '</span>'; }).join('') + '</div></div>';
 
-    h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1</span></div><div class="war-list">';
+    h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1 · +1 every week</span></div><div class="war-list">';
     (g.rivalCos || []).forEach(function (rv, i) {
-      var st = G.tactic(G.rivalStyle(rv.name)), ep = G.rivalWarPower(g, rv);
-      h += '<div class="war-foe"' + stagger(i) + '><span class="logo" style="background:' + esc(rv.color) + '">' + esc(rv.logo) + '</span><div class="grow"><b>' + esc(rv.name) + '</b><small>⚔️ ~' + ep + ' power · 🕵️ Spies say: loves ' + st.emoji + '</small></div>' +
+      var fans = G.rivalFans(g, rv);
+      h += '<div class="war-foe"' + stagger(i) + '><span class="logo" style="background:' + esc(rv.color) + '">' + esc(rv.logo) + '</span><div class="grow"><b>' + esc(rv.name) + '</b><small>📱 ' + U.num(fans) + ' fans · win to take ' + U.num(Math.round(fans * G.WAR_FAN_SHARE)) + '</small></div>' +
         '<button class="btn small ' + (w.energy ? 'red' : '') + '" data-a="warattack" data-v="' + i + '" ' + (w.energy ? '' : 'disabled') + '>⚔️ Attack</button></div>';
     });
     h += '</div></div>';
 
-    h += '<div class="section"><div class="section-head"><h3>🤝 Friend Wars</h3><span class="label">No internet server!</span></div><div class="card friend-war">' +
-      '<p class="small">1️⃣ Pick your secret defense plan. 2️⃣ Send your war code to a friend in any chat app. 3️⃣ They paste it in their game and attack you! Paste their code below to attack them. You can fight each friend once a day.</p>' +
-      '<span class="label">Your secret defense plan (tap to change)</span><div class="plan">' + w.plan.map(function (id, i) { var t = G.tactic(id); return '<button class="slot" data-a="warplan" data-v="' + i + '"><small>Round ' + (i + 1) + '</small><span>' + t.emoji + '</span>' + t.name + '</button>'; }).join('') + '</div>' +
-      '<button class="btn pink block" data-a="warsend">📤 Send my war code</button>' +
-      '<span class="label" style="margin-top:14px;display:block">Got a code from a friend?</span><textarea id="warcode" rows="3" placeholder="Paste the war code here (starts with CSW1.)"></textarea>' +
-      '<button class="btn red big block" data-a="warpaste">⚔️ ATTACK THEM!</button></div></div>';
-    h += '<div class="section card rules-card"><b>How battles work</b><small>3 rounds. Win 2 to win the war! Each round, pick a move:</small><div class="rules">💸 beats 🕵️ · 🕵️ beats 🛡️ · 🛡️ beats 📣 · 📣 beats 💸</div><small>A move that beats theirs makes you 35% stronger that round. Higher power helps, but a smart move can beat a bigger company!</small></div>';
+    h += '<div class="section"><div class="section-head"><h3>🤝 Friend Wars</h3><span class="label">' + friendTriesTxt() + '</span></div><div class="card friend-war">' +
+      '<b class="fw-h">1. Challenge a friend</b><p class="small">Play the 5 games, then send your scores to a friend in any chat app. They have to beat you!</p>' +
+      '<button class="btn pink block" data-a="warchallenge">🎮 Play &amp; send a challenge</button>' +
+      '<b class="fw-h" style="margin-top:16px">2. Got a code from a friend?</b><textarea id="warcode" rows="3" placeholder="Paste the war code here (it starts with CSW2.)"></textarea>' +
+      '<button class="btn red big block" data-a="warpaste">⚔️ BATTLE THEM!</button>' +
+      (G.friendWarsLeft() === Infinity ? '' : '<p class="small muted" style="margin:10px 0 0">You get ' + G.FRIEND_WARS_PER_DAY + ' friend wars a day. 👑 VIP gets unlimited!</p>') + '</div></div>';
     return h;
   }
 
-  function warSide(c, cls) { return '<div class="side ' + cls + '"><span class="logo" style="background:' + esc(c.color) + '">' + esc(c.logo) + '</span><b>' + esc(c.name) + '</b><small>⚔️ ' + c.power + '</small></div>'; }
+  function warSide(c, cls) {
+    return '<div class="side ' + cls + '"><span class="logo" style="background:' + esc(c.color) + '">' + esc(c.logo) + '</span><b>' + esc(c.name) + '</b><small>' + (c.fans != null ? '📱 ' + U.num(c.fans) : '&nbsp;') + '</small></div>';
+  }
   function warSheet() {
-    var g = S.g, b = g.war && g.war.battle;
+    var g = S.g, sh = S.sheet, b = g.war && g.war.battle;
     if (!b) return null;
-    var h = '<div class="war-sheet"><h2>' + (b.foe.kind === 'friend' ? '🤜 Friend War!' : '⚔️ WAR!') + '</h2><div class="war-vs">' + warSide(b.me, 'me') + '<span class="vs">VS</span>' + warSide(b.foe, 'them') + '</div>' +
-      '<div class="war-dots">' + [0, 1, 2].map(function (i) { var r = b.rounds[i]; return '<i class="' + (r ? (r.win ? 'w' : 'l') : '') + '">' + (r ? (r.win ? '✅' : '❌') : i + 1) + '</i>'; }).join('') + '</div>';
-    var last = b.rounds[b.rounds.length - 1];
-    if (last) {
-      var mt = G.tactic(last.me), tt = G.tactic(last.them);
-      h += '<div class="clash" data-n="' + b.rounds.length + '"><span class="' + (last.win ? 'win' : 'lose') + '">' + mt.emoji + '</span><b>' + (last.beat === 1 ? '💥' : last.beat === -1 ? '💢' : '⚡') + '</b><span class="' + (last.win ? 'lose' : 'win') + '">' + tt.emoji + '</span></div>' +
-        '<p class="clash-text">' + (last.beat === 1 ? mt.name + ' beats ' + tt.name + '! ' : last.beat === -1 ? tt.name + ' beats ' + mt.name + '! ' : 'Even moves! ') + (last.win ? 'You win round ' + b.rounds.length + '! 🎉' : 'They win round ' + b.rounds.length + '! 😬') + '</p>';
-    }
-    if (!b.done) {
-      h += '<p class="war-pick">Round ' + (b.rounds.length + 1) + ': pick your move!' + (b.foe.style && !b.rounds.length ? '<br><small>🕵️ Spy tip: they love ' + G.tactic(b.foe.style).emoji + '</small>' : '') + '</p><div class="moves">' +
-        CS.WAR_TACTICS.map(function (t, i) { return tacticBtn(t, 'warmove', t.id, ' style="animation-delay:' + (0.08 * i) + 's"'); }).join('') + '</div><div class="rules">💸 beats 🕵️ · 🕵️ beats 🛡️ · 🛡️ beats 📣 · 📣 beats 💸</div>';
+    var me = { name: g.company.name, logo: g.company.logo, color: g.company.color, fans: g.followers };
+    var foe = b.foe || { name: 'Your friend', logo: '❓', color: '#ADB5BD' };
+    var head = b.kind === 'friend' ? '🤜 Friend War' : b.kind === 'challenge' ? '🎮 Challenge run' : '⚔️ WAR!';
+    var h = '<div class="war-sheet"><h2>' + head + '</h2><div class="war-vs">' + warSide(me, 'me') + '<span class="vs">VS</span>' + warSide(foe, 'them') + '</div>' +
+      '<div class="war-dots">' + b.games.map(function (id, i) {
+        var r = b.rounds[i], cls = r ? (r.win > 0 ? 'w' : r.win < 0 ? 'l' : r.win === 0 ? 't' : 'd') : i === b.mine.length ? 'now' : '';
+        return '<i class="' + cls + '">' + G.warGame(id).emoji + '</i>';
+      }).join('') + '</div>';
+    var i = b.mine.length, stage = sh.stage || 'intro';
+    if (stage === 'intro' && !b.done) {
+      var gm = G.warGame(b.games[i]);
+      h += '<div class="war-intro in"><small>ROUND ' + (i + 1) + ' OF 5</small><div class="wi-e">' + gm.emoji + '</div><h3>' + gm.name + '</h3><p>' + gm.desc + '</p>' +
+        (b.foe ? '<div class="wi-them">' + esc(foe.name) + '\'s score: <b>❓</b></div>' : '') + '</div>' +
+        '<button class="btn green big block" data-a="wargo">▶ GO!</button>' +
+        (b.kind !== 'challenge' ? '<button class="btn small block" style="margin-top:10px" data-a="confirm" data-v="wargiveup">🏳️ Give up</button>' : '');
+    } else if (stage === 'play' && !b.done) {
+      h += '<div class="war-arena" id="warArena"><div class="ws-hud"><span class="ws-score">⭐ 0</span><span class="ws-time"></span></div><div class="ws-field"></div><div class="ws-count">3</div></div>';
+    } else if (stage === 'reveal') {
+      var r = b.rounds[b.rounds.length - 1], gm2 = G.warGame(r.game);
+      h += '<div class="war-reveal in"><div class="wr-game">' + gm2.emoji + ' ' + gm2.name + '</div><div class="wr-scores"><div class="' + (r.win > 0 ? 'win' : '') + '"><small>You</small><b>' + r.mine + '</b></div>' +
+        (b.foe ? '<span>vs</span><div class="' + (r.win < 0 ? 'win' : '') + '"><small>' + esc(foe.name) + '</small><b>' + r.theirs + '</b></div>' : '') + '</div>' +
+        (b.foe ? '<h3 class="' + (r.win > 0 ? 'good' : r.win < 0 ? 'bad' : '') + '">' + (r.win > 0 ? 'You win the round!' : r.win < 0 ? 'They win the round!' : 'It\'s a tie!') + '</h3>' : '<h3>Score saved!</h3>') + '</div>' +
+        '<button class="btn green big block" data-a="warnext">' + (b.done ? 'See the result 🏆' : 'Next round ▶') + '</button>';
     } else {
-      var r = b.result;
-      h += '<div class="war-end ' + (r.won ? 'won' : 'lost') + '"><div class="face-big">' + (r.won ? '🏆' : '😭') + '</div><h2>' + (r.won ? 'VICTORY!' : 'DEFEAT') + '</h2><p>' + esc(r.text) + '</p>' +
-        (r.chips.length ? '<div class="chips">' + r.chips.map(function (c, i) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + i * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
-        '<div class="row2"><button class="btn pink" data-a="warshare">📤 Share</button><button class="btn green" data-a="warclose">Continue ▶</button></div></div>';
+      var res = b.result;
+      if (res.won == null) {
+        h += '<div class="war-end"><div class="face-big">🎮</div><h2>Challenge ready!</h2><p>Your scores: <b>' + b.mine.join(' · ') + '</b></p><p class="small">' + esc(res.text) + '</p>' +
+          '<button class="btn pink big block" data-a="warsendscores">📤 Send the challenge</button><div class="row2" style="margin-top:10px"><button class="btn" data-a="warrematch">🔁 Play again</button><button class="btn green" data-a="warclose">Done</button></div></div>';
+      } else {
+        var left = b.kind === 'friend' ? G.friendWarsLeft() : g.war.energy;
+        var canRe = left > 0;
+        h += '<div class="war-end ' + (res.won ? 'won' : 'lost') + '"><div class="face-big">' + (res.won ? '🏆' : '😤') + '</div><h2>' + (res.won ? 'VICTORY!' : 'DEFEAT') + '</h2><div class="war-score">' + res.score[0] + ' – ' + res.score[1] + '</div><p>' + esc(res.text) + '</p>' +
+          (res.chips.length ? '<div class="chips">' + res.chips.map(function (c, k) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + k * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
+          '<button class="btn ' + (canRe ? 'red' : '') + ' big block" data-a="warrematch" ' + (canRe ? '' : 'disabled') + '>🔁 Quick rematch' + (b.kind === 'friend' ? ' (' + (left === Infinity ? '∞' : left) + ' left)' : ' (⚡' + left + ')') + '</button>' +
+          '<div class="row2" style="margin-top:10px">' + (b.kind === 'friend' ? '<button class="btn pink" data-a="warsendscores">📤 Send my scores</button>' : '<button class="btn pink" data-a="warshare">📣 Share</button>') + '<button class="btn green" data-a="warclose">Done</button></div></div>';
+      }
     }
     return h + '</div>';
+  }
+
+  // The 5 war games. Each builds itself inside #warArena and calls done(score) when it ends.
+  var warGame = null;
+  function startWarPlay() {
+    var g = S.g, b = g.war && g.war.battle;
+    if (!b || b.done || !document.getElementById('warArena')) return;
+    var id = b.games[b.mine.length];
+    runWarGame(id, G.warGameData(id, b.seed), b, function (score) {
+      var r = G.warSubmit(g, score);
+      if (!r || !S.sheet || S.sheet.type !== 'war') return;
+      S.sheet.stage = 'reveal';
+      if (!b.foe) SFX.play('coin'); else if (r.win > 0) { SFX.play('good'); buzz(20); } else if (r.win < 0) { SFX.play('bad'); buzz(50); } else SFX.play('pop');
+      render();
+      if (r.win < 0) setTimeout(shake, 60);
+    });
+  }
+  function runWarGame(id, data, b, done) {
+    var box = document.getElementById('warArena');
+    var field = box.querySelector('.ws-field'), scoreEl = box.querySelector('.ws-score'), timeEl = box.querySelector('.ws-time'), cd = box.querySelector('.ws-count');
+    var score = 0, over = false, timers = [], raf = 0;
+    if (warGame) warGame.stop();
+    warGame = { stop: function () { over = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf); } };
+    function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+    function show() { scoreEl.textContent = '⭐ ' + score; }
+    function pop(txt, x, y, good) {
+      var d = document.createElement('div');
+      d.className = 'ws-pop ' + (good ? 'good' : 'bad'); d.textContent = txt; d.style.left = x + 'px'; d.style.top = y + 'px';
+      field.appendChild(d); setTimeout(function () { d.remove(); }, 700);
+    }
+    function add(v, x, y) { score = Math.max(0, score + v); show(); pop(v > 0 ? '+' + v : String(v), x, y, v > 0); SFX.play(v > 0 ? 'tap' : 'bad'); if (v < 0) buzz(40); }
+    function finish() {
+      if (over) return;
+      warGame.stop(); warGame = null;
+      box.classList.add('over');
+      var t = document.createElement('div'); t.className = 'ws-count'; t.textContent = '⭐ ' + score; box.appendChild(t);
+      setTimeout(function () { done(score); }, 900);
+    }
+    function clock(secs) {
+      var t0 = performance.now();
+      (function tick() {
+        if (over) return;
+        var left = Math.max(0, secs - (performance.now() - t0) / 1000);
+        timeEl.textContent = '⏱️ ' + left.toFixed(1);
+        if (left <= 0) return finish();
+        raf = requestAnimationFrame(tick);
+      })();
+    }
+    show();
+    var n = 3;
+    SFX.play('tick');
+    (function count() {
+      later(function () {
+        n--;
+        if (n > 0) { cd.textContent = n; SFX.play('tick'); count(); }
+        else { cd.textContent = 'GO!'; SFX.play('power'); later(function () { cd.remove(); start(); }, 350); }
+      }, 550);
+    })();
+
+    function start() {
+      var W = field.clientWidth, Hh = field.clientHeight;
+      if (id === 'coins') {
+        data.items.forEach(function (it) {
+          later(function () {
+            var el = document.createElement('button');
+            el.className = 'ws-coin' + (it.bomb ? ' bomb' : it.gold ? ' gold' : '');
+            el.textContent = it.bomb ? '💣' : it.gold ? '💰' : '🪙';
+            var x = 6 + it.x * (W - 62), y = 6 + it.y * (Hh - 62);
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.addEventListener('pointerdown', function (e) {
+              e.preventDefault();
+              if (el.dataset.hit || over) return;
+              el.dataset.hit = 1; el.classList.add('hit');
+              add(it.bomb ? -3 : it.gold ? 3 : 1, x, y);
+              setTimeout(function () { el.remove(); }, 160);
+            });
+            field.appendChild(el);
+            setTimeout(function () { el.remove(); }, 1000);
+          }, it.t);
+        });
+        clock(data.secs);
+      } else if (id === 'stop') {
+        field.innerHTML = '<div class="ws-bar"><i class="zone"></i><b class="mark"></b></div><div class="ws-tip">Tap anywhere to STOP!</div>';
+        var zone = field.querySelector('.zone'), mark = field.querySelector('.mark'), k = 0, t0 = 0, pos = 0, moving = false;
+        var next = function () {
+          if (k >= data.tries.length) return finish();
+          var tr = data.tries[k];
+          zone.style.left = (tr.zone * 100) + '%'; zone.style.width = (tr.width * 100) + '%';
+          timeEl.textContent = 'Try ' + (k + 1) + '/5';
+          t0 = performance.now(); moving = true;
+          var myTry = k;
+          later(function () { if (moving && k === myTry) stopNow(); }, 4000); // too slow: it stops by itself
+          (function anim(now) {
+            if (over || !moving) return;
+            var p = (((now || t0) - t0) / 1000 * tr.speed + tr.phase) % 2;
+            pos = p < 1 ? p : 2 - p;
+            mark.style.left = (pos * 100) + '%';
+            raf = requestAnimationFrame(anim);
+          })();
+        };
+        var stopNow = function () {
+          if (!moving || over) return;
+          moving = false; cancelAnimationFrame(raf);
+          var tr = data.tries[k], half = tr.width / 2, dist = Math.abs(pos - (tr.zone + half));
+          var pts = dist <= half ? Math.round(100 - dist / half * 40) : Math.max(0, Math.round(40 - (dist - half) * 200));
+          score += pts; show();
+          pop('+' + pts, pos * (W - 32) + 8, Hh * 0.45 - 40, pts >= 60);
+          SFX.play(pts >= 60 ? 'coin' : 'tap');
+          k++; later(next, 650);
+        };
+        field.addEventListener('pointerdown', function (e) { e.preventDefault(); stopNow(); });
+        next();
+      } else if (id === 'whack') {
+        field.innerHTML = '<div class="ws-grid">' + [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (i) { return '<button class="hole"><span></span></button>'; }).join('') + '</div>';
+        var holes = field.querySelectorAll('.hole'), myLogo = S.g.company.logo, theirLogo = b.foe && b.foe.logo !== myLogo ? b.foe.logo : '😈';
+        holes.forEach(function (hl) {
+          hl.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (over || !hl.classList.contains('up')) return;
+            var mine = hl.dataset.mine === '1';
+            hl.classList.remove('up'); hl.classList.add(mine ? 'oops' : 'bonk');
+            setTimeout(function () { hl.classList.remove('oops', 'bonk'); }, 260);
+            add(mine ? -2 : 1, hl.offsetLeft + hl.offsetWidth / 2 - 10, hl.offsetTop);
+          });
+        });
+        data.pops.forEach(function (p) {
+          later(function () {
+            var hl = holes[p.hole];
+            if (hl.classList.contains('up')) return;
+            hl.dataset.mine = p.mine ? '1' : '';
+            hl.querySelector('span').textContent = p.mine ? myLogo : theirLogo;
+            hl.classList.add('up'); hl._tok = p.t;
+            setTimeout(function () { if (hl._tok === p.t) hl.classList.remove('up'); }, p.dur);
+          }, p.t);
+        });
+        clock(data.secs);
+      } else if (id === 'math') {
+        field.innerHTML = '<div class="ws-q"></div><div class="ws-opts"></div>';
+        var qEl = field.querySelector('.ws-q'), oEl = field.querySelector('.ws-opts'), qi = 0, busy = false;
+        var ask = function () {
+          var q = data.questions[qi % data.questions.length];
+          qEl.textContent = q.q + ' = ?';
+          oEl.innerHTML = q.options.map(function (o, i) { return '<button class="btn" data-i="' + i + '">' + o + '</button>'; }).join('');
+          busy = false;
+        };
+        oEl.addEventListener('pointerdown', function (e) {
+          var btn = e.target.closest('button');
+          if (!btn || over || busy) return;
+          e.preventDefault(); busy = true;
+          var q = data.questions[qi % data.questions.length], ok = +btn.dataset.i === q.answer;
+          if (ok) { btn.classList.add('right'); add(1, btn.offsetLeft + 20, btn.offsetTop); }
+          else { btn.classList.add('wrong'); SFX.play('bad'); buzz(40); }
+          qi++; later(ask, ok ? 150 : 450);
+        });
+        ask(); clock(data.secs);
+      } else {
+        field.innerHTML = '<div class="ws-grid mem">' + [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function () { return '<button class="tile"></button>'; }).join('') + '</div><div class="ws-tip"></div>';
+        var tiles = field.querySelectorAll('.tile'), tip = field.querySelector('.ws-tip'), lv = 0, need = [], found = 0, input = false;
+        var level = function () {
+          if (lv >= data.levels.length) return finish();
+          need = data.levels[lv]; found = 0; input = false;
+          tiles.forEach(function (t) { t.className = 'tile'; });
+          tip.textContent = 'Level ' + (lv + 1) + '/5 · Watch carefully...';
+          need.forEach(function (i) { tiles[i].classList.add('lit'); });
+          later(function () { need.forEach(function (i) { tiles[i].classList.remove('lit'); }); input = true; tip.textContent = 'Level ' + (lv + 1) + '/5 · Tap the ' + need.length + ' squares!'; }, data.show);
+        };
+        tiles.forEach(function (t, i) {
+          t.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (!input || over || t.classList.contains('ok')) return;
+            if (need.indexOf(i) >= 0) {
+              t.classList.add('ok'); found++;
+              add(1, t.offsetLeft + t.offsetWidth / 2 - 10, t.offsetTop);
+              if (found === need.length) { input = false; lv++; tip.textContent = 'Perfect!'; later(level, 500); }
+            } else {
+              input = false; t.classList.add('bad'); SFX.play('bad'); buzz(60);
+              tip.textContent = 'Wrong square!';
+              need.forEach(function (k) { if (!tiles[k].classList.contains('ok')) tiles[k].classList.add('lit'); });
+              later(finish, 800);
+            }
+          });
+        });
+        level(); clock(data.secs);
+      }
+    }
   }
 
   // ---------- settings ----------
@@ -855,8 +1062,9 @@ var CS = globalThis.CS = globalThis.CS || {};
   function confirmSheet() {
     var w = S.sheet.what;
     var t = w === 'newgame' ? ['🔄', 'Start over?', 'This company is saved in your history, and you start a new one. You get a small bonus for your experience!']
-      : ['📉', 'Give up?', 'Your company closes for good. Your next company gets an experience bonus.'];
-    return '<div class="result"><div class="face-big">' + t[0] + '</div><h2>' + t[1] + '</h2><p style="font-size:16px">' + t[2] + '</p><div class="row2"><button class="btn" data-a="close">Cancel</button><button class="btn red" data-a="doconfirm">Yes</button></div></div>';
+      : w === 'wargiveup' ? ['🏳️', 'Give up this war?', 'The rounds you haven\'t played count as 0, so you will probably lose fans.']
+        : ['📉', 'Give up?', 'Your company closes for good. Your next company gets an experience bonus.'];
+    return '<div class="result"><div class="face-big">' + t[0] + '</div><h2>' + t[1] + '</h2><p style="font-size:16px">' + t[2] + '</p><div class="row2"><button class="btn" data-a="' + (w === 'wargiveup' ? 'warback' : 'close') + '">Cancel</button><button class="btn red" data-a="doconfirm">Yes</button></div></div>';
   }
 
   // ---------- game over / daily finish ----------
@@ -1054,7 +1262,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     S.screen = 'game'; S.tab = 'home'; S.prev = null; window.scrollTo(0, 0);
     var off = G.offlineEarnings(S.g);
     if (off) { S.sheet = { type: 'offline', o: off }; SFX.play('coin'); return; }
-    if (S.g.war && S.g.war.battle) { S.sheet = { type: 'war', k: 'war' }; return; }
+    if (S.g.war && S.g.war.battle) { S.sheet = { type: 'war', k: 'war', stage: S.g.war.battle.done ? 'end' : 'intro' }; return; }
     if (G.currentEvent(S.g)) openNextEvent();
   }
   // Android app: the WebView has no navigator.share, so the native share menu (Capacitor) is used.
@@ -1159,36 +1367,52 @@ var CS = globalThis.CS = globalThis.CS || {};
     warattack: function (v) {
       var rv = S.g.rivalCos[+v];
       if (!rv || !G.warAttackRival(S.g, rv.name)) return false;
-      S.sheet = { type: 'war', k: 'war' + Math.random() };
-      SFX.play('power'); buzz([30, 30, 30]); setTimeout(shake, 60);
+      G.save(S.g);
+      S.sheet = { type: 'war', k: 'war', stage: 'intro' };
+      SFX.play('power'); buzz([30, 30, 30]);
     },
-    warmove: function (v) {
-      var g = S.g, r = G.warRound(g, v);
-      if (!r) return false;
-      SFX.play(r.win ? 'good' : 'bad'); buzz(r.win ? 20 : 50);
-      if (!r.win) setTimeout(shake, 60);
-      var b = g.war.battle;
-      if (b.done) {
-        if (b.result.won) { confetti(90); coinBurst(14); setTimeout(function () { SFX.play('level'); }, 300); }
-        queueCelebrations(b.result, true);
-      }
+    warchallenge: function () {
+      if (!G.warStartChallenge(S.g)) return false;
+      S.sheet = { type: 'war', k: 'war', stage: 'intro' };
+      SFX.play('pop');
     },
-    warclose: function () { G.warClose(S.g); G.save(S.g); S.sheet = null; showOverlay(); },
-    warshare: function () { shareText(G.warShareText(S.g), 'Share your war'); return false; },
-    warplan: function (v) {
-      var w = G.warInit(S.g), i = +v, ids = CS.WAR_TACTICS.map(function (t) { return t.id; });
-      w.plan[i] = ids[(ids.indexOf(w.plan[i]) + 1) % ids.length];
-      G.save(S.g); SFX.play('tap');
-    },
-    warsend: function () { shareText(G.warCodeText(S.g), 'Send your war code'); return false; },
     warpaste: function () {
       var ta = document.getElementById('warcode'), foe = G.readWarCode(S.g, ta && ta.value);
       if (foe.error) { toast(foe.error); SFX.play('bad'); return false; }
-      if (!G.warAttackFriend(S.g, foe)) return false;
+      if (G.friendWarsLeft() < 1) { toast('No friend wars left today. Come back tomorrow, or get 👑 VIP for unlimited!'); S.sheet = { type: 'vip' }; return; }
+      if (!G.warStartFriend(S.g, foe)) return false;
       G.save(S.g);
-      S.sheet = { type: 'war', k: 'war' + Math.random() };
-      SFX.play('power'); buzz([30, 30, 30]); setTimeout(shake, 60);
+      S.sheet = { type: 'war', k: 'war', stage: 'intro' };
+      SFX.play('power'); buzz([30, 30, 30]);
     },
+    wargo: function () {
+      if (!S.sheet || S.sheet.type !== 'war') return false;
+      S.sheet.stage = 'play';
+      setTimeout(startWarPlay, 40);
+    },
+    warnext: function () {
+      var b = S.g.war && S.g.war.battle;
+      if (!b) return false;
+      S.sheet.stage = b.done ? 'end' : 'intro';
+      if (b.done && b.result && b.result.won != null) {
+        if (b.result.won) { confetti(90); coinBurst(14); SFX.play('level'); } else SFX.play('bad');
+        queueCelebrations(b.result, true);
+      }
+    },
+    warrematch: function () {
+      var g = S.g, w = G.warInit(g), last = w.last;
+      if (last && last.kind === 'friend' && G.friendWarsLeft() < 1) { toast('No friend wars left today. 👑 VIP gets unlimited!'); S.sheet = { type: 'vip' }; return; }
+      if (last && last.kind === 'rival' && w.energy < 1) { toast('No war energy left. It refills +1 every week! ⚡'); return false; }
+      G.warClose(g);
+      if (!G.warRematch(g)) { toast('Can\'t rematch right now.'); return false; }
+      G.save(g);
+      S.sheet = { type: 'war', k: 'war', stage: 'intro', n: Math.random() };
+      SFX.play('power');
+    },
+    warback: function () { S.sheet = { type: 'war', k: 'war', stage: 'intro' }; },
+    warclose: function () { if (warGame) warGame.stop(); G.warClose(S.g); G.save(S.g); S.sheet = null; showOverlay(); },
+    warshare: function () { shareText(G.warShareText(S.g), 'Share your war'); return false; },
+    warsendscores: function () { var b = S.g.war && S.g.war.battle; if (b) shareText(G.warCodeText(S.g, b), 'Send your scores'); return false; },
     tryad: function (v) {
       var r = G.tryAd(S.g, v);
       if (!r) return false;
@@ -1283,6 +1507,11 @@ var CS = globalThis.CS = globalThis.CS || {};
       if (w === 'newgame') {
         if (g.mode === 'main') { G.recordLegacy(g, 'Started over'); G.clearSave('main'); } else G.clearSave('daily');
         S.g = null; S.screen = 'create'; S.create.step = 0; S.create.name = '';
+      } else if (w === 'wargiveup') {
+        var bt = g.war && g.war.battle;
+        if (warGame) warGame.stop();
+        while (bt && !bt.done) G.warSubmit(g, 0);
+        S.sheet = { type: 'war', k: 'war', stage: 'end' };
       } else { g.over = { reason: g.mode === 'daily' ? 'daily' : 'gaveup', week: g.week }; G.checkAchievements(g); endCompany(); }
     },
     restart: function () { S.g = null; S.screen = 'create'; S.create.step = 0; S.create.name = ''; window.scrollTo(0, 0); }

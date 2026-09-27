@@ -17,13 +17,14 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 - **Large:** oil company, soda company, football club, shipping, gold mine, airline, bank, movie studio and more.
 - **VIP:** YouTube channel, esports team, music label, zoo, theme park, space company, social media app.
 
-**712 events, and every one has 4 answers**
-- **Every business has its own events** (7 or more each), so a football academy, a banana farm and an oil company feel completely different: angry sideline parents, hurricanes on the farm, storms on the oil rig, a cat stuck on your crane.
-- Angry customers: someone yells at you, someone SLAPS you, "I want to speak to the manager!"
-- Gentle sad moments: an old worker or the shop pet passes away, and you choose how to remember them (shown in the Team tab).
-- Funny ones: a pigeon moves in, a bear walks in, 1,000 rubber chickens, a robbery with a banana.
-- Legendary ones: aliens, time travelers, a cat CEO.
-- Chains, where a choice comes back weeks later with a twist.
+**700+ events, and every one has 4 answers**
+- **Short and dramatic.** Every event is a one- or two-line situation with real stakes, like in a life simulator. Some answers are safe, some are a gamble (you see the chance), and some come back weeks later.
+- **Every business has its own events** (7 each), so a football academy, a banana farm and an oil company feel completely different: a scout at training, a hurricane on the farm, an oil spill, a lion out of its enclosure.
+- **Angry customers:** someone screams at you, someone slaps you, "I want to speak to the owner".
+- **Shady deals:** a bribe, hidden cash or fake reviews can pay off, or come back as a tax raid or a police investigation.
+- **Your life as the boss:** burnout, your family, your cousin who needs a job, a TV interview.
+- **Sad goodbyes:** an old worker or the shop pet passes away, and you choose how to remember them (shown in the Team tab).
+- **Legendary moments:** a billionaire wants your company, the president visits, you're on a magazine cover.
 
 **12 event styles**
 - 💬 Text chats
@@ -41,12 +42,14 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 
 **Rivals everywhere**
 - 3 rival companies with their own power.
-- 30+ rival events: they copy your logo, start mascot dance battles, post fake reviews, steal your manager, or slap you on live TV.
+- 35+ rival events: they open next door, slash prices, post fake reviews, steal your manager, sabotage deliveries, or challenge you on live TV.
 - Every 13 weeks the **Business Cup** crowns the top company, with 🥇🥈🥉 prizes.
 
 **⚔️ Company Wars (no server needed)**
-- Attack your rivals using war energy (+1 every week). Each war is 3 rounds of 💸 Price Attack, 🕵️ Spy Mission, 🛡️ Iron Defense and 📣 Ad Blitz, where each move beats one other move.
-- **Friend Wars:** pick a secret 3-round defense plan and send your war code in any chat app. Your friend pastes it into their game and attacks you. There's no server, so it's free forever. Codes have a checksum so they can't be edited, and each friend can be fought once a day.
+- A war is **5 rounds, one of each mini-game:** 💰 Coin Rush, 🎯 Perfect Stop, 🔨 Whack-a-Rival, 🧮 Quick Math and 🧠 Memory Grid. The order is different every war. Win more rounds to win the war.
+- **The winner takes 10% of the loser's fans.** Lose, and you lose 10% of yours.
+- Attack rival companies with war energy (+1 every week).
+- **Friend Wars:** play your 5 rounds, send your war code in any chat app, and your friend plays the same 5 games to beat your score. Quick rematch with one tap. 3 friend wars a day, unlimited with VIP. There's no server, so it's free forever, and codes have a checksum so they can't be edited.
 - Trophies and war ranks, from 🪖 Recruit to 👑 Emperor.
 
 **📺 Free Ads tab**
@@ -69,7 +72,7 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 - 🎵 **Original background song and sound effects.** They're generated live in code, so there are no audio files and no copyright issues.
 
 **VIP subscription** (Google Play Billing, product id `vip_monthly`)
-- VIP companies, double daily gifts, faster powers, a 4th mission slot, 2x offline earnings, an extra ad try, more war energy and VIP logos.
+- VIP companies, double daily gifts, faster powers, a 4th mission slot, 2x offline earnings, an extra ad try, unlimited Friend Wars, more war energy and VIP logos.
 - On the web there is no payment, so VIP can be switched on for free as a demo.
 
 ## Development
@@ -80,10 +83,10 @@ The game is plain HTML, CSS and JavaScript. The Android app wraps it with [Capac
 src/js/util.js         helpers and seeded random numbers
 src/js/data.js         companies, cities, traits, upgrades, missions, achievements, powers, VIP perks
 src/js/game.js         simulation engine, effects, mini-games, rivals, powers, saves
-src/js/events.js       events, part 1 (the format is explained at the top)
-src/js/events-more.js  events, part 2
-src/js/events-fun.js   events, part 3: rivals, funny and company-specific events
-src/js/events-life.js  events, part 4: sad goodbyes, angry customers, slaps, crazy days, team and boss life
+src/js/events.js       events, part 1: your team (the format and style rules are at the top)
+src/js/events-more.js  events, part 2: customers, business, money and social media
+src/js/events-fun.js   events, part 3: rivals, world news, lucky breaks, mini-games and legendary moments
+src/js/events-life.js  events, part 4: your life, shady deals, trouble and sad goodbyes
 src/js/events-biz*.js  events for one kind of business (small, medium and large businesses)
 src/js/store.js        VIP subscription (Google Play Billing via cordova-plugin-purchase)
 src/js/music.js        background song
@@ -99,7 +102,7 @@ Commands:
 |---|---|
 | `npm install` | Installs Capacitor and the fonts. |
 | `npm run build` | Builds `dist/` (web) and `www/` (the Android app's files, with the fonts bundled). |
-| `npm run check` | Checks all events (4 answers each, valid effects and chains, every piece of text fills in), then plays every company for 2 years, using ads and wars too, to catch crashes. |
+| `npm run check` | Checks all events (4 answers each, valid effects and chains, every piece of text fills in, and short text: titles up to 44 characters, stories up to 150, answers up to 34), then plays every company for 2 years, using ads and wars too, to catch crashes. |
 | `npm run android:sync` | Builds and copies the game into `android/`. |
 | `npm run android:icons` | Regenerates the app icons and splash from `assets/`. |
 
