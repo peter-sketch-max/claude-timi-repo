@@ -1,13 +1,13 @@
 {
   "name": "Company Simulator",
   "short_name": "Company Sim",
-  "description": "Build a company from a tiny shop to a global empire, one week at a time.",
+  "description": "Start a tiny company, make choices, survive crazy weeks and build a giant empire!",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#EEF1EC",
-  "theme_color": "#0F7B53",
+  "background_color": "#3EC5FF",
+  "theme_color": "#2B2250",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

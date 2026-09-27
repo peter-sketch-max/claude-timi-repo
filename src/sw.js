@@ -1,5 +1,5 @@
 // Caches the game so it opens offline once installed.
-var CACHE = 'companysim-v1';
+var CACHE = 'companysim-v2';
 var FILES = ['./', 'index.html', 'css/style.css', 'js/util.js', 'js/data.js', 'js/game.js', 'js/events.js', 'js/ui.js', 'icon.svg', 'manifest.webmanifest'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); })); self.skipWaiting(); });
 self.addEventListener('activate', function (e) {

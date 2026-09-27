@@ -1,803 +1,1401 @@
-// Event definitions.
-//   id, cat, icon, w (weight or fn), cd (cooldown weeks), minWeek, cond(g[,ctx]), setup(g) -> ctx | null
-//   title/text: string or fn(g, ctx)
-//   choices: [{ t: label, d: hint, cost: fn(g,ctx), fx: fn(g,ctx) -> result text }]
-//   Events without choices are minor: fx runs automatically and the line goes to the week report.
-//   auto: which choice staff pick when the week has too many decisions (default: last).
-//   chainOnly: only happens as a follow-up scheduled by another event.
+// All events.
+//
+// Common fields:
+//   id, cat (see CS.CATS), icon, kind, rarity (common|rare|epic|legendary), w (weight), cd (cooldown weeks),
+//   minWeek, need (min staff), cond(g), who ({a: 'any'|'<trait>'|'front'|'mgr'|'lowmood'|'star'|'new'|'veteran'|'notmgr', b: ...}),
+//   init(g, ctx) to add data (return false to skip), start (effect applied when the event appears),
+//   chainOnly (only happens as a follow-up).
+// Text uses {a} {b} {m} {rival} {amt} {company} {front} {fronts} {unit} {industry} {city} and any ctx key.
+//
+// Kinds:
+//   choice (default)  title, text, choices: [{ t, d, fx }]
+//   chat              from: 'a' | 'm' | { name, face }, msgs: [...], choices = replies
+//   review            stars, text, choices
+//   news              title = headline, text, choices
+//   minor             no choices; fx runs by itself and shows in the weekly report
+//   boxes             prizes: [{ label, emoji, w, fx }]
+//   wheel             slices: [{ label, emoji, color, w, fx, jackpot }]
+//   tap               target (emoji), goal, secs, win, lose
+//   quiz              init makes ctx.q = { q, options, answer }, win, lose
+//   deal              init sets ctx.offer, accept(g, c) -> fx
+//   vs                win, lose, tie
+//   interview         init makes ctx.cand
+//   post              pick a social media post
+//
+// Effect (fx) keys: cash (share of weekly sales, negative = cost), money ($), rep, happy, fans, team,
+//   a/b/m (mood of that person), skill/loyal/reliable ({a: n}), rel ['a','b',n], date, breakup,
+//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a',
+//   demand/capacity/supply [value, weeks, label], extra [share, weeks, label], closed [weeks, label],
+//   price (+1/-1), equip (permanent speed), rent (permanent), viral [min, max], hire 'cand', hireSpecial {...},
+//   next ['id', minWeeks, maxWeeks, chance], chance { p, win, lose }, say, xp, flag, run(g, c).
 var CS = globalThis.CS = globalThis.CS || {};
 
 (function () {
   var U = CS.U, G = CS.G;
   var E = [];
-  function def(d) { E.push(d); }
+  function ev(d) {
+    d.kind = d.kind || (d.choices ? 'choice' : 'minor');
+    E.push(d);
+  }
 
-  // ----- helpers for writing events -----
-  function N(g, id) { var e = G.emp(g, id); return e ? e.name : 'someone'; }
-  function first(g, id) { return N(g, id).split(' ')[0]; }
-  function emp(g, id) { return G.emp(g, id); }
-  function pickEmp(g, filter, weightFn) {
-    var list = g.employees.filter(filter || function () { return true; });
-    if (!list.length) return null;
-    return weightFn ? U.weighted(list, weightFn) : U.pick(list);
-  }
-  function pickOther(g, a, filter) {
-    return pickEmp(g, function (e) { return e.id !== a.id && (!filter || filter(e)); });
-  }
-  function traitW(t, heavy) { return function (e) { return G.has(e, t) ? (heavy || 6) : 1; }; }
-  function staff(n) { return function (g) { return g.employees.length >= n; }; }
-  function spend(g, amt) { g.cash -= amt; return amt; }
-  function cost(frac) { return function (g) { return G.cost(g, frac); }; }
-  function payCost(frac) { return function (g) { return spend(g, G.cost(g, frac)); }; }
-  function team(g, d) { g.employees.forEach(function (e) { e.morale += d; }); }
-  function rep(g, d) { g.reputation += d; }
-  function aw(g, d) { g.awareness = Math.min(G.awCap(g), g.awareness + d); }
-  function rival(g) { return U.pick(g.rivals); }
-  function M(n) { return U.money(n); }
-  function hasRole(r) { return function (g) { return g.employees.some(function (e) { return e.role === r; }); }; }
+  function rival(g, c) { c.rival = U.pick(g.rivals); }
+  function amt(frac) { return function (g, c) { c.amt = G.cost(g, frac); }; }
+  function isInd(list) { return function (g) { return list.indexOf(g.company.industry) >= 0; }; }
+  var FOOD = isInd(['cafe', 'restaurant', 'bakery', 'foodtruck', 'supermarket', 'convenience', 'hotel']);
+  var TECH = isInd(['gamestudio', 'software', 'tech', 'electronics', 'phonerepair']);
+  var noCams = function (g) { return !G.upLevel(g, 'cameras'); };
+  var hasRole = function (r) { return function (g) { return g.employees.some(function (e) { return e.role === r; }); }; };
+  var season = function (from, to) { return function (g) { var w = ((g.week - 1) % 52) + 1; return w >= from && w <= to; }; };
+  var busy = function (g) { var h = g.history[g.history.length - 1]; return h && h.demand > h.capacity * 1.08; };
 
   // =====================================================================
-  // EMPLOYEE EVENTS
+  // 👥 TEAM
   // =====================================================================
 
-  def({ id: 'fight', cat: 'Employees', icon: '🥊', w: 5, cd: 5, cond: staff(2),
-    setup: function (g) {
-      var a = pickEmp(g, null, traitW('aggressive', 8)); if (!a) return null;
-      var b = pickOther(g, a); return b ? { a: a.id, b: b.id } : null;
-    },
-    title: function (g, c) { return first(g, c.a) + ' and ' + first(g, c.b) + ' got into a fight'; },
-    text: function (g, c) { return N(g, c.a) + ' and ' + N(g, c.b) + ' started shouting at each other in front of customers. Now nobody is talking to anybody.'; },
+  ev({ id: 'fight', cat: 'team', icon: '🥊', w: 4, cd: 5, need: 2, who: { a: 'aggressive', b: 'any' },
+    title: '{a} and {b} had a big fight!',
+    text: 'They yelled at each other in front of customers. 😤 Now they won\'t talk.',
     choices: [
-      { t: 'Sit them down and mediate', d: 'Takes your time, usually works',
-        fx: function (g, c) {
-          if (U.chance(0.6)) { G.addRel(g, c.a, c.b, 30); return 'They shook hands. Things are awkward, but calm.'; }
-          G.addRel(g, c.a, c.b, -10); G.schedule(g, 'feud', U.ri(1, 2), c);
-          return 'It seemed to work, but ' + first(g, c.b) + ' left the meeting still angry.';
-        } },
-      { t: 'Give both a written warning', d: 'Hurts morale a little',
-        fx: function (g, c) { emp(g, c.a).morale -= 8; emp(g, c.b).morale -= 8; G.addRel(g, c.a, c.b, -5); return 'Both signed the warning. The shouting stopped.'; } },
-      { t: 'Fire them', label: function (g, c) { return 'Fire ' + first(g, c.a); }, d: 'Pays one week severance',
-        fx: function (g, c) { G.removeEmp(g, emp(g, c.a), 'fired'); return 'You made an example of them. The team got the message.'; } },
-      { t: 'Ignore it', d: 'They are adults',
-        fx: function (g, c) { G.addRel(g, c.a, c.b, -30); G.schedule(g, 'feud', 1, c); return 'You hope it blows over.'; } }
+      { t: '🤝 Help them make up', fx: { chance: { p: 0.6, win: { rel: ['a', 'b', 35], team: 2, say: 'They shook hands! 🤗' }, lose: { rel: ['a', 'b', -10], say: 'It didn\'t work. {b} is still angry.', next: ['feud', 1, 2] } } } },
+      { t: '📝 Warn them both', fx: { a: -8, b: -8, say: 'The yelling stopped. They are grumpy.' } },
+      { t: '🚪 Fire {a}', fx: { fire: 'a', say: 'Everyone got the message. No fighting!' } },
+      { t: '🙈 Ignore it', fx: { rel: ['a', 'b', -30], next: ['feud', 1, 1], say: 'You hope it goes away...' } }
     ] });
 
-  def({ id: 'feud', cat: 'Employees', icon: '🔥', chainOnly: true,
-    title: function (g, c) { return 'The feud is getting worse'; },
-    text: function (g, c) { return 'The tension between ' + N(g, c.a) + ' and ' + N(g, c.b) + ' has spread to the whole team. ' + first(g, c.b) + ' says they will quit unless something changes.'; },
+  ev({ id: 'feud', cat: 'team', icon: '🔥', chainOnly: true,
+    title: 'The fight got WORSE!',
+    text: '{a} and {b} are still fighting. Now the whole team is picking sides. {b} says: "Me or them!"',
     choices: [
-      { t: 'Give them a raise', label: function (g, c) { return 'Give ' + first(g, c.b) + ' a 10% raise to stay'; },
-        fx: function (g, c) { G.raise(g, emp(g, c.b), 0.1); return first(g, c.b) + ' stays, for now. ' + first(g, c.a) + ' noticed the raise.'; } },
-      { t: 'Fire the troublemaker', label: function (g, c) { return 'Fire ' + first(g, c.a); },
-        fx: function (g, c) { G.removeEmp(g, emp(g, c.a), 'fired'); team(g, 3); return 'The office is quieter already.'; } },
-      { t: 'Let them quit', label: function (g, c) { return 'Let ' + first(g, c.b) + ' go'; },
-        fx: function (g, c) {
-          var b = emp(g, c.b), r = rival(g);
-          G.removeEmp(g, b, 'quit');
-          G.schedule(g, 'joined_rival', U.ri(1, 3), { name: b.name, rival: r, creative: G.has(b, 'creative') });
-          return first(g, c.b) + ' cleared their desk and left.';
-        } }
+      { t: '💵 Give {b} a raise to stay', fx: { raise: ['b', 0.1], a: -6, say: '{b} stays. {a} is jealous.' } },
+      { t: '🚪 Fire {a}', fx: { fire: 'a', team: 3, say: 'Peace at last! 😌' } },
+      { t: '👋 Let {b} leave', fx: { quit: 'b', say: '{b} packed up and left.' } }
     ] });
 
-  def({ id: 'joined_rival', cat: 'Competitors', icon: '🕵️', chainOnly: true,
+  ev({ id: 'joined_rival', cat: 'rivals', icon: '🕵️', chainOnly: true,
     fx: function (g, c) {
       if (c.creative || U.chance(0.35)) G.schedule(g, 'idea_stolen', U.ri(3, 6), c);
-      G.news(g, c.name + ' joined ' + c.rival + '.', 'bad');
-      return 'Your former employee ' + c.name + ' has joined ' + c.rival + '.';
+      G.news(g, '🕵️ ' + c.name + ' now works for ' + c.rival + '.', 'bad');
+      return 'Your old worker ' + c.name + ' now works for ' + c.rival + '. Uh oh.';
     } });
 
-  def({ id: 'idea_stolen', cat: 'Competitors', icon: '💡', chainOnly: true,
-    title: function (g, c) { return c.rival + ' launched your idea'; },
-    text: function (g, c) { return c.rival + ' just launched something that looks exactly like an idea ' + c.name + ' pitched while working for you. Customers are going there to try it.'; },
+  ev({ id: 'idea_stolen', cat: 'rivals', icon: '💡', kind: 'news', chainOnly: true,
+    title: '{rival} stole your idea!',
+    text: '{rival} launched a new product. It was {name}\'s idea when they worked for YOU! Customers are going there.',
     choices: [
-      { t: 'Sue them', d: 'Expensive, 50/50', cost: cost(1.5),
-        fx: function (g, c) {
-          spend(g, G.cost(g, 1.5));
-          if (U.chance(0.5)) { var won = G.cost(g, 4); g.cash += won; G.news(g, 'Won a lawsuit against ' + c.rival + '.', 'good'); return 'You won! The court awarded you ' + M(won) + '.'; }
-          G.mod(g, 'demand', 0.9, 4, 'Rival copied your idea'); return 'You lost the case. They keep selling it.';
-        } },
-      { t: 'Launch it better and cheaper', cost: cost(0.8),
-        fx: function (g, c) { spend(g, G.cost(g, 0.8)); aw(g, 12); return 'Your version gets better reviews. Customers noticed.'; } },
-      { t: 'Let it go',
-        fx: function (g, c) { G.mod(g, 'demand', 0.88, 5, 'Rival copied your idea'); return 'Some customers switch to ' + c.rival + ' for a while.'; } }
+      { t: '⚖️ Sue them', fx: { cash: -1.5, chance: { p: 0.5, win: { cash: 4, rep: 3, say: 'You WON in court! 🎉' }, lose: { demand: [0.9, 4, 'Rival copied you'], say: 'You lost the case. 😩' } } } },
+      { t: '🚀 Make a better version', fx: { cash: -0.8, fans: 12, say: 'Yours is better! Customers noticed. 😎' } },
+      { t: '🤷 Let it go', fx: { demand: [0.88, 5, 'Rival copied you'], say: 'Some customers go to {rival} for a while.' } }
     ] });
 
-  def({ id: 'late', cat: 'Employees', icon: '⏰', w: 4,
-    setup: function (g) { var a = pickEmp(g, null, function (e) { return G.has(e, 'unreliable') ? 10 : e.reliability < 70 ? 3 : 0.5; }); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' keeps coming in late'; },
-    text: function (g, c) { return N(g, c.a) + ' has been late four times this month. The others are covering and they are starting to complain.'; },
+  ev({ id: 'late', cat: 'team', icon: '⏰', kind: 'chat', w: 3, who: { a: 'unreliable' }, from: 'a',
+    title: '{a} is late again',
+    msgs: ['sorry boss 😬', 'overslept AGAIN', 'be there in 20 min!!'],
     choices: [
-      { t: 'Talk to them privately',
-        fx: function (g, c) {
-          var a = emp(g, c.a);
-          if (U.chance(0.5)) { a.loyalty += 15; a.reliability += 10; return first(g, c.a) + ' opens up about problems at home. They promise to do better, and they mean it.'; }
-          return first(g, c.a) + ' nods, apologizes, and is late again on Friday.';
-        } },
-      { t: 'Formal warning', fx: function (g, c) { var a = emp(g, c.a); a.reliability += 12; a.morale -= 10; return 'They are on time now, but not happy about it.'; } },
-      { t: 'Dock their pay', fx: function (g, c) { var a = emp(g, c.a); a.reliability += 8; a.morale -= 18; a.loyalty -= 10; g.cash += a.salary * 0.2; return 'You saved a little money and lost a lot of goodwill.'; } },
-      { t: 'Fire them', fx: function (g, c) { G.removeEmp(g, emp(g, c.a), 'fired'); return 'You let them go.'; } },
-      { t: 'Ignore it', fx: function (g, c) { team(g, -3); return 'The team keeps covering. They are not thrilled.'; } }
+      { t: '💬 "Is everything okay?"', fx: { chance: { p: 0.5, win: { loyal: { a: 15 }, reliable: { a: 12 }, say: '{a} had problems at home. They promise to do better. ❤️' }, lose: { say: '{a} says thanks... and is late again on Friday. 🙄' } } } },
+      { t: '⚠️ "Last warning!"', fx: { reliable: { a: 12 }, a: -10, say: '{a} is on time now. Not happy about it though.' } },
+      { t: '🚪 "You\'re fired."', fx: { fire: 'a', say: 'Bye {a}! 👋' } },
+      { t: '👍 "No worries"', fx: { team: -3, say: 'The team has to cover for {a}. They are annoyed.' } }
     ] });
 
-  def({ id: 'raise_request', cat: 'Employees', icon: '💵', w: 5,
-    setup: function (g) {
-      var a = pickEmp(g, null, function (e) { var w = 1 + (G.has(e, 'greedy') ? 4 : 0) + (G.has(e, 'ambitious') ? 3 : 0); return e.salary < G.market(g, e.role, e.level) ? w * 2 : w; });
-      return a ? { a: a.id } : null;
-    },
-    title: function (g, c) { return first(g, c.a) + ' wants a raise'; },
-    text: function (g, c) {
-      var a = emp(g, c.a);
-      return N(g, c.a) + ' (' + G.title(g, a) + ') asks for more money. They earn ' + M(a.salary) + ' a week. The market rate is about ' + M(G.market(g, a.role, a.level)) + '.';
-    },
+  ev({ id: 'raise_request', cat: 'team', icon: '💵', kind: 'chat', w: 4, who: { a: 'greedy' }, from: 'a',
+    title: '{a} wants more money',
+    msgs: ['hey boss 👋', 'can I get a raise?', 'I work really hard 💪'],
     choices: [
-      { t: 'Give them 10%', fx: function (g, c) { G.raise(g, emp(g, c.a), 0.1); return 'They thank you and head back to work smiling.'; } },
-      { t: 'Offer 5%', fx: function (g, c) { var a = emp(g, c.a); G.raise(g, a, 0.05); if (G.has(a, 'greedy')) { a.morale -= 8; return 'They take it, but wanted more.'; } return 'They accept.'; } },
-      { t: 'Promise a raise in two months', fx: function (g, c) { G.schedule(g, 'raise_promise', 8, c); return 'They agree to wait. They will remember.'; } },
-      { t: 'Refuse', fx: function (g, c) {
-        var a = emp(g, c.a); a.morale -= 15; a.loyalty -= 10;
-        if (G.has(a, 'ambitious') || G.has(a, 'greedy')) G.schedule(g, 'resign', U.ri(2, 5), c);
-        return 'They go quiet. You notice them updating their CV.';
-      } }
+      { t: '💵 "Sure! +10%"', fx: { raise: ['a', 0.1], say: '{a} is super happy! 😁' } },
+      { t: '🤏 "I can do +5%"', fx: { raise: ['a', 0.05], say: '{a} takes it.' } },
+      { t: '📅 "Ask me in 2 months"', fx: { next: ['raise_promise', 8, 8], say: '{a} will remember that...' } },
+      { t: '❌ "No."', fx: { a: -15, loyal: { a: -10 }, next: ['resign', 2, 5, 0.4], say: '{a} is sad. 😞 They might look for a new job.' } }
     ] });
 
-  def({ id: 'raise_promise', cat: 'Employees', icon: '📅', chainOnly: true,
-    title: function (g, c) { return first(g, c.a) + ' reminds you of your promise'; },
-    text: function (g, c) { return 'Two months ago you promised ' + N(g, c.a) + ' a raise. They are standing at your door.'; },
+  ev({ id: 'raise_promise', cat: 'team', icon: '📅', kind: 'chat', chainOnly: true, from: 'a',
+    title: '{a} remembers your promise',
+    msgs: ['hey boss', 'it\'s been 2 months 👀', 'what about my raise?'],
     choices: [
-      { t: 'Keep your word (10%)', fx: function (g, c) { var a = emp(g, c.a); G.raise(g, a, 0.1); a.loyalty += 15; return 'They respect that you kept your promise.'; } },
-      { t: 'Ask them to wait longer', fx: function (g, c) { var a = emp(g, c.a); a.morale -= 25; a.loyalty -= 20; if (U.chance(0.5)) G.schedule(g, 'resign', 1, c); return 'They laugh, but not in a good way.'; } }
+      { t: '✅ "A promise is a promise!"', fx: { raise: ['a', 0.1], loyal: { a: 15 }, say: '{a} trusts you now. 🙌' } },
+      { t: '🙊 "Hmm... wait longer?"', fx: { a: -25, loyal: { a: -20 }, next: ['resign', 1, 1, 0.5], say: '{a} is really upset. 😠' } }
     ] });
 
-  def({ id: 'dating', cat: 'Employees', icon: '💘', w: 3, cond: staff(3),
-    setup: function (g) {
-      var a = pickEmp(g, function (e) { return !G.partnerOf(g, e); }); if (!a) return null;
-      var b = pickOther(g, a, function (e) { return !G.partnerOf(g, e) && G.getRel(g, a.id, e.id) > -20; });
-      return b ? { a: a.id, b: b.id } : null;
-    },
-    title: function (g, c) { return first(g, c.a) + ' and ' + first(g, c.b) + ' are dating'; },
-    text: function (g, c) { return 'Everybody knows. They are holding hands in the break room. ' + N(g, c.a) + ' and ' + N(g, c.b) + ' ask if this is a problem.'; },
+  ev({ id: 'dating', cat: 'team', icon: '💘', w: 2, need: 3, who: { a: 'any', b: 'any' },
+    cond: function (g) { return Object.keys(g.dating).length < 3; },
+    title: '{a} and {b} are dating!',
+    text: 'Everyone knows. They hold hands in the break room. 🥰 Is that okay?',
     choices: [
-      { t: 'Congratulate them', fx: function (g, c) {
-        g.dating[G.relKey(c.a, c.b)] = true; G.addRel(g, c.a, c.b, 50); emp(g, c.a).morale += 8; emp(g, c.b).morale += 8;
-        if (U.chance(0.35)) G.schedule(g, 'breakup', U.ri(6, 14), c);
-        return 'They are very happy. Some coworkers roll their eyes.';
-      } },
-      { t: 'No dating at work', fx: function (g, c) { emp(g, c.a).morale -= 12; emp(g, c.b).morale -= 12; team(g, -2); return 'They say they will keep it professional. They keep dating anyway.'; } },
-      { t: 'Stay out of it', fx: function (g, c) { g.dating[G.relKey(c.a, c.b)] = true; G.addRel(g, c.a, c.b, 40); if (U.chance(0.3)) G.schedule(g, 'breakup', U.ri(5, 12), c); return 'Love is in the air.'; } }
+      { t: '🎉 "Congrats!"', fx: { date: true, a: 8, b: 8, next: ['breakup', 6, 14, 0.35], say: 'They are so happy! 💕' } },
+      { t: '🚫 "No dating at work!"', fx: { a: -12, b: -12, team: -2, say: 'They are sad. They date anyway. 🙃' } },
+      { t: '🤐 Stay out of it', fx: { date: true, next: ['breakup', 5, 12, 0.3], say: 'Love is in the air! 💘' } }
     ] });
 
-  def({ id: 'breakup', cat: 'Employees', icon: '💔', chainOnly: true,
-    title: function (g, c) { return first(g, c.a) + ' and ' + first(g, c.b) + ' broke up'; },
-    start: function (g, c) { delete g.dating[G.relKey(c.a, c.b)]; },
-    text: function (g, c) { return 'It ended badly. They sit on opposite sides of the room and the whole team has picked sides.'; },
+  ev({ id: 'breakup', cat: 'team', icon: '💔', chainOnly: true, start: { breakup: true },
+    title: '{a} and {b} broke up',
+    text: 'It ended badly. 💔 They sit far apart and the team picked sides.',
     choices: [
-      { t: 'Change their schedules so they rarely meet', cost: cost(0.05), fx: function (g, c) { spend(g, G.cost(g, 0.05)); G.addRel(g, c.a, c.b, -30); return 'Out of sight, slowly out of mind.'; } },
-      { t: 'Pay for a team outing to reset the mood', cost: cost(0.3), fx: function (g, c) { spend(g, G.cost(g, 0.3)); team(g, 8); G.addRel(g, c.a, c.b, -20); return 'Bowling helped. Mostly.'; } },
-      { t: 'Let them sort it out', fx: function (g, c) {
-        G.addRel(g, c.a, c.b, -70); emp(g, c.a).morale -= 15; emp(g, c.b).morale -= 15;
-        if (U.chance(0.4)) G.schedule(g, 'resign', U.ri(1, 3), { a: U.chance(0.5) ? c.a : c.b });
-        return 'The atmosphere is icy.';
-      } }
+      { t: '📆 Give them different shifts', fx: { cash: -0.05, rel: ['a', 'b', -20], say: 'Out of sight, out of mind.' } },
+      { t: '🎳 Team bowling night!', fx: { cash: -0.3, team: 8, say: 'Bowling helped! 🎳' } },
+      { t: '🤷 Let them deal with it', fx: { a: -15, b: -15, rel: ['a', 'b', -60], say: 'The office is freezing cold. 🥶' } }
     ] });
 
-  def({ id: 'resign', cat: 'Employees', icon: '📝', chainOnly: true,
-    title: function (g, c) { return first(g, c.a) + ' hands in their resignation'; },
-    text: function (g, c) { var a = emp(g, c.a); return N(g, c.a) + ' (' + G.title(g, a) + ') puts a letter on your desk. "I have found something better."'; },
+  ev({ id: 'resign', cat: 'team', icon: '📝', chainOnly: true,
+    title: '{a} wants to quit!',
+    text: '{a} gives you a letter. "I found a better job. Bye!" 😢',
     choices: [
-      { t: 'Counteroffer: 20% raise', fx: function (g, c) {
-        var a = emp(g, c.a);
-        if (U.chance(G.has(a, 'loyal') ? 0.9 : 0.6)) { G.raise(g, a, 0.2); a.morale = Math.max(a.morale, 60); return first(g, c.a) + ' tears up the letter.'; }
-        quitToRival(g, a); return 'They thank you, but their mind is made up.';
-      } },
-      { t: 'Ask why they are leaving', fx: function (g, c) {
-        var a = emp(g, c.a);
-        if (U.chance(0.35)) { a.morale = 55; a.loyalty += 10; return 'You had a real talk. They decide to give it another month.'; }
-        quitToRival(g, a); return 'They were unhappy for a long time. They leave.';
-      } },
-      { t: 'Wish them luck', fx: function (g, c) { quitToRival(g, emp(g, c.a)); return 'They leave on good terms.'; } }
+      { t: '💰 Offer 20% more money', fx: { chance: { p: function (g, c) { var e = G.emp(g, c.a); return e && G.has(e, 'loyal') ? 0.9 : 0.6; }, win: { raise: ['a', 0.2], a: 30, say: '{a} rips up the letter! 🎉' }, lose: { quit: 'a', say: '{a} already said yes to the new job.' } } } },
+      { t: '💬 Ask what\'s wrong', fx: { chance: { p: 0.35, win: { a: 30, loyal: { a: 10 }, say: 'You talked it out. {a} will stay! 🤗' }, lose: { quit: 'a', say: '{a} was unhappy for a long time. They leave.' } } } },
+      { t: '👋 "Good luck!"', fx: { quit: 'a', say: '{a} leaves on good terms.' } }
     ] });
 
-  function quitToRival(g, a) {
-    var r = rival(g);
-    G.removeEmp(g, a, 'quit');
-    if (U.chance(0.5)) G.schedule(g, 'joined_rival', U.ri(1, 3), { name: a.name, rival: r, creative: G.has(a, 'creative') });
+  ev({ id: 'jealous', cat: 'team', icon: '😒', chainOnly: true,
+    title: '{a} is jealous!',
+    text: '{a} is mad that {b} got promoted instead of them. "Not fair!" 😤',
+    choices: [
+      { t: '💬 Explain why', fx: { chance: { p: 0.55, win: { say: '{a} understands. Phew.' }, lose: { a: -10, rel: ['a', 'b', -25], say: '{a} doesn\'t believe you.' } } } },
+      { t: '🤞 "You\'re next!"', fx: { a: 8, next: ['promotion_request', 6, 12], say: '{a} will hold you to that!' } },
+      { t: '😑 "Get over it"', fx: { a: -18, loyal: { a: -10 }, rel: ['a', 'b', -35], say: '{a} slams the door. 🚪💥' } }
+    ] });
+
+  ev({ id: 'theft', cat: 'team', icon: '🫳', w: 2, minWeek: 4, who: { a: 'greedy' }, cond: noCams, init: amt(0.15), start: { cash: -0.15 },
+    title: 'Money is missing! 😱',
+    text: '{amt} is gone from the cash register. The camera is blurry... but it looks like {a}!',
+    choices: [
+      { t: '🔍 Ask {a} about it', fx: { chance: { p: function (g, c) { var e = G.emp(g, c.a); return e && G.has(e, 'greedy') ? 0.85 : 0.3; }, win: { fire: 'a', cash: 0.07, say: '{a} said sorry and paid half back. You fired them.' }, lose: { a: -20, loyal: { a: -20 }, say: 'It wasn\'t {a}! They are very hurt. 😢' } } } },
+      { t: '📹 Buy better cameras', fx: { cash: -0.2, say: 'No more missing money! Probably.' } },
+      { t: '🤷 Forget it', fx: { next: ['theft_again', 3, 6, 0.5], say: 'You let it go.' } }
+    ] });
+
+  ev({ id: 'theft_again', cat: 'team', icon: '🫳', chainOnly: true, fx: { cash: -0.3, say: 'MORE money is missing! Letting it go last time was a mistake. 😬' } });
+
+  ev({ id: 'spy', cat: 'rivals', icon: '🕵️', w: 1, minWeek: 10, need: 4, rarity: 'rare', who: { a: 'greedy', b: 'any' }, init: rival,
+    title: '{a} is a SPY! 🕵️',
+    text: '{b} found secret messages. {a} is sending your plans to {rival}!',
+    choices: [
+      { t: '🚪 Fire them right now', fx: { fire: 'a', loyal: { b: 10 }, say: 'Security walks {a} out. 👮' } },
+      { t: '🎭 Send them FAKE plans', fx: { chance: { p: 0.6, win: { fans: 15, fire: 'a', say: '{rival} fell for it and wasted tons of money! 😂 Then you fired {a}.' }, lose: { demand: [0.9, 4, 'Plans leaked'], say: '{rival} figured it out. 😩' } } } },
+      { t: '🏅 Fire them + reward {b}', fx: { bonus: 'b', fire: 'a', team: 3, say: 'Everyone sees that honesty pays! ✨' } }
+    ] });
+
+  ev({ id: 'broke_equipment', cat: 'team', icon: '💥', w: 3, who: { a: 'front' }, init: amt(0.35),
+    title: '{a} broke something expensive!',
+    text: 'CRASH! 💥 {a} dropped an important machine. A new one costs {amt}.',
+    choices: [
+      { t: '💳 Company pays', fx: { cash: -0.35, loyal: { a: 8 }, say: 'Accidents happen. {a} is thankful. 🙏' } },
+      { t: '🧾 {a} pays half', fx: { cash: -0.17, a: -20, say: '{a} pays. They are NOT happy.' } },
+      { t: '🔧 Work without it', fx: { capacity: [0.85, 3, 'Broken machine'], say: 'Work is slower for 3 weeks. 🐢' } }
+    ] });
+
+  ev({ id: 'customer_argument', cat: 'team', icon: '🗯️', w: 3, who: { a: 'aggressive' },
+    title: '{a} yelled at a customer!',
+    text: 'A rude customer yelled at {a}. {a} yelled back! People were filming. 📱',
+    choices: [
+      { t: '🛡️ Stand up for {a}', fx: { a: 10, loyal: { a: 10 }, rep: -2, next: ['complaint_viral', 1, 1, 0.35], say: 'Your team loves you. The customer posts an angry review.' } },
+      { t: '🙏 Say sorry to the customer', fx: { a: -8, rep: 1, say: 'The customer is happy. {a} feels bad.' } },
+      { t: '🚪 Fire {a}', fx: { fire: 'a', rep: 1, say: 'The customer is happy. The team is nervous. 😬' } }
+    ] });
+
+  ev({ id: 'star', cat: 'team', icon: '🌟', w: 3, who: { a: 'star' },
+    title: '{a} is a superstar!',
+    text: '{a} is doing the work of TWO people! Customers ask for {a} by name. 🤩',
+    choices: [
+      { t: '💰 Give a bonus', fx: { bonus: 'a', say: '{a} is beaming! 😁' } },
+      { t: '🎖️ Promote {a}', fx: { promote: 'a', say: 'Congrats {a}! 🎉' } },
+      { t: '👏 Say "Great job!"', fx: { a: 4, say: '{a} smiles.' } }
+    ] });
+
+  ev({ id: 'promotion_request', cat: 'team', icon: '🪜', kind: 'chat', w: 2, minWeek: 6, who: { a: 'ambitious' }, from: 'a',
+    title: '{a} wants a promotion',
+    msgs: ['boss, can we talk? 🙂', 'I want to move up', 'I\'m ready for more!'],
+    choices: [
+      { t: '🎖️ "You got it!"', fx: { promote: 'a', next: ['out_of_depth', 2, 5, 0.25], say: '{a} got promoted! 🥳' } },
+      { t: '📚 "Take a course first"', fx: { cash: -0.15, skill: { a: 8 }, a: 4, say: '{a} learned a lot! Skill +8 📈' } },
+      { t: '⏳ "Not yet"', fx: { a: -12, next: ['resign', 3, 8, 0.3], say: '{a} is disappointed. 😔' } }
+    ] });
+
+  ev({ id: 'out_of_depth', cat: 'boss', icon: '🫠', chainOnly: true,
+    title: '{a} is struggling',
+    text: 'Since the promotion, {a} is confused and making mistakes. 😵',
+    choices: [
+      { t: '🧑‍🏫 Get {a} a coach', fx: { cash: -0.2, skill: { a: 12 }, say: '{a} is getting better every day! 💪' } },
+      { t: '⬇️ Move {a} back down', fx: { demote: 'a', say: 'Awkward... but it helps.' } },
+      { t: '⏳ Give it time', fx: { team: -4, capacity: [0.93, 4, 'Team confused'], say: 'Things are a bit messy for a while.' } }
+    ] });
+
+  ev({ id: 'rumors', cat: 'team', icon: '🗣️', w: 2, need: 3, who: { a: 'any', b: 'any' },
+    title: '{a} is spreading rumors',
+    text: '{a} is telling everyone that {b} will be fired soon. It\'s not true! {b} is upset. 😢',
+    choices: [
+      { t: '📣 Tell everyone the truth', fx: { b: 10, a: -6, say: 'Rumor stopped! {b} feels better.' } },
+      { t: '🤫 Talk to {a} alone', fx: { rel: ['a', 'b', 5], say: '{a} promises to stop.' } },
+      { t: '🙈 Ignore it', fx: { b: -15, rel: ['a', 'b', -30], say: 'The rumor keeps growing... 😬' } }
+    ] });
+
+  ev({ id: 'best_friends', cat: 'team', icon: '🫶', w: 2, need: 2, who: { a: 'friendly', b: 'any' },
+    fx: { rel: ['a', 'b', 60], a: 5, b: 5, say: '{a} and {b} are now best friends! They even wear matching socks. 🧦' } });
+
+  ev({ id: 'productive_week', cat: 'team', icon: '📈', w: 2, who: { a: 'front' },
+    fx: { skill: { a: 3 }, capacity: [1.05, 1, 'Hot streak'], say: '{a} found a faster way to work! Skill +3 🚀' } });
+
+  ev({ id: 'team_quit_threat', cat: 'team', icon: '🪧', w: function (g) { return G.avgMorale(g) < 42 ? 6 : 0; }, cd: 10, need: 4,
+    title: 'The team is angry!',
+    text: 'Your workers say they will ALL quit if things don\'t get better. 😡',
+    choices: [
+      { t: '💵 Everyone gets +5%', fx: { teamRaise: 0.05, say: 'Crisis over! Everyone is happier. 😌' } },
+      { t: '🎁 Everyone gets a bonus', fx: { teamBonus: true, team: 5, say: 'Money helps! 💸' } },
+      { t: '😤 "Go ahead, quit!"', fx: { run: function (g) { var gone = []; g.employees.slice().forEach(function (e) { if (e.morale < 40 && U.chance(0.35)) { gone.push(G.first(e)); G.removeEmp(g, e, 'quit', true); } }); return gone.length ? gone.join(', ') + ' walked out! 🚶🚶' : 'Nobody left... this time.'; } } }
+    ] });
+
+  ev({ id: 'day_off', cat: 'team', icon: '💒', kind: 'chat', w: 3, who: { a: 'any' }, from: 'a',
+    title: '{a} needs a day off',
+    msgs: ['hi boss!! 😊', 'my sister is getting married on friday 💒', 'can I have the day off? 🙏'],
+    choices: [
+      { t: '🎉 "Of course! Have fun!"', fx: { a: 12, loyal: { a: 8 }, capacity: [0.97, 1, 'Someone on a day off'], say: '{a} sends you a wedding cake photo! 🎂' } },
+      { t: '😐 "Sorry, we\'re too busy"', fx: { a: -15, loyal: { a: -10 }, say: '{a} is very sad. 😞' } }
+    ] });
+
+  ev({ id: 'sick', cat: 'team', icon: '🤒', kind: 'chat', w: 3, who: { a: 'any' }, from: 'a',
+    title: '{a} feels sick',
+    msgs: ['boss I feel terrible 🤒', 'achoo!! 🤧', 'can I stay home?'],
+    choices: [
+      { t: '🛌 "Stay home and rest!"', fx: { loyal: { a: 6 }, capacity: [0.96, 1, 'Someone is sick'], say: '{a} gets better fast. 💚' } },
+      { t: '😬 "Come in anyway"', fx: { chance: { p: 0.5, win: { a: -8, say: '{a} came in. They look awful. 🥴' }, lose: { team: -5, capacity: [0.85, 2, 'Half the team is sick'], say: 'Now HALF the team is sick! 🤧🤧🤧' } } } }
+    ] });
+
+  ev({ id: 'idea', cat: 'team', icon: '💡', kind: 'chat', w: 2, who: { a: 'creative' }, from: 'a',
+    init: function (g, c) { c.thing = U.pick(['a glow-in-the-dark menu', 'a secret menu', 'a loyalty card with stickers', 'rainbow packaging', 'a mascot costume', 'a late-night opening']); },
+    title: '{a} has an idea!',
+    msgs: ['BOSS 💡💡💡', 'what if we tried {thing}?!', 'trust me it will be amazing'],
+    choices: [
+      { t: '🚀 "Let\'s try it!"', fx: { cash: -0.5, a: 10, chance: { p: 0.55, win: { demand: [1.15, 6, 'Great new idea'], fans: 10, say: 'Customers LOVE it! 🤩' }, lose: { say: 'Nobody cared. Oh well! 🤷' } } } },
+      { t: '🙅 "Maybe later"', fx: { a: -6, say: '{a} writes it in their notebook anyway. 📓' } }
+    ] });
+
+  ev({ id: 'training_request', cat: 'team', icon: '📚', kind: 'chat', w: 2, who: { a: 'ambitious' }, from: 'a',
+    title: '{a} wants to learn',
+    msgs: ['there\'s a cool course online 📚', 'can the company pay for it?', 'I\'ll get way better!'],
+    choices: [
+      { t: '✅ "Yes, go for it!"', fx: { cash: -0.15, skill: { a: 10 }, a: 8, say: '{a} learned so much! Skill +10 🧠' } },
+      { t: '❌ "Too expensive"', fx: { a: -6, say: '{a} watches free videos instead.' } }
+    ] });
+
+  ev({ id: 'pizza_party', cat: 'team', icon: '🍕', kind: 'chat', w: 2, need: 3, who: { a: 'friendly' }, from: 'a',
+    title: 'Pizza party?',
+    msgs: ['boss!! 🍕', 'the team worked super hard this month', 'pizza party??? pleeeease'],
+    choices: [
+      { t: '🍕 "PIZZA TIME!"', fx: { cash: -0.08, team: 8, say: 'Best Friday ever! 🍕🎉' } },
+      { t: '🥗 "How about salad?"', fx: { team: -2, say: 'The team laughs... a little sadly. 🥗' } },
+      { t: '❌ "Nope"', fx: { team: -4, say: 'Everybody is a bit disappointed.' } }
+    ] });
+
+  ev({ id: 'overworked', cat: 'team', icon: '😩', kind: 'chat', w: 5, cond: busy, who: { a: 'front' }, from: 'a',
+    title: 'The team is exhausted',
+    msgs: ['boss we are SO busy 😩', 'there are too many customers!', 'we need more people!!'],
+    choices: [
+      { t: '⏰ Pay for extra hours', fx: { cash: -0.3, capacity: [1.15, 2, 'Extra hours'], say: 'More work gets done! 💪' } },
+      { t: '🤝 "I\'ll hire more soon!"', fx: { team: -2, say: 'Tip: Go to the Team tab to hire people!' } },
+      { t: '😤 "Just work harder!"', fx: { team: -8, capacity: [1.05, 1, 'Pushing hard'], say: 'They work harder... and grumble. 😒' } }
+    ] });
+
+  ev({ id: 'anniversary', cat: 'team', icon: '🎂', w: 1, who: { a: 'veteran' },
+    fx: { a: 8, loyal: { a: 5 }, say: '{a} has worked here for over a year! The team made a cake. 🎂' } });
+
+  ev({ id: 'talent_show', cat: 'team', icon: '🎤', w: 1.5, need: 3, who: { a: 'funny' },
+    title: 'Talent show?',
+    text: 'The team wants to do a talent show after work! 🎤',
+    choices: [
+      { t: '🎭 Let\'s do it!', fx: { cash: -0.05, team: 6, chance: { p: 0.35, win: { viral: [0.5, 2], say: '{a} did an AMAZING magic trick. Someone posted it! 🪄' }, lose: { say: 'Everyone had fun! 🎉' } } } },
+      { t: '🙅 Not at work', fx: { team: -3, say: 'Maybe next time.' } }
+    ] });
+
+  ev({ id: 'secret_skill', cat: 'team', icon: '🗣️', w: 1.5, who: { a: 'any' },
+    init: function (g, c) { c.skillx = U.pick(['speaks 5 languages', 'can juggle 6 balls', 'is a chess champion', 'was a child actor', 'can draw amazing portraits']); },
+    fx: { fans: 6, a: 5, say: 'Fun fact: {a} {skillx}! Customers love it. 🤩' } });
+
+  ev({ id: 'phone_addict', cat: 'team', icon: '📱', w: 2, who: { a: 'lazy' },
+    title: '{a} is always on their phone',
+    text: 'Every time you look, {a} is scrolling videos. 📱😴',
+    choices: [
+      { t: '📵 No phones at work!', fx: { team: -3, capacity: [1.05, 4, 'No phones rule'], say: 'Work gets faster. People miss their phones.' } },
+      { t: '💬 Talk to {a}', fx: { chance: { p: 0.5, win: { reliable: { a: 10 }, say: '{a} puts the phone away. 👍' }, lose: { say: '{a} just hides it better now. 🙄' } } } },
+      { t: '🤷 Ignore it', fx: { capacity: [0.97, 3, 'Phone scrolling'], say: 'A little slower... but whatever.' } }
+    ] });
+
+  ev({ id: 'mentor', cat: 'team', icon: '🧑‍🏫', w: 1.5, need: 3, who: { a: 'star', b: 'any' },
+    title: '{a} wants to teach {b}',
+    text: '{a} is really good at the job. They want to teach {b} their tricks. It will slow {a} down a bit.',
+    choices: [
+      { t: '👍 Great idea!', fx: { skill: { b: 10 }, rel: ['a', 'b', 25], capacity: [0.97, 2, 'Training time'], say: '{b} learned a lot! Skill +10 🎓' } },
+      { t: '🙅 {a} should just work', fx: { a: -5, say: 'Okay...' } }
+    ] });
+
+  ev({ id: 'poached', cat: 'rivals', icon: '🎣', w: 1.5, minWeek: 8, who: { a: 'star' }, init: rival,
+    title: '{rival} wants to steal {a}!',
+    text: '{rival} offered {a} 30% more money. {a} came to you first. 😬',
+    choices: [
+      { t: '💰 Match the offer', fx: { raise: ['a', 0.3], loyal: { a: 15 }, say: '{a} stays! 🙌' } },
+      { t: '❤️ "We\'re a family!"', fx: { chance: { p: function (g, c) { var e = G.emp(g, c.a); return e && e.loyalty > 60 ? 0.8 : 0.3; }, win: { loyal: { a: 5 }, say: '{a} says no to {rival}! 🥹' }, lose: { quit: 'a', say: '{a} goes to {rival}. 😢' } } } },
+      { t: '👋 Let {a} go', fx: { quit: 'a', say: '{a} leaves for {rival}.' } }
+    ] });
+
+  ev({ id: 'lottery_win', cat: 'team', icon: '🎰', w: 0.6, rarity: 'rare', who: { a: 'any' },
+    title: '{a} won the lottery! 🎰',
+    text: '{a} won $2 million! They are screaming and dancing on the tables. 💃',
+    choices: [
+      { t: '🥳 Throw a party for {a}', fx: { cash: -0.1, team: 8, chance: { p: 0.6, win: { quit: 'a', say: '{a} retires to a beach. They send a thank-you postcard. 🏖️' }, lose: { a: 20, say: '{a} decides to stay! "I love this job!" 🥹' } } } },
+      { t: '💼 Ask {a} to invest in the company', fx: { chance: { p: 0.5, win: { cash: 3, say: '{a} invests! Cha-ching! 💰' }, lose: { quit: 'a', say: '{a} laughs and quits. 😂' } } } }
+    ] });
+
+  ev({ id: 'nap_pod', cat: 'team', icon: '😴', kind: 'chat', w: 1.5, who: { a: 'lazy' }, from: 'a',
+    title: '{a} has a suggestion',
+    msgs: ['boss hear me out 🙏', 'NAP PODS', 'we\'d work way better after a nap 😴'],
+    choices: [
+      { t: '😴 "Buy nap pods!"', fx: { cash: -0.4, team: 6, capacity: [1.04, 8, 'Well rested team'], say: 'Everyone is so rested! 😌' } },
+      { t: '☕ "Drink coffee instead"', fx: { a: -3, say: '{a} sighs and grabs a coffee.' } }
+    ] });
+
+  ev({ id: 'new_worker_great', cat: 'team', icon: '🐣', w: 2, who: { a: 'new' },
+    fx: { a: 6, skill: { a: 2 }, say: 'New worker {a} is doing great! Everyone likes them. 🐣' } });
+
+  ev({ id: 'secret_santa', cat: 'team', icon: '🎁', w: 3, need: 3, cd: 50, cond: season(48, 52),
+    title: 'Holiday gift swap! 🎁',
+    text: 'The team wants to do a holiday gift swap. Should the company add a gift for everyone?',
+    choices: [
+      { t: '🎁 Yes! Gifts for all', fx: { cash: -0.2, team: 10, say: 'Everyone loves their gift! 🎄' } },
+      { t: '🎄 Just the swap', fx: { team: 4, say: '{company} has the best holiday vibes. ✨' } }
+    ] });
+
+  // =====================================================================
+  // 🏪 BUSINESS
+  // =====================================================================
+
+  ev({ id: 'flood', cat: 'business', icon: '🌊', w: 1.5, cd: 20,
+    title: 'The shop is flooding!',
+    text: 'A pipe broke in the night. There is water EVERYWHERE! 💦',
+    choices: [
+      { t: '🚨 Emergency plumber', fx: { cash: -0.7, say: 'Fixed by morning! 🔧' } },
+      { t: '🩹 Cheap quick fix', fx: { cash: -0.25, next: ['flood_again', 3, 8, 0.45], say: 'The leak stopped. For now...' } },
+      { t: '🔒 Close a week and fix it right', fx: { cash: -0.3, closed: [1, 'Closed for repairs'], say: 'You are closed next week.' } }
+    ] });
+  ev({ id: 'flood_again', cat: 'business', icon: '🌊', chainOnly: true, fx: { cash: -1, demand: [0.8, 1, 'Flood damage'], say: 'The cheap fix broke! Even MORE water! 🌊🌊' } });
+
+  ev({ id: 'power_outage', cat: 'business', icon: '🔌', w: 2,
+    title: 'The power went out!',
+    text: 'The whole street is dark. 🌑 No lights, no machines.',
+    choices: [
+      { t: '⚡ Rent a generator', fx: { cash: -0.12, say: 'You are the only shop with lights! 💡' } },
+      { t: '🏠 Send everyone home', fx: { demand: [0.85, 1, 'Power outage'], team: 3, say: 'Fewer sales. Staff enjoyed the free time!' } }
+    ] });
+
+  ev({ id: 'equipment_fail', cat: 'business', icon: '🛠️', w: 2.5,
+    title: 'A machine broke!',
+    text: 'Your most important machine stopped working. 😩',
+    choices: [
+      { t: '🔧 Repair it', fx: { cash: -0.2, say: 'Good as new!' } },
+      { t: '✨ Buy a better one', d: 'Work faster forever', fx: { cash: -1.2, equip: 0.04, say: 'New machine! Everyone works faster! 🚀' } },
+      { t: '🐢 Work without it', fx: { capacity: [0.85, 2, 'Broken machine'], say: 'Slow weeks ahead...' } }
+    ] });
+
+  ev({ id: 'break_in', cat: 'business', icon: '🚨', w: 1.5, minWeek: 5, cond: noCams, init: amt(0.4), start: { cash: -0.4 },
+    title: 'Someone broke in!',
+    text: 'A thief broke in at night and took {amt} of stuff! 😱',
+    choices: [
+      { t: '🚨 Buy an alarm', fx: { cash: -0.3, say: 'Nobody will get in again! 🔒' } },
+      { t: '📄 Ask insurance to pay', fx: { chance: { p: 0.6, win: { cash: 0.28, say: 'Insurance paid you back! 🙌' }, lose: { say: 'Insurance said no. Tiny print. 😑' } } } }
+    ] });
+
+  ev({ id: 'damaged_shipment', cat: 'business', icon: '📦', w: 2.5, init: amt(0.18),
+    title: 'A delivery arrived smashed!',
+    text: 'Half of this week\'s supplies are squished. 📦💥 They cost {amt}.',
+    choices: [
+      { t: '📞 Ask for a refund', fx: { chance: { p: 0.6, win: { say: 'The supplier said sorry and paid you back! 👍' }, lose: { cash: -0.18, say: 'They blamed the truck driver. You pay.' } } } },
+      { t: '🤷 Accept it', fx: { cash: -0.18, say: 'Oh well.' } }
+    ] });
+
+  ev({ id: 'supplier_prices', cat: 'business', icon: '🚚', kind: 'chat', w: 2, from: { name: 'Sam from Supplies', face: '🚚' },
+    title: 'Your supplier has news',
+    msgs: ['hello! 👋', 'bad news...', 'our prices go up 5% starting today 😬'],
+    choices: [
+      { t: '👌 "Okay, fine"', fx: { supply: [0.02, 12, 'Higher supply prices'], say: 'You make a bit less on each sale for a while.' } },
+      { t: '🔄 Find a new supplier', fx: { chance: { p: 0.6, win: { supply: [-0.015, 12, 'Cheaper supplier'], say: 'The new one is CHEAPER! 🎉' }, lose: { supply: [0.01, 6, 'New supplier'], rep: -2, say: 'The new one is worse. Customers noticed. 😕' } } } },
+      { t: '🤝 "Let\'s negotiate"', fx: { chance: { p: 0.5, win: { say: 'Sam agrees to keep the old price! 🤝' }, lose: { supply: [0.03, 8, 'Angry supplier'], say: 'Sam got annoyed and raised prices MORE. 😤' } } } }
+    ] });
+
+  ev({ id: 'inspection', cat: 'business', icon: '📋', w: 2, cd: 15,
+    title: 'Surprise inspection!',
+    text: 'A city inspector walks in with a clipboard. 📋 They want to check everything.',
+    choices: [
+      { t: '✅ Show them everything', fx: { chance: { p: function (g) { return g.reputation / 200 + (g.employees.some(function (e) { return e.role === 'mgr'; }) ? 0.3 : 0.15) + 0.15; }, win: { rep: 3, say: 'You passed! Perfect score! 💯' }, lose: { cash: -0.4, say: 'They found a few problems. You pay a fine. 😬' } } } },
+      { t: '💰 Offer them a "gift"', d: 'Very risky!', fx: { cash: -0.2, next: ['bribe_scandal', 2, 6, 0.4], say: 'They took it and left... Was that a good idea? 😰' } },
+      { t: '🙏 "Can you come back later?"', fx: { rep: -1, next: ['inspection', 2, 4], say: 'They will be back. And they will look harder.' } }
+    ] });
+
+  ev({ id: 'bribe_scandal', cat: 'trouble', icon: '📰', kind: 'news', chainOnly: true,
+    title: 'SCANDAL: {company} bribed an inspector!',
+    text: 'A reporter found out about the "gift". It\'s on the front page! 😱',
+    choices: [
+      { t: '🙇 Say sorry + pay the fine', fx: { cash: -2, rep: -12, say: 'It hurts. But people forgive you slowly.' } },
+      { t: '🤥 Deny everything', fx: { chance: { p: 0.4, win: { rep: -5, say: 'No proof. The story fades.' }, lose: { rep: -25, cash: -3, demand: [0.75, 6, 'Boycott'], say: 'Then they showed the video. Customers are boycotting you! 😭' } } } }
+    ] });
+
+  ev({ id: 'repairs', cat: 'business', icon: '🏚️', w: 1.5, cd: 12,
+    title: 'The building is falling apart',
+    text: 'The roof leaks, the door squeaks, and two letters fell off your sign. 🏚️',
+    choices: [
+      { t: '✨ Fix everything', fx: { cash: -0.8, rep: 3, team: 4, say: 'It looks brand new! ✨' } },
+      { t: '🩹 Fix the worst stuff', fx: { cash: -0.15, say: 'Good enough.' } },
+      { t: '⏳ Later', fx: { rep: -2, next: ['repairs', 4, 8], say: 'It won\'t fix itself...' } }
+    ] });
+
+  ev({ id: 'late_delivery', cat: 'business', icon: '🐢', w: 2.5,
+    title: 'Your delivery is late',
+    text: 'The supplies you need are stuck in traffic somewhere. 🚛🚗🚙',
+    choices: [
+      { t: '⚡ Pay for super-fast shipping', fx: { cash: -0.15, say: 'It arrives just in time! 😅' } },
+      { t: '⏳ Wait for it', fx: { capacity: [0.8, 1, 'Missing supplies'], say: 'You run out of stuff for a few days.' } }
+    ] });
+
+  ev({ id: 'systems_down', cat: 'business', icon: '🖥️', w: 1.5,
+    title: 'The computers crashed!',
+    text: 'The card machine, the orders, the schedule... all DOWN! 💻💀',
+    choices: [
+      { t: '🧑‍💻 Call IT experts', fx: { cash: -0.25, say: 'Fixed in 2 hours! 🛠️' } },
+      { t: '📝 Use pen and paper', fx: { capacity: [0.85, 1, 'Computers down'], team: -2, say: 'Chaotic, but you survive the week.' } }
+    ] });
+
+  ev({ id: 'big_contract', cat: 'lucky', icon: '🤝', w: 1.5, cd: 14, minWeek: 5, init: function (g, c) { c.weeks = 6; c.amt = U.nice(G.scale(g) * 0.25); },
+    title: 'A big client wants a deal!',
+    text: 'A big company wants to buy from you for {weeks} weeks. They pay {amt} extra every week! It will keep your team busy.',
+    choices: [
+      { t: '✍️ Sign it!', fx: { extra: [0.25, 6, 'Big client deal'], team: -5, say: 'Deal signed! Money starts next week. 💰' } },
+      { t: '💪 Ask for 30% more', fx: { chance: { p: 0.5, win: { extra: [0.33, 6, 'Big client deal'], team: -5, say: 'They said YES to more money! 🤑' }, lose: { say: 'They walked away. Too greedy! 😅' } } } },
+      { t: '🙅 No thanks', fx: { say: 'You stay focused on your normal customers.' } }
+    ] });
+
+  ev({ id: 'tax_refund', cat: 'lucky', icon: '🧾', w: 1.5, cd: 26, fx: { cash: 0.3, say: 'Surprise! The tax office sent you money back. 💸' } });
+
+  ev({ id: 'award', cat: 'lucky', icon: '🏆', w: function (g) { return g.reputation > 70 ? 2 : 0; }, cd: 26,
+    fx: { rep: 4, fans: 10, say: 'You won "Best {industry} in {city}"! 🏆' } });
+
+  ev({ id: 'heatwave', cat: 'business', icon: '🥵', w: 3, cd: 20, cond: season(24, 34),
+    title: 'HEATWAVE! 🥵',
+    text: 'It\'s super hot outside and your air conditioner just broke. Everyone is melting! 🫠',
+    choices: [
+      { t: '❄️ Buy a new AC', fx: { cash: -0.35, say: 'Ahhh, cool air! Customers come in to chill. 😎' } },
+      { t: '🍦 Give out free ice pops', fx: { cash: -0.08, fans: 8, happy: 4, say: 'Everyone loves the free ice pops! 🍦' } },
+      { t: '🫠 Just sweat it out', fx: { happy: -5, team: -5, say: 'Sweaty customers. Sweaty staff. Not great. 💦' } }
+    ] });
+
+  ev({ id: 'snowstorm', cat: 'business', icon: '❄️', w: 3, cd: 20, cond: function (g) { var w = ((g.week - 1) % 52) + 1; return w <= 8 || w >= 49; },
+    title: 'Giant snowstorm!',
+    text: 'There is SO much snow. ☃️ The roads are closed.',
+    choices: [
+      { t: '🔒 Close for a week', fx: { closed: [1, 'Snowstorm'], team: 4, say: 'Snow day for everyone! ⛄' } },
+      { t: '💪 Stay open!', fx: { chance: { p: 0.5, win: { fans: 12, rep: 2, say: 'Brave customers loved that you were open! ❤️' }, lose: { capacity: [0.6, 1, 'Staff snowed in'], say: 'Half the staff couldn\'t get there. ❄️' } } } }
+    ] });
+
+  ev({ id: 'road_works', cat: 'business', icon: '🚧', w: 2, cd: 20,
+    title: 'Road work outside!',
+    text: 'The city is fixing the road in front of your shop for 3 weeks. It\'s loud and hard to get in. 🚧',
+    choices: [
+      { t: '😂 Put up a funny sign', fx: { demand: [0.95, 3, 'Road work'], fans: 8, say: '"We\'re still open! Bring earplugs 🎧" People love it.' } },
+      { t: '📞 Complain to the city', fx: { chance: { p: 0.4, win: { say: 'They finish super fast! 🏎️' }, lose: { demand: [0.85, 3, 'Road work'], say: 'Nobody listened. 😑' } } } },
+      { t: '🤷 Deal with it', fx: { demand: [0.85, 3, 'Road work'], say: 'Fewer customers for a while.' } }
+    ] });
+
+  ev({ id: 'mouse', cat: 'business', icon: '🐭', w: 2,
+    title: 'A MOUSE! 🐭',
+    text: 'A customer screamed. A little mouse ran across the floor!',
+    choices: [
+      { t: '🧑‍🔬 Call pest control', fx: { cash: -0.12, say: 'The mouse moved out. Bye mouse! 👋' } },
+      { t: '🐈 Adopt a shop cat', fx: { cash: -0.05, fans: 12, happy: 3, say: 'Meet Whiskers, the new shop cat! Customers LOVE her. 🐈' } },
+      { t: '🙈 Pretend it didn\'t happen', fx: { chance: { p: 0.5, win: { say: 'Nobody posted about it. Lucky!' }, lose: { rep: -8, say: 'Someone posted a video. "MOUSE AT {company}!" 😱' } } } }
+    ] });
+
+  ev({ id: 'rent_up', cat: 'business', icon: '🏠', kind: 'chat', w: 1, cd: 40, minWeek: 20, from: { name: 'Your Landlord', face: '🧓' },
+    title: 'The landlord wants more rent',
+    msgs: ['hello tenant 🧓', 'rent is going up 10%', 'starting next week'],
+    choices: [
+      { t: '😩 "Okay..."', fx: { rent: 0.1, say: 'Rent is higher now.' } },
+      { t: '🤝 "Can we meet in the middle?"', fx: { chance: { p: 0.5, win: { rent: 0.05, say: 'Deal at +5%. 🤝' }, lose: { rent: 0.1, say: 'The landlord said no.' } } } },
+      { t: '📦 "Then I\'ll move out!"', fx: { chance: { p: 0.4, win: { say: 'The landlord panics. Rent stays the same! 😎' }, lose: { rent: 0.15, say: 'The landlord called your bluff. +15%! 😱' } } } }
+    ] });
+
+  ev({ id: 'found_money', cat: 'lucky', icon: '💵', w: 1.5, cd: 20, fx: { cash: 0.12, say: 'Someone found cash stuck behind the counter! 💵' } });
+
+  ev({ id: 'charity', cat: 'business', icon: '🏫', w: 2, cd: 12,
+    title: 'A school needs help',
+    text: 'The local school asks for money for new books. 📚',
+    choices: [
+      { t: '❤️ Donate', fx: { cash: -0.25, rep: 5, fans: 8, say: 'The kids made you a giant thank-you card! 💌' } },
+      { t: '📦 Donate some {unit} instead', fx: { cash: -0.1, rep: 3, say: 'They loved it! 😊' } },
+      { t: '🙅 Not this time', fx: { rep: -1, say: 'Maybe next time.' } }
+    ] });
+
+  ev({ id: 'festival', cat: 'lucky', icon: '🎪', w: 2, cd: 15,
+    title: 'City festival this weekend!',
+    text: 'Thousands of people are coming to the {city} festival! 🎪🎡',
+    choices: [
+      { t: '⛺ Set up a stand', fx: { cash: -0.3, extra: [0.35, 1, 'Festival stand'], fans: 15, say: 'Your stand was packed! 🎉' } },
+      { t: '🎈 Hand out balloons', fx: { cash: -0.05, fans: 8, say: 'Kids everywhere have your balloons! 🎈' } },
+      { t: '😴 Skip it', fx: { say: 'You rest this weekend.' } }
+    ] });
+
+  ev({ id: 'holiday_rush', cat: 'business', icon: '🎄', w: 5, cd: 40, cond: season(47, 52),
+    title: 'HOLIDAY RUSH! 🎄',
+    text: 'It\'s the holidays! Tons of shoppers are coming. Are you ready?',
+    choices: [
+      { t: '👷 Hire extra helpers', fx: { cash: -0.4, demand: [1.3, 2, 'Holiday rush'], capacity: [1.25, 2, 'Holiday helpers'], say: 'You\'re ready for the crowds! 🛍️' } },
+      { t: '🎅 Just decorate', fx: { cash: -0.05, demand: [1.3, 2, 'Holiday rush'], happy: 3, say: 'It looks so cozy! 🎄' } }
+    ] });
+
+  ev({ id: 'back_to_school', cat: 'world', icon: '🎒', w: 3, cd: 40, cond: season(33, 36), fx: { demand: [1.1, 2, 'Back to school'], say: 'Back to school week! More customers than usual. 🎒' } });
+
+  ev({ id: 'too_expensive', cat: 'customers', icon: '💸', w: function (g) { return g.price === 2 ? 3 : 0; },
+    title: 'Customers say you\'re too pricey',
+    text: 'People are complaining your prices are too high. 💸',
+    choices: [
+      { t: '⬇️ Lower prices', fx: { price: -1, happy: 5, say: 'Prices are normal now. Customers are happier.' } },
+      { t: '💎 "We\'re worth it!"', fx: { happy: -4, say: 'Some customers leave. Others stay.' } }
+    ] });
+
+  ev({ id: 'long_line', cat: 'customers', icon: '🚶', w: 4, cond: busy,
+    title: 'The line goes out the door!',
+    text: 'So many customers are waiting! 🚶🚶🚶🚶 Some are getting grumpy.',
+    choices: [
+      { t: '👷 Hire a temp worker', fx: { cash: -0.12, capacity: [1.2, 1, 'Temp worker'], say: 'The line moves faster! 🏃' } },
+      { t: '🍪 Free snacks for waiting people', fx: { cash: -0.05, happy: 6, say: 'Nobody minds waiting now! 🍪' } },
+      { t: '🤷 Do nothing', fx: { happy: -4, say: 'Some people give up and leave. 😒' } }
+    ] });
+
+  ev({ id: 'lost_wallet', cat: 'customers', icon: '💼', w: 1.5, cd: 25, init: amt(1),
+    title: 'A bag full of money!',
+    text: 'A customer left a bag behind. Inside: {amt} in cash! 😳',
+    choices: [
+      { t: '😇 Give it back', fx: { rep: 6, chance: { p: 0.5, win: { cash: 0.2, say: 'The owner cried with joy and gave you a reward! 🥹' }, lose: { say: 'The owner said thank you! You feel great. 😇' } } } },
+      { t: '😈 Keep it', fx: { cash: 1, chance: { p: 0.5, win: { say: 'Nobody ever came back for it... 👀' }, lose: { rep: -15, say: 'The camera caught you. EVERYONE knows. 😱' } } } }
+    ] });
+
+  ev({ id: 'tax_audit', cat: 'trouble', icon: '🧾', w: 0.8, minWeek: 15, cd: 40,
+    title: 'Tax check!',
+    text: 'The tax office wants to check all your money records. 🧾🔍',
+    choices: [
+      { t: '🧮 Pay an expert to help', fx: { cash: -0.4, say: 'Everything was perfect! ✅' } },
+      { t: '💪 Do it yourself', fx: { chance: { p: function (g) { return g.employees.some(function (e) { return e.role === 'acct'; }) ? 0.85 : 0.5; }, win: { say: 'You passed! 📊' }, lose: { cash: -1, say: 'You made mistakes. Big fine! 😖' } } } }
+    ] });
+
+  // =====================================================================
+  // 🛍️ CUSTOMERS
+  // =====================================================================
+
+  var REVIEWERS = ['Karen B.', 'Mike T.', 'Sofia L.', 'Grandpa Joe', 'Jenny K.', 'Tom W.', 'Lily P.', 'Carlos M.', 'Anna S.', 'Big Dave'];
+  function reviewer(g, c) { c.who2 = U.pick(REVIEWERS); }
+
+  ev({ id: 'review_5', cat: 'customers', icon: '⭐', kind: 'review', w: function (g) { return g.satisfaction > 60 ? 4 : 1; }, stars: 5, init: reviewer,
+    title: 'New 5-star review!',
+    text: 'BEST {industry} in {city}!!! The staff are amazing. I come here every day! 😍😍',
+    choices: [
+      { t: '💖 Reply "Thank you!!"', fx: { fans: 5, say: 'They liked your reply! 💕' } },
+      { t: '🎁 Send them a free gift', fx: { cash: -0.03, rep: 2, fans: 8, say: 'They posted a photo of your gift! 📸' } },
+      { t: '👀 Just enjoy it', fx: { say: 'Nice. 😊' } }
+    ] });
+
+  ev({ id: 'review_1', cat: 'customers', icon: '😡', kind: 'review', w: function (g) { return g.satisfaction < 50 ? 4 : 1.2; }, stars: 1, init: reviewer,
+    title: 'Ouch! 1-star review',
+    text: 'I waited FOREVER and nobody said hi. Never coming back. 😡👎',
+    choices: [
+      { t: '🙏 Say sorry nicely', fx: { rep: 2, say: 'Other people see your kind reply. 👍' } },
+      { t: '🎟️ Offer a free visit', fx: { cash: -0.02, rep: 3, chance: { p: 0.5, win: { say: 'They came back and changed it to 5 stars! ⭐⭐⭐⭐⭐' }, lose: { say: 'They never replied.' } } } },
+      { t: '😤 Argue with them', fx: { chance: { p: 0.3, win: { fans: 10, say: 'Your funny reply went a little viral! 😂' }, lose: { rep: -6, say: 'People think you\'re rude. 😬' } } } }
+    ] });
+
+  ev({ id: 'review_weird', cat: 'customers', icon: '🤔', kind: 'review', w: 2, stars: 3, init: reviewer,
+    title: 'A strange review',
+    text: 'Pretty good. But the chair I sat on made a fart noise every time I moved. 3 stars. 🪑💨',
+    choices: [
+      { t: '🪑 Fix the chair', fx: { cash: -0.02, happy: 2, say: 'No more fart chair. 😌' } },
+      { t: '😂 Make it famous', fx: { fans: 14, say: 'People come JUST to sit in the fart chair! 😂🪑' } }
+    ] });
+
+  ev({ id: 'review_kid', cat: 'customers', icon: '🧒', kind: 'review', w: 1.5, stars: 5, init: function (g, c) { c.who2 = 'Timmy (age 8)'; },
+    title: 'A review from a kid',
+    text: 'I LOVE THIS PLACE. the lady gave me a sticker. 10/10 would come again. my mom says i have to stop typing now',
+    choices: [
+      { t: '🌟 Send Timmy a surprise', fx: { cash: -0.02, fans: 15, rep: 3, say: 'Timmy\'s mom posted his happy face online. Everyone melted! 🥹' } },
+      { t: '💖 Reply with a heart', fx: { fans: 4, say: 'Timmy is very proud. 😊' } }
+    ] });
+
+  ev({ id: 'vip', cat: 'customers', icon: '🕶️', w: 1.2, cd: 20, rarity: 'rare',
+    init: function (g, c) { c.celeb = U.pick(['a famous singer', 'a pro soccer player', 'a movie star', 'a famous YouTuber', 'a TV chef']); },
+    title: 'A celebrity walked in!',
+    text: 'Wait... is that {celeb}?! 😱 Everyone is staring.',
+    choices: [
+      { t: '👑 Give them VIP treatment', fx: { cash: -0.1, chance: { p: 0.6, win: { viral: [1, 4], rep: 4, say: 'They posted about you! 🌟' }, lose: { rep: 1, say: 'They said thanks and left. Still cool! 😎' } } } },
+      { t: '📸 Ask for a selfie', fx: { chance: { p: 0.5, win: { fans: 20, say: 'Selfie on the wall! 🤳' }, lose: { rep: -2, say: 'They didn\'t like that. Awkward. 😬' } } } },
+      { t: '😌 Treat them like anyone else', fx: { rep: 2, say: 'They liked being treated normally. Classy! ✨' } }
+    ] });
+
+  ev({ id: 'kid_customer', cat: 'customers', icon: '🧸', w: 1.5, cd: 20,
+    title: 'A little customer',
+    text: 'A tiny kid wants to buy something. They only have $1.50 and a toy car. 🚗',
+    choices: [
+      { t: '🥰 "That\'s enough!"', fx: { rep: 4, chance: { p: 0.3, win: { viral: [0.5, 3], say: 'Their dad filmed it. The internet is crying happy tears! 🥹' }, lose: { say: 'The kid is SO happy! 😊' } } } },
+      { t: '🙅 "Sorry, not enough"', fx: { rep: -3, say: 'The kid walks away sadly. 😢' } }
+    ] });
+
+  ev({ id: 'regulars', cat: 'customers', icon: '🤗', w: 2, fx: { demand: [1.06, 2, 'Friends of regulars'], say: 'Your favorite regular customer brought 5 friends! 👯👯' } });
+
+  ev({ id: 'special_order', cat: 'customers', icon: '🦖', w: 2,
+    title: 'A super special order',
+    text: 'A customer wants something very special. "Can you make it purple and shaped like a dinosaur?" 🦖💜',
+    choices: [
+      { t: '🦖 "Challenge accepted!"', fx: { cash: -0.04, happy: 4, fans: 6, say: 'They LOVED it! They told everyone. 💜' } },
+      { t: '🙅 "Sorry, we can\'t"', fx: { say: 'They go somewhere else.' } }
+    ] });
+
+  ev({ id: 'lost_kid', cat: 'customers', icon: '😢', w: 1.2, cd: 30,
+    title: 'A lost kid',
+    text: 'A little kid is crying. They can\'t find their parents! 😢',
+    choices: [
+      { t: '🔍 Help find the parents', fx: { rep: 3, team: 3, say: 'Found them! Big happy hug. 🤗' } },
+      { t: '👮 Call the police', fx: { rep: 1, say: 'The police helped. All good.' } }
+    ] });
+
+  ev({ id: 'proposal', cat: 'customers', icon: '💍', w: 1, cd: 30, rarity: 'rare',
+    title: 'A marriage proposal!',
+    text: 'A customer wants to propose to their partner in YOUR shop. 💍 They need your help!',
+    choices: [
+      { t: '🌹 Go all out!', fx: { cash: -0.08, chance: { p: 0.8, win: { viral: [0.5, 3], rep: 3, say: 'They said YES! 💍 The video is everywhere!' }, lose: { say: 'They said... "let me think about it." Oof. 😬' } } } },
+      { t: '🎶 Just play a love song', fx: { fans: 5, say: 'So romantic! 🎶' } }
+    ] });
+
+  ev({ id: 'influencer_freebie', cat: 'customers', icon: '🤳', w: 1.5, cd: 15,
+    title: 'An influencer wants free stuff',
+    text: '"I have 200K followers. Give me free stuff and I\'ll post about you!" 💅',
+    choices: [
+      { t: '🎁 Okay, here you go', fx: { cash: -0.1, chance: { p: 0.6, win: { fans: 30, say: 'They posted! New followers everywhere! 📈' }, lose: { say: 'They never posted. Hmm. 🤨' } } } },
+      { t: '🙅 "Please pay like everyone"', fx: { chance: { p: 0.5, win: { rep: 2, say: 'Other customers respect that! 💪' }, lose: { rep: -4, say: 'They posted a mean video about you. 🙄' } } } }
+    ] });
+
+  ev({ id: 'grumpy_grandpa', cat: 'customers', icon: '👴', kind: 'chat', w: 1.5, from: { name: 'Grandpa Joe', face: '👴' },
+    title: 'Grandpa Joe has a complaint',
+    msgs: ['HELLO', 'THE MUSIC IS TOO LOUD', 'IN MY DAY WE HAD QUIET SHOPS'],
+    choices: [
+      { t: '🔉 Turn it down', fx: { happy: 2, say: 'Grandpa Joe gives you a thumbs up. 👍' } },
+      { t: '🎸 Play his favorite oldies', fx: { happy: 4, fans: 4, say: 'Grandpa Joe is DANCING. 🕺' } },
+      { t: '🔊 Keep it loud', fx: { happy: -2, say: 'Grandpa Joe leaves. Grumpy. 😤' } }
+    ] });
+
+  ev({ id: 'hair_in_food', cat: 'customers', icon: '🤢', w: 2, cond: FOOD,
+    title: 'Hair in the food! 🤢',
+    text: 'A customer found a hair in their food. They are VERY upset.',
+    choices: [
+      { t: '🙏 Free meal + big sorry', fx: { cash: -0.03, rep: 1, say: 'They forgive you. 😌' } },
+      { t: '🧢 Hairnets for everyone!', fx: { cash: -0.05, team: -2, happy: 2, say: 'The team looks silly. But no more hair! 😂' } },
+      { t: '🤷 "Not ours!"', fx: { rep: -5, say: 'They left a 1-star review. 😬' } }
+    ] });
+
+  ev({ id: 'food_critic', cat: 'customers', icon: '🧐', w: 1.2, cond: FOOD, cd: 30, rarity: 'rare',
+    title: 'A food critic is here!',
+    text: 'A famous food critic is secretly eating here. 🧐 Your staff noticed!',
+    choices: [
+      { t: '👨‍🍳 Make everything perfect', fx: { cash: -0.1, chance: { p: function (g) { return g.satisfaction / 100 + 0.1; }, win: { rep: 8, fans: 25, say: '"A hidden gem!" ⭐⭐⭐⭐⭐ Critics love you!' }, lose: { rep: -4, say: '"It was... fine." Ouch. 😐' } } } },
+      { t: '😎 Act normal', fx: { chance: { p: function (g) { return g.satisfaction / 100; }, win: { rep: 6, say: 'They loved the normal you! ⭐⭐⭐⭐' }, lose: { rep: -3, say: 'Not their favorite. 😕' } } } }
+    ] });
+
+  ev({ id: 'streamer', cat: 'customers', icon: '🎮', w: 2, cond: TECH, cd: 20, rarity: 'rare',
+    title: 'A big streamer is using your stuff!',
+    text: 'A famous streamer is using your product live in front of 50,000 people! 🎮',
+    choices: [
+      { t: '💬 Send them a message', fx: { chance: { p: 0.5, win: { viral: [1, 4], say: 'They shouted you out LIVE! 🎉' }, lose: { fans: 10, say: 'They didn\'t see it, but lots of viewers did.' } } } },
+      { t: '🎁 Send free stuff for the fans', fx: { cash: -0.2, fans: 30, say: 'Viewers go crazy for the giveaway! 🎁' } }
+    ] });
+
+  ev({ id: 'bug_found', cat: 'business', icon: '🐛', w: 2, cond: TECH,
+    title: 'A big bug was found!',
+    text: 'Users found a bug. When you press a button, everything turns upside down. 🙃',
+    choices: [
+      { t: '🧑‍💻 Fix it now', fx: { cash: -0.15, say: 'Fixed! 🔧' } },
+      { t: '😂 Call it a "feature"', fx: { chance: { p: 0.4, win: { fans: 20, say: 'People LOVE the upside-down mode! 🙃' }, lose: { rep: -5, say: 'People did not find it funny. 😑' } } } }
+    ] });
+
+  // =====================================================================
+  // 📱 SOCIAL MEDIA
+  // =====================================================================
+
+  ev({ id: 'video_posted', cat: 'social', icon: '🎥', w: 2.5,
+    title: 'Someone filmed your shop!',
+    text: 'A customer posted a video of your {fronts} at work. People are watching it! 👀',
+    choices: [
+      { t: '🔁 Share it on your page', fx: { chance: { p: function (g) { return g.satisfaction > 55 ? 0.8 : 0.4; }, win: { fans: 12, chance: { p: 0.2, win: { viral: [1, 4], say: 'IT WENT VIRAL! 🔥' }, lose: { say: 'Nice boost! 📈' } } }, lose: { rep: -3, say: 'The comments are full of complaints. 😬' } } } },
+      { t: '🤐 Leave it', fx: { fans: 4, say: 'It gets a few thousand views.' } }
+    ] });
+
+  ev({ id: 'employee_famous', cat: 'social', icon: '🤳', w: 1.5, cd: 20, who: { a: 'funny' }, rarity: 'rare',
+    title: '{a} is famous online!',
+    text: 'A video of {a} being hilarious has MILLIONS of views! People come just to meet {a}. 🤩',
+    choices: [
+      { t: '⭐ Make {a} your mascot', fx: { fans: 30, a: 15, viral: [1, 4], next: ['famous_raise', 3, 6], say: 'Everyone loves {a}! 🎉' } },
+      { t: '🤫 Keep it low-key', fx: { fans: 10, a: -10, say: '{a} is a little disappointed.' } }
+    ] });
+
+  ev({ id: 'famous_raise', cat: 'team', icon: '💅', kind: 'chat', chainOnly: true, from: 'a',
+    title: 'Famous {a} wants more',
+    msgs: ['so... I\'m kind of famous now 💅', 'another company offered me DOUBLE', 'what do you say?'],
+    choices: [
+      { t: '💰 "Double it is!"', fx: { raise: ['a', 1], a: 20, fans: 10, say: 'Your star stays! 🌟' } },
+      { t: '🤏 "+25%?"', fx: { chance: { p: 0.5, win: { raise: ['a', 0.25], say: '{a} accepts. Phew! 😅' }, lose: { quit: 'a', fans: -10, say: '{a} left. Some fans followed them. 😢' } } } },
+      { t: '❌ "No"', fx: { quit: 'a', fans: -15, say: '{a} left and made a video about it. Ouch. 🎥' } }
+    ] });
+
+  ev({ id: 'complaint_viral', cat: 'social', icon: '😡', w: function (g) { return g.satisfaction < 50 ? 3 : 0.8; }, cd: 10,
+    title: 'A complaint is going viral!',
+    text: 'An angry customer\'s post about you has been shared 10,000 times! 😱',
+    choices: [
+      { t: '🙇 Say sorry publicly', fx: { rep: -2, say: 'People respect it. Mostly. 🙂' } },
+      { t: '🎁 Make it right for them', fx: { cash: -0.1, rep: 1, say: 'They updated the post: "They fixed it! ❤️"' } },
+      { t: '🤥 "They\'re lying!"', fx: { chance: { p: 0.4, win: { rep: 1, say: 'Their story fell apart! People are on your side.' }, lose: { rep: -10, viral: [0.5, 2], say: 'Big mistake. It got MUCH bigger. 😱' } } } }
+    ] });
+
+  ev({ id: 'meme', cat: 'social', icon: '🐸', w: 1.5, cd: 15,
+    title: 'You became a meme! 🐸',
+    text: 'Someone made a meme about {company}. It\'s actually really funny. 😂',
+    choices: [
+      { t: '😂 Join the joke', fx: { chance: { p: 0.7, win: { fans: 20, viral: [0.5, 3], say: 'Your reply got more likes than the meme! 🔥' }, lose: { rep: -3, say: 'Your reply was cringe. 😬' } } } },
+      { t: '🚫 Ask them to delete it', fx: { rep: -3, fans: 10, say: 'Now EVERYONE is sharing it. Oops. 🙈' } },
+      { t: '🙈 Ignore it', fx: { fans: 5, say: 'It fades after a few days.' } }
+    ] });
+
+  ev({ id: 'influencer', cat: 'social', icon: '✨', w: 2, fx: { fans: 15, rep: 2, say: 'An influencer with 800K followers said they LOVE {company}! ✨' } });
+
+  ev({ id: 'embarrassing_post', cat: 'social', icon: '🙈', w: 1.5, cd: 15, who: { a: 'any' },
+    title: 'Oops! Wrong account!',
+    text: '{a} posted a silly selfie on the COMPANY account by mistake. 🤳😳',
+    choices: [
+      { t: '🗑️ Delete it fast', fx: { rep: -1, say: 'Only a few people saw it.' } },
+      { t: '😂 Post another silly selfie', fx: { chance: { p: 0.55, win: { fans: 20, say: 'Everyone loved it! Selfie war! 🤳🤳' }, lose: { rep: -4, say: 'It didn\'t work. 😅' } } } },
+      { t: '🚪 Fire {a}', fx: { fire: 'a', say: 'Harsh... but the account is safe.' } }
+    ] });
+
+  ev({ id: 'rumor_company', cat: 'social', icon: '🧢', w: 1.5, cd: 15, init: rival,
+    title: 'A fake rumor!',
+    text: 'People online say {company} is closing forever. It\'s NOT true! 🧢',
+    choices: [
+      { t: '📢 Post the truth', fx: { rep: 1, say: 'Rumor busted! ✅' } },
+      { t: '🔍 Find who started it', fx: { cash: -0.3, chance: { p: 0.5, win: { rep: 5, say: 'It was {rival}! Now everyone is on YOUR side. 😤' }, lose: { say: 'You couldn\'t find out. 🤷' } } } },
+      { t: '🙈 Ignore it', fx: { demand: [0.92, 3, 'Fake rumor'], say: 'Some people believe it. 😕' } }
+    ] });
+
+  ev({ id: 'celebrity_mention', cat: 'social', icon: '📺', w: 0.8, cd: 40, rarity: 'epic',
+    fx: { fans: 50, rep: 3, viral: [3, 10], say: 'A celebrity talked about {company} on TV! The whole country knows you now! 📺🌟' } });
+
+  ev({ id: 'hacked', cat: 'social', icon: '🔓', w: 1, cd: 30,
+    title: 'Your account got hacked!',
+    text: 'Someone hacked your social media and is posting cat pictures. 🐱🐱🐱',
+    choices: [
+      { t: '🔐 Reset the password', fx: { fans: -5, say: 'Got it back! Some followers left.' } },
+      { t: '🐱 Keep the cat pics', fx: { chance: { p: 0.5, win: { fans: 15, say: 'Honestly? The cats got more likes. 😹' }, lose: { rep: -3, say: 'People are confused. 🤔' } } } }
+    ] });
+
+  ev({ id: 'fan_art', cat: 'social', icon: '🎨', w: 1.5, fx: { fans: 8, team: 3, say: 'A fan drew your logo as a superhero! 🦸 It\'s now on the wall.' } });
+
+  ev({ id: 'livestream', cat: 'social', icon: '🔴', w: 1.5, cd: 15,
+    title: 'Go live?',
+    text: 'Your team wants to livestream a normal work day. 🔴',
+    choices: [
+      { t: '🔴 Go live!', fx: { chance: { p: 0.45, win: { viral: [0.5, 3], say: 'Something hilarious happened on stream! 😂' }, lose: { fans: 3, say: 'It was a bit boring. 12 viewers. 😅' } } } },
+      { t: '🙅 Nah', fx: { say: 'Maybe another day.' } }
+    ] });
+
+  ev({ id: 'collab', cat: 'social', icon: '🤝', w: 1.2, cd: 20,
+    init: function (g, c) { c.brand = U.pick(['a sneaker brand', 'a famous candy company', 'a video game', 'a cartoon show', 'a popular band']); },
+    title: 'Collab offer! 🤝',
+    text: '{brand} wants to do a special collab with {company}!',
+    choices: [
+      { t: '✅ Let\'s do it!', fx: { cash: -0.4, fans: 25, demand: [1.12, 4, 'Collab hype'], say: 'The collab is a HIT! 🔥' } },
+      { t: '🙅 Not our style', fx: { say: 'You pass.' } }
+    ] });
+
+  ev({ id: 'hashtag', cat: 'social', icon: '#️⃣', w: 1, cd: 25, rarity: 'rare',
+    fx: { chance: { p: 0.6, win: { fans: 20, say: '#{company}Challenge is trending! People are doing silly dances outside your shop. 💃' }, lose: { fans: 5, say: 'Someone started #{company}Challenge. 3 people did it. 😅' } } } });
+
+  ev({ id: 'post_time', cat: 'social', icon: '📱', kind: 'post', w: 2.5, cd: 6,
+    title: 'Your followers want a post!',
+    text: 'Your fans are asking for new content! Pick what to post: 📱' });
+
+  // =====================================================================
+  // 👔 BOSS STUFF
+  // =====================================================================
+
+  ev({ id: 'manager_raise', cat: 'boss', icon: '👔', kind: 'chat', w: 1.5, who: { m: 'mgr' }, from: 'm',
+    title: 'Manager {m} wants a raise',
+    msgs: ['boss, I run this place 😤', 'I deserve to be paid like it', 'raise please?'],
+    choices: [
+      { t: '💵 "+12%, you earned it"', fx: { raise: ['m', 0.12], say: '{m} is fired up! 🔥' } },
+      { t: '🎁 "Here\'s a bonus instead"', fx: { bonus: 'm', say: 'Not what they asked, but it helps.' } },
+      { t: '❌ "No"', fx: { m: -20, say: '{m} is clearly unhappy. 😒' } }
+    ] });
+
+  ev({ id: 'fraud_found', cat: 'boss', icon: '🧮', w: 1, minWeek: 15, cd: 30, rarity: 'rare', cond: hasRole('acct'), who: { a: 'acct', b: 'greedy' }, init: amt(1.5),
+    title: 'Your accountant found stealing!',
+    text: '{a} found fake bills. {b} has been secretly taking money! Total: {amt}. 😱',
+    choices: [
+      { t: '👮 Fire {b} + call police', fx: { fire: 'b', chance: { p: 0.5, win: { cash: 0.9, say: 'The court made them pay you back! 💰' }, lose: { say: 'The money is gone forever. 😩' } } } },
+      { t: '🚪 Just fire {b}', fx: { fire: 'b', say: 'No drama. No money back.' } },
+      { t: '💸 Make {b} pay it back', fx: { cash: 0.7, b: -20, next: ['theft_again', 6, 12, 0.5], say: '{b} pays back half. Can you trust them? 🤨' } }
+    ] });
+
+  ev({ id: 'bad_manager', cat: 'boss', icon: '😠', w: 1.5, need: 4, who: { m: 'mgr' },
+    title: 'The team doesn\'t like {m}',
+    text: 'Workers say manager {m} yells at them and has favorites. 😠',
+    choices: [
+      { t: '🧑‍🏫 Send {m} to a class', fx: { cash: -0.2, team: 5, say: '{m} came back much nicer. 😊' } },
+      { t: '🛡️ Side with {m}', fx: { team: -8, loyal: { m: 10 }, say: '{m} is happy. The team is not.' } },
+      { t: '⬇️ Remove {m} as manager', fx: { demote: 'm', team: 6, say: 'The team quietly cheers. 🎉' } }
+    ] });
+
+  ev({ id: 'manager_disagree', cat: 'boss', icon: '⚔️', w: 1.5, cond: function (g) { return g.employees.filter(function (e) { return e.role === 'mgr'; }).length >= 2; }, who: { a: 'mgr', b: 'mgr' },
+    title: 'Your managers disagree!',
+    text: '{a} wants LOWER prices to get more customers. {b} wants HIGHER prices for more money. You decide!',
+    choices: [
+      { t: '⬇️ Side with {a}', fx: { price: -1, b: -12, say: 'Prices go down! More customers coming.' } },
+      { t: '⬆️ Side with {b}', fx: { price: 1, a: -12, say: 'Prices go up! Each sale makes more money.' } },
+      { t: '😐 Keep things the same', fx: { a: -5, b: -5, say: 'Neither is happy. 😑' } }
+    ] });
+
+  ev({ id: 'risky_idea', cat: 'boss', icon: '🎲', w: 1.2, minWeek: 12, cd: 25, who: { m: 'ambitious' }, init: amt(4),
+    title: 'A BIG risky plan!',
+    text: '{m} has a huge plan: spend {amt} on a brand new product line! "Trust me!" 🎲',
+    choices: [
+      { t: '🎲 Go all in!', fx: { cash: -4, chance: { p: 0.5, win: { demand: [1.25, 20, 'New product line'], fans: 15, m: 15, say: 'It\'s a HIT! 🚀' }, lose: { m: -10, say: 'It flopped. The money is gone. 😭' } } } },
+      { t: '🧪 Try a small test', fx: { cash: -0.8, chance: { p: 0.5, win: { demand: [1.08, 10, 'Product test'], say: 'The test went well! 👍' }, lose: { say: 'The test says no. Good thing you checked!' } } } },
+      { t: '🙅 No way', fx: { m: -8, say: '{m} sighs and closes the laptop.' } }
+    ] });
+
+  ev({ id: 'wants_manager', cat: 'boss', icon: '🙋', w: 1.5, minWeek: 8, need: 4, who: { a: 'notmgr' },
+    title: '{a} wants to be a manager',
+    text: '{a} really wants to lead the team. They are excited, but have never done it before.',
+    choices: [
+      { t: '👔 Give {a} a chance', fx: { mgr: 'a', next: ['out_of_depth', 2, 5, 0.45], say: '{a} is SO excited! Can they do it? 🤞' } },
+      { t: '📚 "Learn more first"', fx: { a: -4, skill: { a: 2 }, say: '{a} takes it well.' } },
+      { t: '❌ "No"', fx: { a: -12, say: '{a} is hurt. 😢' } }
+    ] });
+
+  ev({ id: 'manager_stealing', cat: 'boss', icon: '💰', w: 0.8, minWeek: 15, cd: 30, who: { m: 'mgr' }, init: amt(1), start: { cash: -1 },
+    title: 'Manager {m} was stealing!',
+    text: '{m} was paying for fake "work trips" with company money. {amt} is gone! 😡',
+    choices: [
+      { t: '🚪 Fire {m}', fx: { fire: 'm', say: 'You need a new manager now.' } },
+      { t: '⬇️ Demote + get the money back', fx: { demote: 'm', cash: 0.7, say: 'You got most of it back. 💰' } }
+    ] });
+
+  ev({ id: 'investors_angry', cat: 'boss', icon: '📊', w: function (g) { return g.ownership < 80 ? 1.5 : 0; }, minWeek: 10, cd: 20,
+    title: 'Your investors want more!',
+    text: 'The people who own part of {company} want you to grow FASTER. 📈',
+    choices: [
+      { t: '⬆️ Raise prices', fx: { price: 1, say: 'Investors are happy. Customers... less so.' } },
+      { t: '📢 Promise big growth', fx: { rep: -1, say: 'They will be watching! 👀' } },
+      { t: '😎 "Trust the plan"', fx: { chance: { p: 0.5, win: { say: 'They calm down. 😌' }, lose: { run: function (g) { g.ownership = Math.max(10, g.ownership - 3); return 'They made you give them 3% more of the company! 😤'; } } } } }
+    ] });
+
+  ev({ id: 'consultant', cat: 'boss', icon: '🧑‍💼', w: 1.2, cd: 25, init: amt(1),
+    title: 'A fancy consultant',
+    text: 'A consultant in a shiny suit says "I can make you 20% more money!" It costs {amt}. 🧑‍💼',
+    choices: [
+      { t: '✍️ Hire them', fx: { cash: -1, chance: { p: 0.55, win: { demand: [1.12, 12, 'Consultant tips'], equip: 0.03, say: 'Their ideas actually worked! 📈' }, lose: { say: 'They made a pretty slideshow. That\'s it. 🙄' } } } },
+      { t: '🙅 No thanks', fx: { say: 'They leave you their card. ✨' } }
+    ] });
+
+  ev({ id: 'focus', cat: 'boss', icon: '🎯', w: 2, cd: 10,
+    title: 'Pick this month\'s focus',
+    text: 'Your team asks: what should we focus on this month? 🎯',
+    choices: [
+      { t: '⭐ Quality', fx: { happy: 6, rep: 2, say: 'Everything is a bit better! ⭐' } },
+      { t: '⚡ Speed', fx: { capacity: [1.12, 4, 'Speed focus'], say: 'Everything is faster! ⚡' } },
+      { t: '📣 Getting noticed', fx: { fans: 12, say: 'More people know about you! 📣' } },
+      { t: '😊 Team happiness', fx: { team: 8, say: 'Happy team, happy life! 😊' } }
+    ] });
+
+  // =====================================================================
+  // 😂 FUNNY
+  // =====================================================================
+
+  ev({ id: 'pet', cat: 'funny', icon: '🐶', w: 2, cd: 20, who: { a: 'any' },
+    title: '{a} brought a dog to work!',
+    text: 'The dog is very cute. 🐶 The dog is also eating a customer\'s sandwich.',
+    choices: [
+      { t: '🐾 Dogs are welcome here!', fx: { team: 6, chance: { p: 0.8, win: { fans: 6, say: 'Everyone loves the office dog! 🐕' }, lose: { rep: -2, say: 'Happy team! But one customer sneezed nonstop. 🤧' } } } },
+      { t: '🚫 No pets', fx: { a: -6, say: 'The dog goes home. Everyone is a little sad. 🥺' } }
+    ] });
+
+  ev({ id: 'prank_war', cat: 'funny', icon: '🎭', w: function (g) { return g.employees.some(function (e) { return G.has(e, 'funny'); }) ? 2.5 : 0.5; }, need: 3,
+    title: 'PRANK WAR! 🎭',
+    text: 'Someone wrapped a desk in tin foil. Then someone put a fake spider in a coffee. It\'s getting crazy!',
+    choices: [
+      { t: '🎈 Join in!', fx: { team: 8, capacity: [0.95, 1, 'Prank war'], say: 'You filled a car with balloons. LEGENDARY. 🎈🚗' } },
+      { t: '🛑 Stop it now', fx: { team: -4, say: 'Back to work. Boring. 😐' } }
+    ] });
+
+  ev({ id: 'microwave', cat: 'funny', icon: '🍿', w: 1.2, cd: 30,
+    title: 'The microwave is GONE',
+    text: 'Someone took the office microwave. Lunch is chaos. 🍿😱',
+    choices: [
+      { t: '🛒 Buy a new one', fx: { money: -150, say: 'Peace returns to the kitchen. 🕊️' } },
+      { t: '🔍 Investigate!', fx: { team: 3, say: 'It was found in the closet with a note: "sorry" 📝' } }
+    ] });
+
+  ev({ id: 'asleep', cat: 'funny', icon: '😴', w: 2, who: { a: 'lazy' },
+    title: '{a} fell asleep in a meeting',
+    text: 'In the middle of the meeting... {a} started SNORING. 😴💤',
+    choices: [
+      { t: '🤫 Let them sleep', fx: { chance: { p: 0.3, win: { skill: { a: 5 }, say: '{a} woke up with a genius idea! Skill +5 💡' }, lose: { team: 2, say: 'Everyone giggled for the whole meeting. 😂' } } } },
+      { t: '☕ Wake them with coffee', fx: { say: '{a} says sorry and drinks 3 coffees. ☕☕☕' } },
+      { t: '🏠 Send them home', fx: { a: -12, say: 'Point made.' } }
+    ] });
+
+  ev({ id: 'mega_order', cat: 'funny', icon: '📦', w: 1.2, cd: 30, who: { a: 'any' },
+    title: 'Oops! 10,000 instead of 100!',
+    text: '{a} typed too many zeros. A GIANT truck of supplies is outside. 🚛📦📦📦',
+    choices: [
+      { t: '↩️ Send it back (small fee)', fx: { cash: -0.12, say: 'Lesson learned: check the zeros! 🔢' } },
+      { t: '🎉 Throw an "Oops Sale"!', fx: { cash: -0.6, fans: 12, demand: [1.15, 2, 'Oops Sale'], supply: [-0.1, 2, 'Extra stock'], say: 'The Oops Sale was a huge hit! 😂' } },
+      { t: '📦 Keep it all', fx: { cash: -0.6, supply: [-0.08, 6, 'Extra stock'], say: 'Your storage room is FULL. 📦📦📦' } }
+    ] });
+
+  ev({ id: 'internal_msg', cat: 'funny', icon: '💬', w: 1.2, cd: 25,
+    title: 'Private message went public!',
+    text: 'Someone posted "is the boss here yet? look busy!!" on the COMPANY page. 😳',
+    choices: [
+      { t: '😂 Reply "The boss is here."', fx: { chance: { p: 0.6, win: { fans: 18, viral: [0.3, 1.5], say: 'People loved it! 😂' }, lose: { say: 'A few laughs. That\'s it.' } } } },
+      { t: '🗑️ Delete it', fx: { say: 'Only 40 people saw it. Probably. 👀' } }
+    ] });
+
+  ev({ id: 'parking', cat: 'funny', icon: '🅿️', w: 1.5, need: 2, who: { a: 'any', b: 'any' },
+    title: 'The parking spot war',
+    text: '{a} and {b} BOTH want the best parking spot. Now there are angry notes on the cars. 🚗📝',
+    choices: [
+      { t: '📋 Whoever came first gets it', fx: { b: -6, say: 'Rules are rules.' } },
+      { t: '🏆 Worker of the month gets it', fx: { team: 3, say: 'Now everyone works harder for it! 😂' } },
+      { t: '😈 Take it yourself', fx: { rel: ['a', 'b', 20], say: 'Now they\'re teaming up... against YOU. 😂' } }
+    ] });
+
+  ev({ id: 'lunch_thief', cat: 'funny', icon: '🥪', w: 1.5, cd: 25,
+    title: 'The lunch thief strikes again',
+    text: 'Someone keeps eating other people\'s lunch from the fridge. The fridge is covered in angry notes. 🥪😤',
+    choices: [
+      { t: '📷 Put a camera in the fridge', fx: { money: -90, run: function (g) { var e = U.pick(g.employees); return 'Caught! It was ' + (e ? G.first(e) : 'the manager') + '. They bring cake to say sorry. 🍰'; } } },
+      { t: '🍔 Free lunch for all on Friday', fx: { cash: -0.03, team: 4, say: 'Free lunch fixes EVERYTHING. 🍔' } }
+    ] });
+
+  ev({ id: 'birthday', cat: 'funny', icon: '🎂', w: 1.5, need: 2, who: { a: 'any' },
+    fx: { team: 2, a: 6, say: 'Surprise birthday party for {a}! 🎂🎉' } });
+
+  ev({ id: 'goose', cat: 'funny', icon: '🪿', w: 1, cd: 30, rarity: 'rare',
+    title: 'A GOOSE got inside!',
+    text: 'A goose walked into the shop. It won\'t leave. It is honking at everyone. 🪿📢',
+    choices: [
+      { t: '🧹 Chase it out', fx: { chance: { p: 0.5, win: { say: 'The goose leaves. Everyone claps. 👏' }, lose: { fans: 15, say: 'The goose chased YOU. Someone filmed it. 😂' } } } },
+      { t: '👑 Make it the mascot', fx: { fans: 20, happy: 3, say: 'Meet Sir Honksalot, your new mascot! 🪿👑' } }
+    ] });
+
+  ev({ id: 'pajamas', cat: 'funny', icon: '🩳', w: 1.5, who: { a: 'any' },
+    title: '{a} came in pajamas!',
+    text: '{a} forgot to change and came to work in dinosaur pajamas. 🦖🩳',
+    choices: [
+      { t: '🦖 Pajama Day for everyone!', fx: { team: 6, fans: 6, say: 'Customers love Pajama Day! 😂' } },
+      { t: '🏠 "Go change, please"', fx: { a: -3, say: '{a} goes home, red-faced. 😳' } }
+    ] });
+
+  ev({ id: 'sign_typo', cat: 'funny', icon: '🪧', w: 1, cd: 40,
+    init: function (g, c) { c.typo = g.company.name.split('').reverse().join(''); },
+    title: 'Your new sign has a typo!',
+    text: 'The sign company printed your name BACKWARDS: "{typo}" 🤦',
+    choices: [
+      { t: '🔧 Fix it', fx: { cash: -0.1, say: 'Fixed. 😌' } },
+      { t: '😂 Keep it!', fx: { fans: 15, chance: { p: 0.3, win: { viral: [0.5, 2], say: 'People travel just to take a photo with it! 📸' }, lose: { say: 'Tourists take photos of it. 📸' } } } }
+    ] });
+
+  ev({ id: 'fire_alarm', cat: 'funny', icon: '🍿', w: 1.5, cd: 25, who: { a: 'any' },
+    title: 'Burnt popcorn alarm!',
+    text: '{a} burned popcorn and set off the fire alarm. Everyone had to go outside! 🚨🍿',
+    choices: [
+      { t: '🚫 Ban popcorn forever', fx: { team: -3, say: 'Popcorn is now illegal here. 😔🍿' } },
+      { t: '😂 Laugh it off', fx: { team: 3, capacity: [0.95, 1, 'Popcorn alarm'], say: '{a} now has the nickname "Popcorn". 🍿' } }
+    ] });
+
+  ev({ id: 'elevator', cat: 'funny', icon: '🛗', w: 1.2, need: 2, who: { a: 'any', b: 'any' },
+    fx: { chance: { p: 0.6, win: { rel: ['a', 'b', 40], say: '{a} and {b} got stuck in the elevator for 2 hours. Now they\'re best friends! 🛗🤝' }, lose: { rel: ['a', 'b', -40], say: '{a} and {b} got stuck in the elevator for 2 hours. Now they can\'t stand each other. 🛗😤' } } } });
+
+  ev({ id: 'same_outfit', cat: 'funny', icon: '👯', w: 1.2, need: 2, who: { a: 'any', b: 'any' },
+    fx: { rel: ['a', 'b', 15], team: 2, say: '{a} and {b} wore the EXACT same outfit today. Twins! 👯' } });
+
+  ev({ id: 'robot_vacuum', cat: 'funny', icon: '🤖', w: 1, fx: { fans: 5, say: 'The robot vacuum escaped and drove down the street. A kid caught it. 🤖🏃' } });
+
+  ev({ id: 'mystery_smell', cat: 'funny', icon: '🤢', w: 1.2, cd: 30,
+    title: 'What is that SMELL?!',
+    text: 'Something smells terrible and nobody knows where it\'s coming from. 🤢',
+    choices: [
+      { t: '🔍 Search everywhere', fx: { team: 2, say: 'Found it: a 3-week-old tuna sandwich behind the fridge. 🐟🤮' } },
+      { t: '🕯️ Buy 50 candles', fx: { money: -120, happy: -1, say: 'Now it smells like vanilla AND tuna. 🕯️🐟' } }
+    ] });
+
+  ev({ id: 'karaoke', cat: 'funny', icon: '🎤', w: 1.2, need: 3, fx: { team: 5, say: 'Someone left karaoke on at lunch. The whole team sang. Badly. 🎤😂' } });
+
+  ev({ id: 'costume_day', cat: 'funny', icon: '🎃', w: 4, cd: 40, cond: season(42, 44),
+    title: 'Halloween! 🎃',
+    text: 'The team wants to dress up in costumes at work!',
+    choices: [
+      { t: '👻 Costumes for everyone!', fx: { cash: -0.05, team: 8, fans: 10, say: 'A zombie served customers. They LOVED it. 🧟' } },
+      { t: '🍬 Just give out candy', fx: { cash: -0.03, happy: 4, say: 'Sweet! 🍬' } }
+    ] });
+
+  // =====================================================================
+  // 🚨 BIG TROUBLE
+  // =====================================================================
+
+  ev({ id: 'lawsuit', cat: 'trouble', icon: '⚖️', w: 0.7, minWeek: 20, cd: 40, init: amt(6),
+    title: 'You\'re being sued!',
+    text: 'A customer says they tripped in your shop. They want {amt}! ⚖️',
+    choices: [
+      { t: '🤝 Pay them to go away', fx: { cash: -2.5, say: 'Settled quietly. 🤐' } },
+      { t: '⚖️ Fight it in court', fx: { cash: -1, chance: { p: 0.55, win: { rep: 3, say: 'You WON! They were faking it. 🎉' }, lose: { cash: -6, rep: -8, say: 'You lost. It\'s all over the news. 😭' } } } }
+    ] });
+
+  ev({ id: 'accident', cat: 'trouble', icon: '🚑', w: 0.6, minWeek: 15, cd: 40, who: { a: 'front' },
+    title: 'Accident at work!',
+    text: '{a} got hurt at work. They will be okay, but everyone is worried about safety. 🚑',
+    choices: [
+      { t: '🦺 Pay their bills + make it safer', fx: { cash: -1.5, team: 8, loyal: { a: 25 }, say: 'The team trusts you more now. ❤️' } },
+      { t: '🤏 Pay the minimum', fx: { cash: -0.4, team: -10, next: ['strike', 2, 5, 0.4], say: 'The team is angry at you. 😠' } }
+    ] });
+
+  ev({ id: 'bad_batch', cat: 'trouble', icon: '☣️', w: 0.7, minWeek: 12, cd: 40,
+    title: 'Some products were bad!',
+    text: 'A batch of your {unit} came out wrong. A few customers noticed. Most didn\'t... yet. 😬',
+    choices: [
+      { t: '📢 Tell everyone + give refunds', fx: { cash: -1.8, rep: 3, say: 'People love your honesty! 🙌' } },
+      { t: '🤫 Fix it quietly', fx: { chance: { p: 0.5, win: { say: 'Nobody ever found out. 😅' }, lose: { rep: -18, demand: [0.8, 6, 'Cover-up scandal'], say: 'A reporter found out you hid it! 😱' } } } }
+    ] });
+
+  ev({ id: 'strike', cat: 'trouble', icon: '🪧', w: function (g) { return G.avgMorale(g) < 38 ? 2 : 0; }, minWeek: 10, cd: 30, need: 4,
+    title: 'STRIKE! 🪧',
+    text: 'The whole team walked out! They are outside with signs. Nothing is getting done!',
+    choices: [
+      { t: '💵 Give everyone +10%', fx: { teamRaise: 0.1, say: 'Everyone is back at work! 🙌' } },
+      { t: '🤝 Negotiate', fx: { chance: { p: 0.5, win: { teamRaise: 0.05, say: 'You agree on +5%. Deal! 🤝' }, lose: { closed: [1, 'Strike'], team: -5, say: 'Talks failed. Closed next week. 😩' } } } },
+      { t: '😤 Wait them out', fx: { closed: [2, 'Strike'], team: -10, rep: -5, say: 'Closed for 2 weeks! 😱' } }
+    ] });
+
+  ev({ id: 'cyberattack', cat: 'trouble', icon: '🦠', w: 0.6, minWeek: 20, cd: 40, init: amt(1.2),
+    title: 'HACKERS! 🦠',
+    text: 'Hackers locked all your computers. They want {amt} to unlock them! 💻🔒',
+    choices: [
+      { t: '💸 Pay them', fx: { cash: -1.2, chance: { p: 0.8, win: { say: 'They unlocked everything. Phew.' }, lose: { capacity: [0.7, 2, 'Locked computers'], say: 'They took the money and ran! 😡' } } } },
+      { t: '💾 Use your backups', fx: { cash: -0.4, capacity: [0.8, 1, 'Restoring computers'], say: 'Takes a week, but you\'re back! 💪' } }
+    ] });
+
+  ev({ id: 'supplier_bankrupt', cat: 'trouble', icon: '🏚️', w: 0.5, minWeek: 20, cd: 50,
+    title: 'Your supplier closed!',
+    text: 'Your main supplier went out of business overnight! You need a new one NOW. 😰',
+    choices: [
+      { t: '⚡ Pay extra for a fast one', fx: { supply: [0.06, 8, 'Emergency supplier'], say: 'Supplies keep coming, but it costs more.' } },
+      { t: '🔍 Take time to find a good one', fx: { capacity: [0.6, 2, 'No supplies'], say: 'Two slow weeks, then back to normal.' } }
+    ] });
+
+  ev({ id: 'kitchen_fire', cat: 'trouble', icon: '🔥', w: 0.7, minWeek: 8, cd: 40, cond: FOOD,
+    title: 'FIRE in the kitchen! 🔥',
+    text: 'A pan caught fire! Smoke everywhere!',
+    choices: [
+      { t: '🧯 Use the fire extinguisher', fx: { chance: { p: 0.75, win: { cash: -0.2, team: 3, say: 'Fire out! Hero moment! 🦸' }, lose: { cash: -1, closed: [1, 'Fire damage'], say: 'It spread a bit. Closed for a week to fix it. 😩' } } } },
+      { t: '🚒 Everyone out, call for help', fx: { cash: -0.5, closed: [1, 'Fire damage'], say: 'Everyone is safe. That\'s what matters. ❤️' } }
+    ] });
+
+  // =====================================================================
+  // 🥊 RIVALS & 🌍 WORLD NEWS
+  // =====================================================================
+
+  ev({ id: 'rival_opens', cat: 'rivals', icon: '🏪', w: 2, cd: 20, minWeek: 8, init: rival,
+    title: '{rival} is opening next door!',
+    text: 'A giant "OPENING SOON" sign just went up across the street. It\'s {rival}! They have super low prices. 😬',
+    choices: [
+      { t: '💳 Start a loyalty card', fx: { cash: -0.5, fans: 8, demand: [0.95, 4, 'New rival nearby'], say: 'Your regular customers stay with you! ❤️' } },
+      { t: '🎉 Throw a big party the same day', fx: { cash: -0.8, fans: 15, say: 'Your party was WAY more fun than their opening! 🎉' } },
+      { t: '🤷 Ignore them', fx: { demand: [0.85, 8, 'New rival nearby'], say: 'Some customers try the new place. 😕' } }
+    ] });
+
+  ev({ id: 'rival_scandal', cat: 'world', icon: '📰', kind: 'news', w: 1.2, cd: 25, init: rival,
+    title: '{rival} caught selling fake stuff!',
+    text: 'Big news: {rival} has been selling fakes! Their customers are angry. 😱',
+    choices: [
+      { t: '🤐 Stay quiet', fx: { demand: [1.05, 3, 'Rival scandal'], say: 'Some of their customers come to you anyway.' } },
+      { t: '🎟️ "10% off for {rival} customers!"', fx: { cash: -0.2, demand: [1.15, 4, 'Rival scandal'], fans: 10, say: 'Smart move! New customers everywhere! 🧠' } },
+      { t: '😈 Make fun of them online', fx: { chance: { p: 0.5, win: { fans: 20, say: 'Savage! People loved it. 🔥' }, lose: { rep: -5, say: 'People thought you were mean. 😬' } } } }
+    ] });
+
+  ev({ id: 'rival_closed', cat: 'world', icon: '📰', w: 1, cd: 30, init: rival, fx: { demand: [1.1, 6, 'Rival closed a shop'], say: '📰 {rival} closed one of their shops! Their customers are coming to you.' } });
+
+  ev({ id: 'trend_news', cat: 'world', icon: '📈', kind: 'news', w: 1.5, cd: 20,
+    title: 'Your business is the NEW trend!',
+    text: 'Everybody online is talking about {industry} places this month! More people want to buy from you.',
+    choices: [
+      { t: '🚀 Ride the wave!', fx: { cash: -0.3, demand: [1.25, 4, 'Hot trend'], say: 'You\'re part of the trend! 🌊' } },
+      { t: '😌 Enjoy the extra customers', fx: { demand: [1.12, 4, 'Hot trend'], say: 'Nice! 📈' } }
+    ] });
+
+  ev({ id: 'price_news', cat: 'world', icon: '📰', w: 1, cd: 30, fx: { supply: [0.03, 6, 'Supply prices up'], say: '📰 Supplies cost more everywhere right now. Your costs are a bit higher.' } });
+
+  ev({ id: 'healthy_trend', cat: 'world', icon: '🥗', kind: 'news', w: 1, cd: 30, cond: FOOD,
+    title: 'Everyone is eating healthy now!',
+    text: 'A new health trend is here! People want healthy food. 🥗',
+    choices: [
+      { t: '🥗 Add healthy options', fx: { cash: -0.3, demand: [1.1, 6, 'Healthy menu'], say: 'Health fans love your new menu! 💚' } },
+      { t: '🍔 "We\'re not changing!"', fx: { demand: [0.95, 3, 'Health trend'], fans: 4, say: 'Some people love that you stay the same!' } }
+    ] });
+
+  ev({ id: 'sponsor_team', cat: 'world', icon: '⚽', w: 1.2, cd: 30,
+    title: 'Sponsor a kids\' team?',
+    text: 'The local kids\' soccer team needs new shirts. They want YOUR logo on them! ⚽',
+    choices: [
+      { t: '👕 Yes!', fx: { cash: -0.3, rep: 4, fans: 10, say: 'Your logo is on 15 tiny shirts. They won their first game! 🏆' } },
+      { t: '🙅 Not now', fx: { say: 'Maybe next season.' } }
+    ] });
+
+  ev({ id: 'tv_show', cat: 'lucky', icon: '📺', w: 0.8, cd: 40, rarity: 'epic',
+    title: 'A TV show wants YOU!',
+    text: 'A TV show wants to film a whole episode at {company}! 📺🎬',
+    choices: [
+      { t: '🎬 Yes! Roll the cameras!', fx: { chance: { p: 0.75, win: { fans: 60, rep: 5, viral: [2, 6], say: 'The episode was a hit! You\'re famous! 🌟' }, lose: { fans: 25, rep: -4, say: 'They made you look a bit silly... but people know you now! 😅' } } } },
+      { t: '🙈 Too scary', fx: { say: 'Maybe it\'s better this way.' } }
+    ] });
+
+  ev({ id: 'grant', cat: 'lucky', icon: '🏛️', w: 1, cd: 40, fx: { cash: 0.8, say: 'The city gave you a small-business prize! 🏛️💰' } });
+
+  ev({ id: 'old_painting', cat: 'lucky', icon: '🖼️', w: 0.8, cd: 50, rarity: 'rare',
+    title: 'You found an old painting!',
+    text: 'While cleaning the storage room, you found a dusty old painting. 🖼️ Is it worth anything?',
+    choices: [
+      { t: '💰 Sell it', fx: { chance: { p: 0.3, win: { cash: 6, say: 'It was by a FAMOUS painter! 🤑🤑' }, lose: { cash: 0.1, say: 'It was painted by someone\'s grandma. 😂' } } } },
+      { t: '🖼️ Hang it on the wall', fx: { happy: 3, say: 'It makes the shop look fancy. 🎩' } }
+    ] });
+
+  // =====================================================================
+  // 🍀 MINI-GAMES
+  // =====================================================================
+
+  ev({ id: 'mystery_boxes', cat: 'lucky', icon: '🎁', kind: 'boxes', w: 2.5, cd: 7,
+    title: 'Mystery boxes!',
+    text: 'A delivery driver dropped off 3 mystery boxes by mistake. "Keep one!" Pick a box! 🎁',
+    prizes: [
+      { label: 'A bag of cash', emoji: '💰', w: 3, fx: { cash: 1.2 } },
+      { label: 'A viral video', emoji: '📱', w: 2, fx: { fans: 25 } },
+      { label: 'A super worker', emoji: '🦸', w: 1, fx: { hireSpecial: { role: 'front', skill: 88, traits: ['hardworking', 'friendly'] } } },
+      { label: 'Happy customers', emoji: '🥰', w: 2, fx: { happy: 8, rep: 3 } },
+      { label: 'Old socks', emoji: '🧦', w: 2, fx: { say: 'Just old socks. Yuck! 🤢' } },
+      { label: 'A toy snake', emoji: '🐍', w: 1.5, fx: { team: 4, say: 'It\'s a toy! Everyone laughed. 😂' } },
+      { label: 'Golden ticket', emoji: '🎫', w: 0.5, fx: { cash: 4, fans: 20 } }
+    ] });
+
+  ev({ id: 'lucky_wheel', cat: 'lucky', icon: '🎡', kind: 'wheel', w: 2.5, cd: 7,
+    title: 'Spin the Lucky Wheel!',
+    text: 'The Business Fair has a prize wheel. You get ONE free spin! 🎡',
+    slices: [
+      { label: 'Cash', emoji: '💰', color: '#FFB020', w: 3, fx: { cash: 0.7 } },
+      { label: 'Followers', emoji: '📱', color: '#FF5FA2', w: 2.5, fx: { fans: 20 } },
+      { label: 'Reputation', emoji: '⭐', color: '#7C4DFF', w: 2.5, fx: { rep: 5 } },
+      { label: 'Oops', emoji: '💸', color: '#FF4D5E', w: 2, fx: { cash: -0.4 } },
+      { label: 'Party', emoji: '🎉', color: '#20C997', w: 2.5, fx: { team: 10 } },
+      { label: 'JACKPOT', emoji: '💎', color: '#2EA8FF', w: 0.6, jackpot: true, fx: { cash: 5, fans: 30 } },
+      { label: 'Lucky week', emoji: '🍀', color: '#12B886', w: 2, fx: { demand: [1.2, 2, 'Lucky week'] } },
+      { label: 'Nothing', emoji: '🙃', color: '#ADB5BD', w: 2, fx: { say: 'Better luck next time!' } }
+    ] });
+
+  ev({ id: 'rush_hour', cat: 'lucky', icon: '🏃', kind: 'tap', w: 2.5, cd: 8,
+    title: 'RUSH HOUR!',
+    text: 'A HUGE crowd just walked in! Tap the customers as fast as you can to serve them! 🏃‍♀️',
+    target: '🙋', goal: 18, secs: 7,
+    win: { cash: 0.8, happy: 5, say: 'Everyone got served! 🙌' }, lose: { happy: -3, say: 'Some customers left without buying. 😕' } });
+
+  ev({ id: 'catch_thief', cat: 'lucky', icon: '🦹', kind: 'tap', w: 2, cd: 10, cond: noCams,
+    title: 'STOP THAT THIEF!',
+    text: 'A thief grabbed stuff and is running away! Tap them to catch them! 🦹',
+    target: '🦹', goal: 14, secs: 6,
+    win: { cash: 0.3, rep: 3, fans: 6, say: 'GOT THEM! 👮 You\'re a hero!' }, lose: { cash: -0.5, say: 'They got away... 😩' } });
+
+  ev({ id: 'leak_tap', cat: 'lucky', icon: '💧', kind: 'tap', w: 1.5, cd: 12,
+    title: 'LEAKS EVERYWHERE!',
+    text: 'The pipes are leaking! Tap the drops to plug them before the shop floods! 💧',
+    target: '💧', goal: 16, secs: 7,
+    win: { say: 'All leaks plugged! 🔧' }, lose: { cash: -0.5, say: 'Too much water got in. Clean-up costs money. 💦' } });
+
+  ev({ id: 'bug_squash', cat: 'lucky', icon: '🐛', kind: 'tap', w: 2, cd: 10, cond: TECH,
+    title: 'BUG ATTACK!',
+    text: 'Bugs are crawling through your code! Squash them before launch! 🐛',
+    target: '🐛', goal: 18, secs: 7,
+    win: { rep: 3, fans: 8, say: 'Bug-free launch! 🚀' }, lose: { rep: -3, say: 'Some bugs got through. Users are grumpy. 😤' } });
+
+  ev({ id: 'balloon_party', cat: 'lucky', icon: '🎈', kind: 'tap', w: 1.5, cd: 12, need: 2,
+    title: 'Balloon party!',
+    text: 'It\'s the company birthday! Pop as many balloons as you can! 🎈',
+    target: '🎈', goal: 20, secs: 7,
+    win: { team: 10, say: 'Best party ever! 🥳' }, lose: { team: 4, say: 'Still a fun party! 🎉' } });
+
+  function quizGen() {
+    var t = U.ri(0, 4), q, ans, opts, money = true;
+    if (t === 0) {
+      var price = U.ri(3, 15), paid = price <= 5 ? 10 : 20; ans = paid - price;
+      q = 'A customer buys something for $' + price + '. They pay with $' + paid + '. How much change do you give back?';
+      opts = [ans, ans + 1, ans + 2, Math.max(1, ans - 1)];
+    } else if (t === 1) {
+      var n = U.ri(2, 9), p = U.ri(2, 6); ans = n * p;
+      q = 'You sell ' + n + ' things for $' + p + ' each. How much money did you make?';
+      opts = [ans, ans + p, ans - p, n + p];
+    } else if (t === 2) {
+      var sell = U.ri(8, 20), costx = U.ri(2, sell - 2); ans = sell - costx;
+      q = 'You sell a toy for $' + sell + '. It cost you $' + costx + ' to make. How much PROFIT did you make?';
+      opts = [ans, sell + costx, ans + 2, Math.max(1, ans - 2)];
+    } else if (t === 3) {
+      var full = U.pick([10, 20, 40, 50, 100]), pct = U.pick([10, 20, 50]); ans = full - full * pct / 100;
+      q = 'Something costs $' + full + '. It\'s ' + pct + '% off today! What is the new price?';
+      opts = [ans, full - pct, full * pct / 100, ans + 5];
+    } else {
+      var w = U.ri(2, 6), each = U.pick([5, 10, 20, 25]); ans = w * each; money = false;
+      q = 'You have ' + w + ' workers. Each one helps ' + each + ' customers a day. How many customers get help in one day?';
+      opts = [ans, w + each, ans + each, ans - each];
+    }
+    var uniq = [];
+    opts.forEach(function (o) { if (uniq.indexOf(o) < 0 && o > 0) uniq.push(o); });
+    while (uniq.length < 3) uniq.push(ans + uniq.length * 3);
+    uniq = U.shuffle(uniq.slice(0, 4));
+    return { q: q, options: uniq.map(function (o) { return (money ? '$' : '') + o; }), answer: uniq.indexOf(ans) };
   }
+  ev({ id: 'quiz', cat: 'lucky', icon: '🧠', kind: 'quiz', w: 2.5, cd: 6,
+    init: function (g, c) { c.q = quizGen(); },
+    title: 'Business Brain Quiz!',
+    text: 'Answer right to win a prize! 🧠',
+    win: { cash: 0.5, xp: 20, say: 'Big brain! 🧠✨' }, lose: { say: 'Nice try! You\'ll get the next one. 💪' } });
 
-  def({ id: 'jealous', cat: 'Employees', icon: '😒', chainOnly: true,
-    title: function (g, c) { return first(g, c.a) + ' is jealous of ' + first(g, c.b); },
-    text: function (g, c) { return N(g, c.a) + ' is furious that ' + N(g, c.b) + ' got promoted instead of them and is telling everyone it was unfair.'; },
-    choices: [
-      { t: 'Explain the decision', fx: function (g, c) { if (U.chance(0.55)) return 'They grumble but accept it.'; emp(g, c.a).morale -= 10; G.addRel(g, c.a, c.b, -25); return 'They do not buy it.'; } },
-      { t: 'Promise them the next promotion', fx: function (g, c) { emp(g, c.a).morale += 8; G.schedule(g, 'promotion_request', U.ri(6, 12), { a: c.a }); return 'They will hold you to that.'; } },
-      { t: 'Tell them to get over it', fx: function (g, c) { var a = emp(g, c.a); a.morale -= 18; a.loyalty -= 10; G.addRel(g, c.a, c.b, -35); return 'They go back to their desk and slam the drawer.'; } }
-    ] });
+  ev({ id: 'investor_deal', cat: 'lucky', icon: '💼', kind: 'deal', w: 1.2, cd: 20, minWeek: 12,
+    cond: function (g) { return g.ownership > 30; },
+    init: function (g, c) { c.pct = U.pick([5, 10, 15]); c.offer = U.nice(G.stakeOffer(g, c.pct) * 0.8); c.round = 0; c.own = Math.round(g.ownership); },
+    title: 'An investor wants in!',
+    text: 'A rich investor wants to buy {pct}% of {company}. You own {own}% right now. Make a deal!',
+    accept: function (g, c) { return { money: c.offer, run: function (gg) { gg.ownership -= c.pct; return 'You sold ' + c.pct + '% of the company.'; } }; },
+    acceptSay: 'Deal! 🤝 {offerTxt} is in your account!' });
 
-  def({ id: 'theft', cat: 'Employees', icon: '🫳', w: 3, minWeek: 4,
-    setup: function (g) { var a = pickEmp(g, null, traitW('greedy', 8)); return a ? { a: a.id, amt: G.cost(g, 0.15) } : null; },
-    title: 'Money is missing from the register',
-    start: function (g, c) { g.cash -= c.amt; },
-    text: function (g, c) { return M(c.amt) + ' has gone missing. The security footage is blurry, but it looks a lot like ' + N(g, c.a) + '.'; },
-    choices: [
-      { t: 'Confront them', fx: function (g, c) {
-        var a = emp(g, c.a);
-        if (G.has(a, 'greedy') || U.chance(0.3)) { G.removeEmp(g, a, 'fired'); g.cash += c.amt * 0.5; return 'They confessed and paid back half. You fired them.'; }
-        a.morale -= 20; a.loyalty -= 20; return 'It was not them. They are deeply offended.';
-      } },
-      { t: 'Call the police', fx: function (g, c) {
-        var a = emp(g, c.a);
-        if (G.has(a, 'greedy') || U.chance(0.3)) { G.removeEmp(g, a, 'fired', true); G.news(g, a.name + ' was arrested for theft.', 'bad'); team(g, -3); return 'The police arrested ' + first(g, c.a) + '. The team is shaken.'; }
-        team(g, -8); return 'The police found nothing. Everyone feels like a suspect.';
-      } },
-      { t: 'Install better cameras', cost: cost(0.2), fx: function (g, c) { spend(g, G.cost(g, 0.2)); return 'No more missing money. Probably.'; } },
-      { t: 'Let it go', fx: function (g, c) { if (U.chance(0.5)) G.schedule(g, 'theft_again', U.ri(3, 6), c); return 'You write it off.'; } }
-    ] });
+  ev({ id: 'buy_recipe', cat: 'lucky', icon: '📜', kind: 'deal', w: 1, cd: 25, minWeek: 8,
+    init: function (g, c) { c.offer = U.nice(G.scale(g) * 0.6); c.round = 0; },
+    title: 'Someone wants your secret!',
+    text: 'A big company wants to buy your secret recipe. They will copy it, so you\'ll get a few fewer customers for a while.',
+    accept: function (g, c) { return { money: c.offer, demand: [0.95, 8, 'Secret sold'] }; },
+    acceptSay: 'Sold! 🤝 {offerTxt} for your secret.' });
 
-  def({ id: 'theft_again', cat: 'Employees', icon: '🫳', chainOnly: true,
-    fx: function (g, c) { var amt = G.cost(g, 0.3); g.cash -= amt; return 'More money is missing: ' + M(amt) + '. Letting it go last time was a mistake.'; } });
+  ev({ id: 'movie_filming', cat: 'lucky', icon: '🎬', kind: 'deal', w: 1, cd: 30, minWeek: 5, rarity: 'rare',
+    init: function (g, c) { c.offer = U.nice(G.scale(g) * 0.9); c.round = 0; },
+    title: 'A movie wants to film here!',
+    text: 'A movie crew wants to film a scene in your shop! You\'d have to close for a week. How much will they pay?',
+    accept: function (g, c) { return { money: c.offer, closed: [1, 'Movie filming'], fans: 20 }; },
+    acceptSay: 'Lights, camera, action! 🎬 {offerTxt} for you!' });
 
-  def({ id: 'spy', cat: 'Employees', icon: '🕵️', w: 1.5, minWeek: 10, cond: staff(4),
-    setup: function (g) { var a = pickEmp(g, null, function (e) { return (G.has(e, 'greedy') ? 5 : 1) * (e.loyalty < 40 ? 3 : 1); }); var b = a && pickOther(g, a); return b ? { a: a.id, b: b.id, rival: rival(g) } : null; },
-    title: function (g, c) { return first(g, c.a) + ' is feeding secrets to ' + c.rival; },
-    text: function (g, c) { return N(g, c.b) + ' found messages on a shared computer. ' + N(g, c.a) + ' has been sending your prices and plans to ' + c.rival + '.'; },
-    choices: [
-      { t: 'Fire them on the spot', fx: function (g, c) { G.removeEmp(g, emp(g, c.a), 'fired'); emp(g, c.b).loyalty += 10; return 'Security walks them out.'; } },
-      { t: 'Feed them fake plans', fx: function (g, c) {
-        if (U.chance(0.6)) { aw(g, 15); G.news(g, c.rival + ' launched a promotion that flopped.', 'good'); G.removeEmp(g, emp(g, c.a), 'fired', true); return c.rival + ' fell for it and wasted a fortune. Then you fired the spy.'; }
-        G.mod(g, 'demand', 0.9, 4, 'Leaked plans'); return 'They figured it out. ' + c.rival + ' undercut your prices.';
-      } },
-      { t: 'Reward the whistleblower', label: function (g, c) { return 'Fire them and reward ' + first(g, c.b); }, cost: function (g, c) { var b = emp(g, c.b); return b ? b.salary * 2 : 0; },
-        fx: function (g, c) { G.bonus(g, emp(g, c.b)); G.removeEmp(g, emp(g, c.a), 'fired'); team(g, 3); return 'The team sees that honesty pays.'; } }
-    ] });
+  ev({ id: 'price_war', cat: 'rivals', icon: '🥊', kind: 'vs', w: 2, cd: 10, minWeek: 4, init: rival,
+    title: '{rival} wants a BATTLE!',
+    text: '{rival} is trying to steal your customers! Pick your move.',
+    win: { fans: 15, demand: [1.15, 4, 'Won the battle'], rep: 2 }, lose: { demand: [0.9, 3, 'Lost the battle'] }, tie: { fans: 4 } });
 
-  def({ id: 'broke_equipment', cat: 'Employees', icon: '💥', w: 3,
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role === 'front'; }, traitW('lazy', 3)); return a ? { a: a.id, amt: G.cost(g, 0.35) } : null; },
-    title: function (g, c) { return first(g, c.a) + ' broke expensive equipment'; },
-    text: function (g, c) { return N(g, c.a) + ' dropped something important. Replacing it costs ' + M(c.amt) + '.'; },
-    choices: [
-      { t: 'Company pays for it', cost: function (g, c) { return c.amt; }, fx: function (g, c) { spend(g, c.amt); emp(g, c.a).loyalty += 8; return 'Accidents happen. ' + first(g, c.a) + ' is grateful.'; } },
-      { t: 'Take it out of their pay', cost: function (g, c) { return c.amt / 2; }, fx: function (g, c) { spend(g, c.amt / 2); var a = emp(g, c.a); a.morale -= 20; a.loyalty -= 15; return 'They pay half. They will not forget it.'; } },
-      { t: 'Run without it for now', fx: function (g, c) { G.mod(g, 'capacity', 0.85, 3, 'Broken equipment'); return 'Work is slower for a few weeks.'; } }
-    ] });
-
-  def({ id: 'customer_argument', cat: 'Employees', icon: '🗯️', w: 4,
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role === 'front' || e.role === 'sales'; }, traitW('aggressive', 5)); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' argued with a customer'; },
-    text: function (g, c) { return 'A customer yelled at ' + N(g, c.a) + ', and ' + first(g, c.a) + ' yelled back. Other customers were filming.'; },
-    choices: [
-      { t: 'Back your employee', fx: function (g, c) { var a = emp(g, c.a); a.morale += 10; a.loyalty += 10; rep(g, -2); if (U.chance(0.35)) G.schedule(g, 'complaint_viral', 1, {}); return 'Your staff love you for it. The customer posts an angry review.'; } },
-      { t: 'Apologize to the customer', fx: function (g, c) { emp(g, c.a).morale -= 8; rep(g, 1); return 'The customer leaves satisfied. ' + first(g, c.a) + ' feels thrown under the bus.'; } },
-      { t: 'Fire them', label: function (g, c) { return 'Fire ' + first(g, c.a); }, fx: function (g, c) { G.removeEmp(g, emp(g, c.a), 'fired'); rep(g, 1); return 'The customer is satisfied. The staff are nervous.'; } }
-    ] });
-
-  def({ id: 'star', cat: 'Employees', icon: '🌟', w: 3,
-    setup: function (g) { var a = pickEmp(g, null, function (e) { return (G.has(e, 'hardworking') ? 5 : 1) * (e.skill > 60 ? 2 : 1); }); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' is on fire this month'; },
-    text: function (g, c) { return N(g, c.a) + ' has been doing the work of two people. Customers ask for them by name.'; },
-    choices: [
-      { t: 'Give a bonus', cost: function (g, c) { var a = emp(g, c.a); return a ? a.salary * 2 : 0; }, fx: function (g, c) { G.bonus(g, emp(g, c.a)); return 'They beam. You just earned a lot of loyalty.'; } },
-      { t: 'Promote them', fx: function (g, c) { var a = emp(g, c.a); if (a.level >= 3) { G.promote(g, a, true); } else G.promote(g, a); return first(g, c.a) + ' is now ' + G.title(g, a) + '.'; } },
-      { t: 'Say thanks', fx: function (g, c) { var a = emp(g, c.a); if (G.has(a, 'ambitious') || G.has(a, 'greedy')) { a.morale -= 6; return 'A thank-you was not what they were hoping for.'; } a.morale += 4; return 'They appreciate being noticed.'; } }
-    ] });
-
-  def({ id: 'promotion_request', cat: 'Employees', icon: '🪜', w: 3, minWeek: 6,
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role !== 'mgr' || e.level < 3; }, traitW('ambitious', 8)); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' asks for a promotion'; },
-    text: function (g, c) { var a = emp(g, c.a); return N(g, c.a) + ' has been here ' + a.weeks + ' weeks and wants to move up. Skill: ' + Math.round(a.skill) + '/100.'; },
-    choices: [
-      { t: 'Promote them', fx: function (g, c) { var a = emp(g, c.a); if (a.level >= 3) G.promote(g, a, true); else G.promote(g, a); if (a.skill < 45 && U.chance(0.5)) G.schedule(g, 'out_of_depth', U.ri(2, 5), c); return 'Congratulations, ' + G.title(g, a) + '.'; } },
-      { t: 'Pay for training first', cost: cost(0.15), fx: function (g, c) { spend(g, G.cost(g, 0.15)); var a = emp(g, c.a); a.skill += 8; a.morale += 4; return 'They come back sharper. Skill +8.'; } },
-      { t: 'Not yet', fx: function (g, c) { var a = emp(g, c.a); a.morale -= 12; if (G.has(a, 'ambitious') && U.chance(0.4)) G.schedule(g, 'resign', U.ri(3, 8), c); return 'They are disappointed.'; } }
-    ] });
-
-  def({ id: 'out_of_depth', cat: 'Management', icon: '🫠', chainOnly: true,
-    title: function (g, c) { return first(g, c.a) + ' is struggling in the new role'; },
-    text: function (g, c) { return 'Since the promotion, ' + N(g, c.a) + ' has missed deadlines and the team is confused.'; },
-    choices: [
-      { t: 'Give them a coach', cost: cost(0.2), fx: function (g, c) { spend(g, G.cost(g, 0.2)); emp(g, c.a).skill += 12; return 'Slowly, they grow into the job.'; } },
-      { t: 'Demote them back', fx: function (g, c) { G.demote(g, emp(g, c.a)); return 'Awkward, but the team is relieved.'; } },
-      { t: 'Give it time', fx: function (g, c) { team(g, -4); G.mod(g, 'capacity', 0.93, 4, 'Weak leadership'); return 'Things run a bit worse for a while.'; } }
-    ] });
-
-  def({ id: 'rumors', cat: 'Employees', icon: '🗣️', w: 3, cond: staff(3),
-    setup: function (g) { var a = pickEmp(g); var b = a && pickOther(g, a); return b ? { a: a.id, b: b.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' is spreading rumors'; },
-    text: function (g, c) { return N(g, c.a) + ' is telling people that ' + N(g, c.b) + ' is about to be fired. ' + first(g, c.b) + ' is very upset.'; },
-    choices: [
-      { t: 'Shut the rumor down publicly', fx: function (g, c) { emp(g, c.b).morale += 10; emp(g, c.a).morale -= 6; G.addRel(g, c.a, c.b, -15); return 'You set the record straight in the team meeting.'; } },
-      { t: 'Talk to them privately', label: function (g, c) { return 'Talk to ' + first(g, c.a) + ' privately'; }, fx: function (g, c) { G.addRel(g, c.a, c.b, 5); return 'They promise to stop. You will see.'; } },
-      { t: 'Ignore it', fx: function (g, c) { emp(g, c.b).morale -= 15; G.addRel(g, c.a, c.b, -30); return 'The rumor keeps spreading.'; } }
-    ] });
-
-  def({ id: 'best_friends', cat: 'Employees', icon: '🫶', w: 2, cond: staff(2),
-    setup: function (g) { var a = pickEmp(g, null, traitW('friendly', 4)); var b = a && pickOther(g, a); return b ? { a: a.id, b: b.id } : null; },
-    fx: function (g, c) { G.addRel(g, c.a, c.b, 60); emp(g, c.a).morale += 5; emp(g, c.b).morale += 5; return N(g, c.a) + ' and ' + N(g, c.b) + ' have become best friends. They now finish each other\'s sentences.'; } });
-
-  def({ id: 'productive_week', cat: 'Employees', icon: '📈', w: 2,
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role === 'front'; }); return a ? { a: a.id } : null; },
-    fx: function (g, c) { var a = emp(g, c.a); a.skill += 3; G.mod(g, 'capacity', 1.05, 1, 'Hot streak'); return N(g, c.a) + ' figured out a faster way to work. Skill +3.'; } });
-
-  def({ id: 'team_quit_threat', cat: 'Employees', icon: '🪧', w: function (g) { return G.avgMorale(g) < 42 ? 6 : 0; }, cd: 10, cond: staff(4),
-    title: 'The team threatens to quit',
-    text: function (g) { return 'A group of employees says they will walk out unless things improve. Average morale is ' + Math.round(G.avgMorale(g)) + '/100.'; },
-    choices: [
-      { t: 'Everyone gets a 5% raise', fx: function (g) { g.employees.forEach(function (e) { G.raise(g, e, 0.05); }); return 'Crisis averted. Payroll went up.'; } },
-      { t: 'Team bonus', cost: function (g) { return g.employees.reduce(function (s, e) { return s + e.salary; }, 0); }, fx: function (g) { spend(g, g.employees.reduce(function (s, e) { return s + e.salary; }, 0)); team(g, 15); return 'An extra week\'s pay each buys some goodwill.'; } },
-      { t: 'Call their bluff', fx: function (g) {
-        var gone = [];
-        g.employees.slice().forEach(function (e) { if (e.morale < 40 && U.chance(0.35)) { gone.push(e.name.split(' ')[0]); G.removeEmp(g, e, 'quit', true); } });
-        if (gone.length) { G.news(g, gone.length + ' employees walked out.', 'bad'); return gone.join(', ') + ' walked out.'; }
-        return 'Nobody left. This time.';
-      } }
-    ] });
-
-  // =====================================================================
-  // COMPANY EVENTS
-  // =====================================================================
-
-  def({ id: 'flood', cat: 'Company', icon: '🌊', w: 1.5, cd: 20,
-    title: 'The office is flooding',
-    text: 'A pipe burst overnight. There is water everywhere.',
-    choices: [
-      { t: 'Emergency repair', cost: cost(0.7), fx: function (g) { spend(g, G.cost(g, 0.7)); return 'Plumbers fixed it by morning.'; } },
-      { t: 'Cheap patch job', cost: cost(0.25), fx: function (g) { spend(g, G.cost(g, 0.25)); if (U.chance(0.45)) G.schedule(g, 'flood_again', U.ri(3, 8), {}); return 'The leak stopped. For now.'; } },
-      { t: 'Close for a week and fix it properly', fx: function (g) { G.mod(g, 'closed', 1, 1, 'Closed for repairs'); spend(g, G.cost(g, 0.3)); return 'You are closed next week.'; } }
-    ] });
-  def({ id: 'flood_again', cat: 'Company', icon: '🌊', chainOnly: true,
-    fx: function (g) { var c = G.cost(g, 1); spend(g, c); G.mod(g, 'demand', 0.8, 1, 'Flood damage'); return 'The cheap patch failed. The flood is worse this time. Repairs cost ' + M(c) + '.'; } });
-
-  def({ id: 'power_outage', cat: 'Company', icon: '🔌', w: 2.5,
-    title: 'Power outage',
-    text: 'The whole block lost power. Nobody knows when it will come back.',
-    choices: [
-      { t: 'Rent a generator', cost: cost(0.12), fx: function (g) { spend(g, G.cost(g, 0.12)); return 'You are the only lit shop on the street.'; } },
-      { t: 'Send everyone home early', fx: function (g) { G.mod(g, 'demand', 0.85, 1, 'Power outage'); team(g, 3); return 'You lost some sales. Staff enjoyed the afternoon off.'; } }
-    ] });
-
-  def({ id: 'equipment_fail', cat: 'Company', icon: '🛠️', w: 3,
-    title: 'Equipment broke down',
-    text: 'One of your key machines stopped working this morning.',
-    choices: [
-      { t: 'Repair it', cost: cost(0.2), fx: function (g) { spend(g, G.cost(g, 0.2)); return 'Fixed and running.'; } },
-      { t: 'Upgrade to better equipment', cost: cost(1.2), d: 'Permanent +4% capacity', fx: function (g) { spend(g, G.cost(g, 1.2)); g.flags.equip = Math.min(1.4, g.flags.equip * 1.04); return 'New gear. Everyone works faster.'; } },
-      { t: 'Work around it', fx: function (g) { G.mod(g, 'capacity', 0.85, 2, 'Broken machine'); return 'Things will be slow for two weeks.'; } }
-    ] });
-
-  def({ id: 'break_in', cat: 'Company', icon: '🚨', w: 1.5, minWeek: 5,
-    setup: function (g) { return { amt: G.cost(g, 0.4) }; },
-    title: 'Break-in overnight',
-    start: function (g, c) { g.cash -= c.amt; },
-    text: function (g, c) { return 'Someone broke in and took ' + M(c.amt) + ' worth of stock.'; },
-    choices: [
-      { t: 'Install an alarm system', cost: cost(0.3), fx: function (g) { spend(g, G.cost(g, 0.3)); g.flags.alarm = true; return 'Nobody is getting in again.'; } },
-      { t: 'File an insurance claim', fx: function (g, c) { if (U.chance(0.6)) { g.cash += c.amt * 0.7; return 'Insurance covered 70%.'; } return 'The claim was rejected. Fine print.'; } }
-    ] });
-
-  def({ id: 'damaged_shipment', cat: 'Company', icon: '📦', w: 3,
-    setup: function (g) { return { amt: G.cost(g, 0.18) }; },
-    title: 'A shipment arrived damaged',
-    text: function (g, c) { return 'Half of this week\'s delivery is crushed. It was worth ' + M(c.amt) + '.'; },
-    choices: [
-      { t: 'Demand a refund', fx: function (g, c) { if (U.chance(0.6)) return 'The supplier apologized and refunded you.'; spend(g, c.amt); return 'The supplier blames the courier. You eat the cost.'; } },
-      { t: 'Accept the loss', fx: function (g, c) { spend(g, c.amt); return 'You move on.'; } }
-    ] });
-
-  def({ id: 'supplier_problems', cat: 'Company', icon: '🚚', w: 2.5,
-    title: 'Your supplier is raising prices',
-    text: 'Your main supplier says costs are going up 5% starting now.',
-    choices: [
-      { t: 'Accept the new price', fx: function (g) { G.mod(g, 'supply', 0.02, 12, 'Supplier price hike'); return 'Margins get a little thinner for a few months.'; } },
-      { t: 'Switch suppliers', fx: function (g) {
-        if (U.chance(0.6)) { G.mod(g, 'supply', -0.015, 12, 'Better supplier'); return 'The new supplier is actually cheaper.'; }
-        G.mod(g, 'supply', 0.01, 6, 'New supplier'); rep(g, -2); return 'The new supplier\'s quality is worse. Customers notice.';
-      } },
-      { t: 'Negotiate hard', fx: function (g) { if (U.chance(0.5)) return 'They backed down. Prices stay the same.'; G.mod(g, 'supply', 0.03, 8, 'Angry supplier'); return 'They got annoyed and raised prices even more.'; } }
-    ] });
-
-  def({ id: 'inspection', cat: 'Company', icon: '📋', w: 2, cd: 15,
-    title: 'Surprise inspection',
-    text: 'A government inspector walked in unannounced with a clipboard.',
-    choices: [
-      { t: 'Cooperate fully', fx: function (g) {
-        var ok = g.reputation / 100 * 0.5 + (g.employees.some(function (e) { return e.role === 'mgr'; }) ? 0.25 : 0.1) + 0.2;
-        if (U.chance(ok)) { rep(g, 2); return 'You passed with flying colors.'; }
-        var fine = G.cost(g, 0.4); spend(g, fine); return 'A few violations. Fine: ' + M(fine) + '.';
-      } },
-      { t: 'Offer the inspector a "gift"', d: 'Risky', cost: cost(0.2), fx: function (g) {
-        spend(g, G.cost(g, 0.2));
-        if (U.chance(0.35)) { G.schedule(g, 'bribe_scandal', U.ri(2, 6), {}); return 'The inspector pocketed it and smiled. Hopefully nobody saw.'; }
-        return 'The inspector accepted and left. That was easy. Too easy?';
-      } },
-      { t: 'Ask them to come back later', fx: function (g) { rep(g, -1); G.schedule(g, 'inspection', U.ri(2, 4), {}); return 'They will be back, and they will look harder.'; } }
-    ] });
-
-  def({ id: 'bribe_scandal', cat: 'Major', icon: '📰', chainOnly: true,
-    title: 'Bribery scandal',
-    text: 'A journalist found out you bribed an inspector. It is on the front page.',
-    choices: [
-      { t: 'Public apology and a large fine', cost: cost(2), fx: function (g) { spend(g, G.cost(g, 2)); rep(g, -12); return 'Painful, but the story dies down.'; } },
-      { t: 'Deny everything', fx: function (g) { if (U.chance(0.4)) { rep(g, -5); return 'The story fades without proof.'; } rep(g, -25); spend(g, G.cost(g, 3)); G.mod(g, 'demand', 0.75, 6, 'Scandal boycott'); return 'Then they published the photos. Customers are boycotting you.'; } }
-    ] });
-
-  def({ id: 'customer_scene', cat: 'Company', icon: '😤', w: 3,
-    title: 'A customer is causing a scene',
-    text: 'A customer is screaming that they were overcharged and refuses to leave.',
-    choices: [
-      { t: 'Give them a full refund and a freebie', cost: cost(0.02), fx: function (g) { spend(g, G.cost(g, 0.02)); rep(g, 1); return 'They leave happy and even post a nice review.'; } },
-      { t: 'Calmly explain the bill', fx: function (g) { if (U.chance(0.6)) return 'They realize their mistake and apologize.'; rep(g, -1); return 'They storm out and post a one-star review.'; } },
-      { t: 'Call security', fx: function (g) { rep(g, -2); if (U.chance(0.25)) G.schedule(g, 'complaint_viral', 1, {}); return 'Security walks them out. Someone was filming.'; } }
-    ] });
-
-  def({ id: 'competitor_nearby', cat: 'Competitors', icon: '🏪', w: 2, cd: 20, minWeek: 8,
-    setup: function (g) { return { rival: rival(g) }; },
-    title: function (g, c) { return c.rival + ' is opening across the street'; },
-    text: function (g, c) { return c.rival + ' just put up a big "Opening soon" sign right across from you. They are known for aggressive prices.'; },
-    choices: [
-      { t: 'Launch a loyalty program', cost: cost(0.5), fx: function (g) { spend(g, G.cost(g, 0.5)); aw(g, 8); G.mod(g, 'demand', 0.95, 4, 'New competitor'); return 'Your regulars stay loyal.'; } },
-      { t: 'Run a big opening-week promotion', cost: cost(0.8), fx: function (g) { spend(g, G.cost(g, 0.8)); aw(g, 15); return 'Your promotion steals their thunder.'; } },
-      { t: 'Ignore them', fx: function (g) { G.mod(g, 'demand', 0.85, 8, 'New competitor'); return 'Some customers try the new place.'; } }
-    ] });
-
-  def({ id: 'repairs', cat: 'Company', icon: '🏚️', w: 2, cd: 12,
-    title: 'The building needs repairs',
-    text: 'The roof leaks, the door sticks, and the sign is missing two letters.',
-    choices: [
-      { t: 'Renovate properly', cost: cost(0.8), fx: function (g) { spend(g, G.cost(g, 0.8)); rep(g, 3); team(g, 4); return 'It looks brand new.'; } },
-      { t: 'Do the minimum', cost: cost(0.15), fx: function (g) { spend(g, G.cost(g, 0.15)); return 'It holds together.'; } },
-      { t: 'Put it off', fx: function (g) { rep(g, -2); G.schedule(g, 'repairs', U.ri(4, 8), {}); return 'The problems will not fix themselves.'; } }
-    ] });
-
-  def({ id: 'late_delivery', cat: 'Company', icon: '🐢', w: 3,
-    title: 'An important delivery is late',
-    text: 'The supplies you need for this week are stuck somewhere.',
-    choices: [
-      { t: 'Pay for express shipping', cost: cost(0.15), fx: function (g) { spend(g, G.cost(g, 0.15)); return 'It arrives just in time.'; } },
-      { t: 'Wait for it', fx: function (g) { G.mod(g, 'capacity', 0.8, 1, 'Missing supplies'); return 'You run short for a few days.'; } }
-    ] });
-
-  def({ id: 'systems_down', cat: 'Company', icon: '🖥️', w: 2,
-    title: 'Your computer systems crashed',
-    text: 'Payments, orders and schedules are all down.',
-    choices: [
-      { t: 'Hire an emergency IT team', cost: cost(0.25), fx: function (g) { spend(g, G.cost(g, 0.25)); return 'Back up in two hours.'; } },
-      { t: 'Go old school: pen and paper', fx: function (g) { G.mod(g, 'capacity', 0.85, 1, 'Systems down'); team(g, -2); return 'Chaotic, but you get through the week.'; } }
-    ] });
-
-  def({ id: 'big_contract', cat: 'Opportunity', icon: '🤝', w: 2, cd: 14, minWeek: 5,
-    setup: function (g) { return { weeks: U.ri(4, 8), amt: G.cost(g, 0.25) }; },
-    title: 'A big client wants a deal',
-    text: function (g, c) { return 'A large local business wants a ' + c.weeks + '-week contract worth ' + M(c.amt) + ' a week. It will stretch your team.'; },
-    choices: [
-      { t: 'Accept', fx: function (g, c) { G.mod(g, 'extra', c.amt, c.weeks, 'Client contract'); team(g, -5); return 'Deal signed. The money starts next week.'; } },
-      { t: 'Negotiate for more', fx: function (g, c) { if (U.chance(0.5)) { G.mod(g, 'extra', c.amt * 1.3, c.weeks, 'Client contract'); team(g, -5); return 'They agreed to 30% more.'; } return 'They walked away.'; } },
-      { t: 'Decline', fx: function () { return 'You stay focused on your regular customers.'; } }
-    ] });
-
-  def({ id: 'tax_refund', cat: 'Company', icon: '🧾', w: 1.5, cd: 26,
-    fx: function (g) { var a = G.cost(g, 0.3); g.cash += a; return 'Surprise tax refund: ' + M(a) + '.'; } });
-
-  def({ id: 'award', cat: 'Company', icon: '🏅', w: function (g) { return g.reputation > 70 ? 2 : 0; }, cd: 26,
-    fx: function (g) { rep(g, 4); aw(g, 10); var city = CS.CITIES[g.company.city].name; G.news(g, g.company.name + ' won "Best ' + CS.IND[g.company.industry].name + ' in ' + city + '".', 'good'); return 'You won "Best ' + CS.IND[g.company.industry].name + ' in ' + city + '"!'; } });
-
-  def({ id: 'investor_offer', cat: 'Opportunity', icon: '💼', w: 1, cd: 30, minWeek: 12,
-    setup: function (g) { return g.ownership > 30 ? { pct: U.pick([5, 10, 15]) } : null; },
-    title: 'An investor wants in',
-    text: function (g, c) { return 'An investor offers ' + M(G.stakeOffer(g, c.pct) * 1.1) + ' for ' + c.pct + '% of your company. You currently own ' + Math.round(g.ownership) + '%.'; },
-    choices: [
-      { t: 'Take the deal', fx: function (g, c) { var amt = U.nice(G.stakeOffer(g, c.pct) * 1.1); g.ownership -= c.pct; g.cash += amt; G.news(g, 'Sold ' + c.pct + '% to an investor for ' + M(amt) + '.', 'neutral'); return 'The money is in your account.'; } },
-      { t: 'No thanks', fx: function () { return 'You keep your shares.'; } }
-    ] });
-
-  // =====================================================================
-  // SOCIAL MEDIA
-  // =====================================================================
-
-  function viral(g, views) {
-    g.flags.viral = true;
-    var v = Math.round(views), likes = Math.round(v * U.rand(0.05, 0.09)), shares = Math.round(v * U.rand(0.01, 0.025));
-    return '\n📱 ' + U.num(v) + ' views · ' + U.num(likes) + ' likes · ' + U.num(shares) + ' shares';
-  }
-
-  def({ id: 'video_posted', cat: 'Social media', icon: '🎥', w: 2.5,
-    title: 'Someone posted a video of your company',
-    text: 'A customer filmed your staff at work and posted it. It is getting attention.',
-    choices: [
-      { t: 'Repost it on your account', fx: function (g) {
-        if (g.satisfaction > 55 || U.chance(0.4)) { var big = U.chance(0.2); aw(g, big ? 40 : 10); return (big ? 'It went viral!' : 'Nice boost in attention.') + (big ? viral(g, U.rand(2e6, 9e6)) : ''); }
-        rep(g, -3); return 'The comments are full of complaints about your service.';
-      } },
-      { t: 'Leave it alone', fx: function (g) { aw(g, 4); return 'It gets a few thousand views.'; } }
-    ] });
-
-  def({ id: 'employee_famous', cat: 'Social media', icon: '🤳', w: 1.5, cd: 20,
-    setup: function (g) { var a = pickEmp(g, null, traitW('funny', 5)); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' is famous online'; },
-    text: function (g, c) { return 'A video of ' + N(g, c.a) + ' being hilarious at work has millions of views. People are showing up just to meet them.'; },
-    choices: [
-      { t: 'Make them the face of the company', fx: function (g, c) { aw(g, 35); emp(g, c.a).morale += 15; G.schedule(g, 'raise_request_famous', U.ri(3, 6), c); return 'Customers love it.' + viral(g, U.rand(3e6, 12e6)); } },
-      { t: 'Ask them to keep it low-key', fx: function (g, c) { aw(g, 10); emp(g, c.a).morale -= 10; return 'The hype fades. ' + first(g, c.a) + ' is disappointed.'; } }
-    ] });
-
-  def({ id: 'raise_request_famous', cat: 'Employees', icon: '💅', chainOnly: true,
-    title: function (g, c) { return 'Internet celebrity ' + first(g, c.a) + ' wants more'; },
-    text: function (g, c) { return 'Now that they are famous, ' + N(g, c.a) + ' wants double pay. Another company has made an offer.'; },
-    choices: [
-      { t: 'Double their pay', fx: function (g, c) { var a = emp(g, c.a); a.salary *= 2; a.morale += 20; aw(g, 10); return 'Your star stays.'; } },
-      { t: 'Offer 25% more', fx: function (g, c) { var a = emp(g, c.a); if (U.chance(0.5)) { G.raise(g, a, 0.25); return 'They accept, grudgingly.'; } quitToRival(g, a); aw(g, -10); return 'They take the other offer. Some fans follow them.'; } },
-      { t: 'Refuse', fx: function (g, c) { quitToRival(g, emp(g, c.a)); aw(g, -15); return 'They leave and post a video about it.'; } }
-    ] });
-
-  def({ id: 'complaint_viral', cat: 'Social media', icon: '😡', w: function (g) { return g.satisfaction < 50 ? 3 : 0.8; }, cd: 10,
-    title: 'A complaint about you is going viral',
-    text: 'An angry customer\'s post about your company has been shared thousands of times.',
-    choices: [
-      { t: 'Post a public apology', fx: function (g) { rep(g, -2); return 'People respect the apology. Mostly.'; } },
-      { t: 'Offer the customer compensation', cost: cost(0.1), fx: function (g) { spend(g, G.cost(g, 0.1)); rep(g, 1); return 'The customer updates the post: "They made it right."'; } },
-      { t: 'Say they are lying', fx: function (g) { if (U.chance(0.4)) { rep(g, 1); return 'Their story fell apart. People side with you.'; } rep(g, -10); aw(g, 10); return 'Big mistake. It got much bigger.' + viral(g, U.rand(1e6, 5e6)); } }
-    ] });
-
-  def({ id: 'meme', cat: 'Social media', icon: '🐸', w: 1.5, cd: 15,
-    title: 'You are a meme',
-    text: 'Someone made a meme about your company. It is actually pretty funny.',
-    choices: [
-      { t: 'Join the joke', fx: function (g) { if (U.chance(0.7)) { aw(g, 25); return 'Your reply got more likes than the meme.' + viral(g, U.rand(1e6, 6e6)); } rep(g, -3); return 'Your reply came off as cringe.'; } },
-      { t: 'Ask for it to be taken down', fx: function (g) { rep(g, -3); aw(g, 12); return 'Now everyone is sharing it even more.'; } },
-      { t: 'Ignore it', fx: function (g) { aw(g, 6); return 'It fades after a few days.'; } }
-    ] });
-
-  def({ id: 'influencer', cat: 'Social media', icon: '✨', w: 2,
-    fx: function (g) { aw(g, U.rand(8, 20)); rep(g, 2); return 'An influencer with 800K followers praised your company.'; } });
-
-  def({ id: 'embarrassing_post', cat: 'Social media', icon: '🙈', w: 1.5, cd: 15,
-    setup: function (g) { var a = pickEmp(g); return a ? { a: a.id } : null; },
-    title: 'An embarrassing post',
-    text: function (g, c) { return N(g, c.a) + ' accidentally posted a selfie with a rude caption on the company account.'; },
-    choices: [
-      { t: 'Delete it and apologize', fx: function (g) { rep(g, -1); return 'Few people saw it.'; } },
-      { t: 'Turn it into a joke', fx: function (g) { if (U.chance(0.5)) { aw(g, 20); return 'Your self-deprecating follow-up was a hit.' + viral(g, U.rand(8e5, 3e6)); } rep(g, -5); return 'It did not land.'; } },
-      { t: 'Fire them', label: function (g, c) { return 'Fire ' + first(g, c.a); }, fx: function (g, c) { G.removeEmp(g, emp(g, c.a), 'fired'); return 'Harsh, but the account is safe.'; } }
-    ] });
-
-  def({ id: 'rumor_company', cat: 'Social media', icon: '🧢', w: 1.5, cd: 15,
-    setup: function (g) { return { rival: rival(g) }; },
-    title: 'A rumor about your company',
-    text: 'People online are saying your company is about to close down. It is not true.',
-    choices: [
-      { t: 'Post a clear statement', fx: function (g) { rep(g, 1); return 'The rumor dies down.'; } },
-      { t: 'Find out who started it', cost: cost(0.3), fx: function (g, c) { spend(g, G.cost(g, 0.3)); if (U.chance(0.5)) { rep(g, 4); G.news(g, c.rival + ' was caught spreading rumors.', 'good'); return 'It was ' + c.rival + '. The public is on your side now.'; } return 'The trail went cold.'; } },
-      { t: 'Ignore it', fx: function (g) { G.mod(g, 'demand', 0.92, 3, 'Closing-down rumor'); return 'Some customers believe it.'; } }
-    ] });
-
-  def({ id: 'celebrity', cat: 'Social media', icon: '🌟', w: 0.6, cd: 40,
-    fx: function (g) { aw(g, 50); rep(g, 3); g.flags.viral = true; G.news(g, 'A celebrity mentioned ' + g.company.name + ' on a talk show.', 'good'); return 'A celebrity mentioned your company on national TV!' + viral(g, U.rand(5e6, 2e7)); } });
-
-  // =====================================================================
-  // MANAGEMENT
-  // =====================================================================
-  var mgrPick = function (g) { var m = pickEmp(g, function (e) { return e.role === 'mgr'; }); return m ? { m: m.id } : null; };
-
-  def({ id: 'manager_raise', cat: 'Management', icon: '👔', w: 2, cond: hasRole('mgr'), setup: mgrPick,
-    title: function (g, c) { return 'Manager ' + first(g, c.m) + ' wants a raise'; },
-    text: function (g, c) { return N(g, c.m) + ' says they are running the place and deserve to be paid like it. They earn ' + M(emp(g, c.m).salary) + ' a week.'; },
-    choices: [
-      { t: 'Give 12%', fx: function (g, c) { G.raise(g, emp(g, c.m), 0.12); return 'They are motivated again.'; } },
-      { t: 'Give a one-time bonus', cost: function (g, c) { var m = emp(g, c.m); return m ? m.salary * 2 : 0; }, fx: function (g, c) { G.bonus(g, emp(g, c.m)); return 'Not what they asked for, but it helps.'; } },
-      { t: 'Refuse', fx: function (g, c) { var m = emp(g, c.m); m.morale -= 20; if (U.chance(0.4)) G.schedule(g, 'rival_offer', U.ri(2, 5), { m: c.m, rival: rival(g) }); return 'They are clearly unhappy.'; } }
-    ] });
-
-  def({ id: 'rival_offer', cat: 'Management', icon: '📨', w: 1, cond: hasRole('mgr'), minWeek: 10,
-    setup: function (g) { var c = mgrPick(g); if (c) c.rival = rival(g); return c; },
-    title: function (g, c) { return c.rival + ' wants your manager'; },
-    text: function (g, c) { return c.rival + ' offered ' + N(g, c.m) + ' 30% more money. ' + first(g, c.m) + ' came to you first.'; },
-    choices: [
-      { t: 'Match the offer', fx: function (g, c) { var m = emp(g, c.m); G.raise(g, m, 0.3); m.loyalty += 15; return 'They stay, and they appreciate it.'; } },
-      { t: 'Appeal to their loyalty', fx: function (g, c) { var m = emp(g, c.m); if (m.loyalty > 60 || U.chance(0.3)) { m.loyalty += 5; return 'They turn the offer down.'; } G.removeEmp(g, m, 'quit'); G.schedule(g, 'joined_rival', 1, { name: m.name, rival: c.rival, creative: G.has(m, 'creative') }); return 'They take the offer.'; } },
-      { t: 'Let them go', fx: function (g, c) { var m = emp(g, c.m); G.removeEmp(g, m, 'quit'); G.schedule(g, 'joined_rival', 1, { name: m.name, rival: c.rival, creative: true }); return 'They leave for ' + c.rival + '.'; } }
-    ] });
-
-  def({ id: 'fraud_found', cat: 'Management', icon: '🧮', w: 1.2, minWeek: 15, cd: 30, cond: hasRole('acct'),
-    setup: function (g) {
-      var a = pickEmp(g, function (e) { return e.role === 'acct'; }); if (!a) return null;
-      var t = pickEmp(g, function (e) { return e.id !== a.id; }, traitW('greedy', 10)); if (!t) return null;
-      return { a: a.id, b: t.id, amt: G.cost(g, 1.5) };
+  ev({ id: 'interview', cat: 'team', icon: '🧑‍💼', kind: 'interview', w: 2.5, cd: 6,
+    init: function (g, c) {
+      var role = U.weighted(['front', 'sales', 'acct', 'mgr'], function (r) { return { front: 60, sales: 20, acct: 10, mgr: 10 }[r]; });
+      c.cand = G.makeEmployee(g, role, { skill: U.ri(35, 90) });
+      c.cand.salary = Math.round(c.cand.salary * 0.95);
     },
-    title: 'Your accountant found fraud',
-    text: function (g, c) { return N(g, c.a) + ' found fake invoices. ' + N(g, c.b) + ' has been slowly taking money. Total: ' + M(c.amt) + '.'; },
-    choices: [
-      { t: 'Fire them and press charges', fx: function (g, c) { G.removeEmp(g, emp(g, c.b), 'fired'); if (U.chance(0.5)) { g.cash += c.amt * 0.6; return 'The court orders them to repay 60%.'; } return 'You will never see that money again.'; } },
-      { t: 'Fire them quietly', fx: function (g, c) { G.removeEmp(g, emp(g, c.b), 'fired'); return 'No scandal, no money back.'; } },
-      { t: 'Make them pay it back and stay', fx: function (g, c) { var b = emp(g, c.b); g.cash += c.amt * 0.5; b.morale -= 20; b.loyalty -= 10; if (U.chance(0.5)) G.schedule(g, 'theft_again', U.ri(6, 12), { a: c.b }); return 'They repay half so far. Can you trust them?'; } }
-    ] });
-
-  def({ id: 'bad_manager', cat: 'Management', icon: '😠', w: function (g) { return g.employees.some(function (e) { return e.role === 'mgr'; }) ? 2 : 0; }, cond: staff(4), setup: mgrPick,
-    title: 'Staff complain about their manager',
-    text: function (g, c) { return 'Several employees say ' + N(g, c.m) + ' yells at them and plays favorites.'; },
-    choices: [
-      { t: 'Send the manager to leadership training', cost: cost(0.2), fx: function (g, c) { spend(g, G.cost(g, 0.2)); team(g, 5); return 'They come back calmer.'; } },
-      { t: 'Side with the manager', fx: function (g, c) { team(g, -8); emp(g, c.m).loyalty += 10; return 'The manager feels backed. The team feels ignored.'; } },
-      { t: 'Demote the manager', fx: function (g, c) { G.demote(g, emp(g, c.m)); team(g, 6); return 'The team cheers quietly.'; } }
-    ] });
-
-  def({ id: 'manager_disagree', cat: 'Management', icon: '⚔️', w: 1.5,
-    cond: function (g) { return g.employees.filter(function (e) { return e.role === 'mgr'; }).length >= 2; },
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role === 'mgr'; }); var b = a && pickOther(g, a, function (e) { return e.role === 'mgr'; }); return b ? { a: a.id, b: b.id } : null; },
-    title: 'Your managers disagree',
-    text: function (g, c) { return N(g, c.a) + ' wants to cut prices to grow. ' + N(g, c.b) + ' wants to raise prices for quality. They want you to decide.'; },
-    choices: [
-      { t: 'Side with growth', label: function (g, c) { return 'Side with ' + first(g, c.a) + ' (cheaper)'; }, fx: function (g, c) { g.price = Math.max(0, g.price - 1); emp(g, c.b).morale -= 12; return 'Prices go down.'; } },
-      { t: 'Side with quality', label: function (g, c) { return 'Side with ' + first(g, c.b) + ' (pricier)'; }, fx: function (g, c) { g.price = Math.min(2, g.price + 1); emp(g, c.a).morale -= 12; return 'Prices go up.'; } },
-      { t: 'Keep things as they are', fx: function (g, c) { emp(g, c.a).morale -= 5; emp(g, c.b).morale -= 5; G.addRel(g, c.a, c.b, -15); return 'Neither of them is happy.'; } }
-    ] });
-
-  def({ id: 'risky_expansion', cat: 'Management', icon: '🎲', w: 1.2, minWeek: 12, cd: 25,
-    setup: function (g) { var m = pickEmp(g, function (e) { return e.role === 'mgr' || G.has(e, 'ambitious'); }); return m ? { m: m.id } : null; },
-    title: 'A risky growth idea',
-    text: function (g, c) { return N(g, c.m) + ' pitches a bold plan: spend ' + M(G.cost(g, 4)) + ' on a new product line. "Trust me, it will pay off."'; },
-    choices: [
-      { t: 'Go for it', cost: cost(4), fx: function (g, c) {
-        spend(g, G.cost(g, 4));
-        if (U.chance(0.5)) { G.mod(g, 'demand', 1.25, 20, 'New product line'); aw(g, 15); emp(g, c.m).morale += 15; return 'It is a hit! Customers love the new line.'; }
-        emp(g, c.m).morale -= 10; return 'It flopped. The money is gone.';
-      } },
-      { t: 'Try a small test first', cost: cost(0.8), fx: function (g, c) { spend(g, G.cost(g, 0.8)); if (U.chance(0.5)) { G.mod(g, 'demand', 1.08, 10, 'Product test'); return 'The test went well. Modest gains.'; } return 'The test showed it would not work. Good thing you checked.'; } },
-      { t: 'Decline', fx: function (g, c) { emp(g, c.m).morale -= 8; return 'They sigh and close their laptop.'; } }
-    ] });
-
-  def({ id: 'unqualified', cat: 'Management', icon: '🙋', w: 1.5, minWeek: 8, cond: staff(4),
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role !== 'mgr' && e.skill < 55; }); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' applies to be a manager'; },
-    text: function (g, c) { return N(g, c.a) + ' wants the manager job. They are keen but have little experience (skill ' + Math.round(emp(g, c.a).skill) + ').'; },
-    choices: [
-      { t: 'Give them a chance', fx: function (g, c) { G.promote(g, emp(g, c.a), true); if (U.chance(0.55)) G.schedule(g, 'out_of_depth', U.ri(2, 5), c); return 'They are thrilled. Can they do it?'; } },
-      { t: 'Encourage them to build skills first', fx: function (g, c) { var a = emp(g, c.a); a.morale -= 4; a.skill += 2; return 'They take it well.'; } },
-      { t: 'Say no', fx: function (g, c) { emp(g, c.a).morale -= 12; return 'They are hurt.'; } }
-    ] });
-
-  def({ id: 'manager_stealing', cat: 'Management', icon: '💰', w: 0.8, minWeek: 15, cd: 30, cond: hasRole('mgr'), setup: function (g) { var c = mgrPick(g); if (c) c.amt = G.cost(g, 1); return c; },
-    title: 'A manager was caught stealing',
-    start: function (g, c) { g.cash -= c.amt; },
-    text: function (g, c) { return N(g, c.m) + ' has been paying themselves "expenses" that do not exist. ' + M(c.amt) + ' is gone.'; },
-    choices: [
-      { t: 'Fire them', fx: function (g, c) { G.removeEmp(g, emp(g, c.m), 'fired'); return 'You need a new manager now.'; } },
-      { t: 'Demote them and recover the money', fx: function (g, c) { G.demote(g, emp(g, c.m)); g.cash += c.amt * 0.7; return 'You got most of it back.'; } }
-    ] });
+    title: 'Someone wants a job!',
+    text: 'A person walks in with a smile. "Hi! Are you hiring?" Ask ONE question, then decide!' });
 
   // =====================================================================
-  // FUNNY
+  // ✨ LEGENDARY (super rare and weird)
   // =====================================================================
 
-  def({ id: 'pet', cat: 'Funny', icon: '🐶', w: 2, cd: 20,
-    setup: function (g) { var a = pickEmp(g); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' brought their dog to work'; },
-    text: 'The dog is very good. The dog is also eating a customer\'s sandwich.',
+  ev({ id: 'alien', cat: 'weird', icon: '👽', rarity: 'legendary', w: 1, minWeek: 10, cd: 200,
+    title: 'An ALIEN walked in! 👽',
+    text: 'A little green alien bought some {unit} and paid with a glowing space coin. 🪙✨',
     choices: [
-      { t: 'Make it a pet-friendly workplace', fx: function (g) { team(g, 6); if (U.chance(0.2)) { rep(g, -2); return 'Morale is up. One customer had an allergic reaction.'; } aw(g, 5); return 'Morale is up and customers love the office dog.'; } },
-      { t: 'No pets allowed', fx: function (g, c) { emp(g, c.a).morale -= 6; return 'The dog goes home. Everyone is a little sad.'; } }
+      { t: '🪙 Keep the space coin', fx: { chance: { p: 0.5, win: { cash: 8, say: 'A museum paid a FORTUNE for it! 🤑' }, lose: { say: 'It stopped glowing. Now it\'s just a coin. 😐' } } } },
+      { t: '📸 Take a selfie with the alien', fx: { viral: [5, 15], fans: 40, say: 'The selfie broke the internet! 👽🤳' } },
+      { t: '🛸 Offer it a job', fx: { hireSpecial: { name: 'Zorp Blip', face: '👽', role: 'front', skill: 99, traits: ['hardworking', 'funny'], salaryMult: 0.5 }, fans: 20, say: 'Zorp joined the team! 👽 "Beep boop, happy to help."' } }
     ] });
 
-  def({ id: 'prank_war', cat: 'Funny', icon: '🎭', w: function (g) { return g.employees.some(function (e) { return G.has(e, 'funny'); }) ? 2.5 : 0.5; }, cond: staff(3),
-    title: 'A prank war has started',
-    text: 'Someone wrapped a desk in tin foil. Retaliation came with a fake spider. It is escalating.',
+  ev({ id: 'time_traveler', cat: 'weird', icon: '⏳', rarity: 'legendary', w: 1, minWeek: 10, cd: 200,
+    title: 'A time traveler appears!',
+    text: 'A person in shiny clothes says: "I\'m from the year 3000. {company} becomes HUGE in the future!" ⏳',
     choices: [
-      { t: 'Join in', fx: function (g) { team(g, 8); G.mod(g, 'capacity', 0.95, 1, 'Prank war'); return 'You filled a manager\'s car with balloons. Legendary.'; } },
-      { t: 'Shut it down', fx: function (g) { team(g, -4); return 'Back to work. Boring, but productive.'; } }
+      { t: '🔮 "Give me tips!"', fx: { demand: [1.2, 12, 'Tips from the future'], say: 'The tips are... weirdly good. 🤯' } },
+      { t: '🤨 "Sure you are."', fx: { team: 3, say: 'They vanish in a puff of smoke. Wait, WHAT? 💨' } }
     ] });
 
-  def({ id: 'microwave', cat: 'Funny', icon: '🍿', w: 1.5, cd: 30,
-    title: 'Someone stole the office microwave',
-    text: 'The microwave is gone. Just gone. Lunch is chaos.',
+  ev({ id: 'cat_ceo', cat: 'weird', icon: '🐈', rarity: 'legendary', w: 1, cd: 200,
+    title: 'A cat took your chair',
+    text: 'A fluffy stray cat keeps sitting in YOUR boss chair. The team calls it "the CEO". 🐈👔',
     choices: [
-      { t: 'Buy a new one', cost: function () { return 150; }, fx: function (g) { spend(g, 150); return 'Peace returns to the kitchen.'; } },
-      { t: 'Launch an investigation', fx: function (g) { team(g, 3); return 'It was found three days later in the supply closet, next to a note: "sorry".'; } }
+      { t: '👔 Make the cat official CEO', fx: { fans: 50, team: 12, viral: [3, 10], say: 'Mr. Whiskers, CEO, is now world famous! 🐈👑' } },
+      { t: '🐾 Adopt it as office cat', fx: { team: 8, fans: 15, say: 'Best office cat ever. 😻' } }
     ] });
 
-  def({ id: 'asleep', cat: 'Funny', icon: '😴', w: 2,
-    setup: function (g) { var a = pickEmp(g, null, traitW('lazy', 5)); return a ? { a: a.id } : null; },
-    title: function (g, c) { return first(g, c.a) + ' fell asleep in a meeting'; },
-    text: function (g, c) { return 'Mid-presentation, ' + N(g, c.a) + ' started snoring. Loudly.'; },
+  ev({ id: 'royal_visit', cat: 'weird', icon: '👑', rarity: 'legendary', w: 1, minWeek: 15, cd: 200,
+    title: 'A real prince visits!',
+    text: 'A REAL prince from a faraway kingdom is visiting your shop! 👑✨',
     choices: [
-      { t: 'Let them sleep', fx: function (g, c) { if (U.chance(0.3)) { emp(g, c.a).skill += 5; return 'They wake up with a brilliant idea. Skill +5.'; } team(g, 2); return 'Everyone found it hilarious.'; } },
-      { t: 'Wake them gently', fx: function (g, c) { return 'They apologize and chug a coffee.'; } },
-      { t: 'Send them home without pay', fx: function (g, c) { emp(g, c.a).morale -= 12; return 'Point made.'; } }
+      { t: '🎺 Roll out the red carpet', fx: { cash: -0.5, fans: 60, rep: 10, say: 'The prince says it was the best visit of his trip! 👑' } },
+      { t: '😎 Treat him like everyone', fx: { rep: 5, fans: 25, say: 'He loved being treated normally! 😄' } }
     ] });
 
-  def({ id: 'mega_order', cat: 'Funny', icon: '📦', w: 1.2, cd: 30,
-    setup: function (g) { var a = pickEmp(g); return a ? { a: a.id, amt: G.cost(g, 0.6) } : null; },
-    title: 'Someone ordered 10,000 instead of 100',
-    text: function (g, c) { return N(g, c.a) + ' added two zeros to an order. A truck full of supplies worth ' + M(c.amt) + ' is outside.'; },
+  ev({ id: 'ghost', cat: 'weird', icon: '👻', rarity: 'legendary', w: 1, cd: 200,
+    title: 'Is the shop HAUNTED? 👻',
+    text: 'Staff say things move by themselves at night. Spooky whispers too! 👻',
     choices: [
-      { t: 'Send it back (restocking fee)', cost: function (g, c) { return c.amt * 0.2; }, fx: function (g, c) { spend(g, c.amt * 0.2); return 'Lesson learned.'; } },
-      { t: 'Run a giant sale to use it up', cost: function (g, c) { return c.amt; }, fx: function (g, c) { spend(g, c.amt); aw(g, 12); G.mod(g, 'demand', 1.15, 2, 'Mega sale'); G.mod(g, 'supply', -0.1, 2, 'Surplus stock'); return 'The "Oops Sale" was a hit.'; } },
-      { t: 'Keep it all', cost: function (g, c) { return c.amt; }, fx: function (g, c) { spend(g, c.amt); G.mod(g, 'supply', -0.08, 6, 'Surplus stock'); return 'Your storage room is full for months.'; } }
+      { t: '🔦 Start ghost tours!', fx: { extra: [0.3, 8, 'Ghost tours'], fans: 30, say: 'Ghost tours sell out every night! 👻🎟️' } },
+      { t: '🧹 Call ghost hunters', fx: { cash: -0.3, team: 5, say: 'It was a raccoon. 🦝 A very dramatic raccoon.' } }
     ] });
 
-  def({ id: 'internal_msg', cat: 'Funny', icon: '💬', w: 1.2, cd: 25,
-    title: 'Internal message posted publicly',
-    text: 'Someone posted "is the boss in yet? tell everyone to look busy" on the company account.',
+  ev({ id: 'meteor', cat: 'weird', icon: '☄️', rarity: 'legendary', w: 1, cd: 200,
+    title: 'A METEOR landed outside!',
+    text: 'A tiny glowing space rock crashed in your parking lot! ☄️ Scientists are on the way.',
     choices: [
-      { t: 'Own it: "The boss is in. Everyone look busy."', fx: function (g) { if (U.chance(0.6)) { aw(g, 18); return 'People loved the honesty.' + viral(g, U.rand(5e5, 2e6)); } return 'A few laughs. Nothing more.'; } },
-      { t: 'Delete it quickly', fx: function () { return 'Only 40 people saw it. Probably.'; } }
+      { t: '💰 Sell it to scientists', fx: { cash: 6, say: 'Space rocks are worth a LOT! 🤑' } },
+      { t: '🏛️ Put it on display', fx: { demand: [1.25, 10, 'Meteor display'], fans: 40, say: 'People come from everywhere to see it! ☄️📸' } }
     ] });
 
-  def({ id: 'parking', cat: 'Funny', icon: '🅿️', w: 1.5, cond: staff(2),
-    setup: function (g) { var a = pickEmp(g); var b = a && pickOther(g, a); return b ? { a: a.id, b: b.id } : null; },
-    title: 'The great parking spot war',
-    text: function (g, c) { return N(g, c.a) + ' and ' + N(g, c.b) + ' both claim the parking spot closest to the door. There are now handwritten signs.'; },
+  ev({ id: 'dino_bone', cat: 'weird', icon: '🦖', rarity: 'legendary', w: 1, cd: 200,
+    title: 'Dinosaur bone found!',
+    text: 'Workers fixing your floor found a DINOSAUR BONE underneath! 🦴🦖',
     choices: [
-      { t: 'Assign spots by seniority', fx: function (g, c) { var a = emp(g, c.a), b = emp(g, c.b); (a.weeks >= b.weeks ? b : a).morale -= 6; return 'Rules are rules.'; } },
-      { t: 'Make it employee-of-the-month parking', fx: function (g) { team(g, 3); return 'Now everyone wants it. Productivity is up.'; } },
-      { t: 'Take the spot yourself', fx: function (g, c) { G.addRel(g, c.a, c.b, 20); return 'They are united now, against you.'; } }
+      { t: '🏛️ Give it to a museum', fx: { rep: 15, fans: 40, say: 'The museum named the dinosaur after {company}! 🦖' } },
+      { t: '💰 Sell it', fx: { cash: 5, rep: -3, say: 'Rich! But some people think you should have given it away. 🤔' } }
     ] });
 
-  def({ id: 'lunch_thief', cat: 'Funny', icon: '🥪', w: 1.5, cd: 25,
-    title: 'Someone keeps eating other people\'s lunch',
-    text: 'A labeled sandwich has vanished for the fifth time. There is a sticky note war on the fridge.',
+  ev({ id: 'superhero', cat: 'weird', icon: '🦸', rarity: 'legendary', w: 1, cd: 200,
+    fx: { fans: 40, rep: 6, viral: [2, 6], say: 'Someone in a superhero costume stopped a robbery at {company}! The video is everywhere! 🦸‍♀️' } });
+
+  ev({ id: 'robot_applicant', cat: 'weird', icon: '🤖', rarity: 'legendary', w: 1, minWeek: 10, cd: 200,
+    title: 'A robot wants a job!',
+    text: 'A shiny robot rolls in. "HELLO. I AM ROBO-3000. I WANT TO WORK HERE." 🤖',
     choices: [
-      { t: 'Install a fridge camera', cost: function () { return 90; }, fx: function (g) { spend(g, 90); var e = U.pick(g.employees); return 'The camera caught ' + (e ? e.name : 'someone') + ' red-handed. They bring in cake to apologize.'; } },
-      { t: 'Buy everyone lunch on Friday', cost: cost(0.03), fx: function (g) { spend(g, G.cost(g, 0.03)); team(g, 4); return 'Free lunch fixes everything.'; } }
+      { t: '🤖 "You\'re hired!"', fx: { hireSpecial: { name: 'Robo 3000', face: '🤖', role: 'front', skill: 95, traits: ['reliable', 'serious'], salaryMult: 0.4 }, fans: 25, say: 'Robo-3000 never gets tired! 🔋' } },
+      { t: '🙅 "Humans only!"', fx: { team: 6, say: 'Your team is relieved. 😅' } }
     ] });
 
-  def({ id: 'birthday', cat: 'Funny', icon: '🎂', w: 1.5, cond: staff(2),
-    setup: function (g) { var a = pickEmp(g); return a ? { a: a.id } : null; },
-    fx: function (g, c) { team(g, 2); emp(g, c.a).morale += 6; return 'The team threw a surprise birthday party for ' + N(g, c.a) + '.'; } });
+  ev({ id: 'rainbow', cat: 'weird', icon: '🌈', rarity: 'epic', w: 1, cd: 100,
+    fx: { happy: 10, fans: 20, say: 'A DOUBLE rainbow appeared right over {company}. Everyone took photos! 🌈🌈' } });
 
-  // =====================================================================
-  // MAJOR PROBLEMS (rare)
-  // =====================================================================
-
-  def({ id: 'lawsuit', cat: 'Major', icon: '⚖️', w: 0.7, minWeek: 20, cd: 40,
-    title: 'You are being sued',
-    text: function (g) { return 'A customer claims they were injured by your product and is suing for ' + M(G.cost(g, 6)) + '.'; },
+  ev({ id: 'twins', cat: 'weird', icon: '👯', rarity: 'epic', w: 1, cd: 100, who: { a: 'any' },
+    title: '{a} has a secret twin!',
+    text: 'A person who looks EXACTLY like {a} walks in. "Hi! I\'m their twin. Can I work here too?" 👯',
     choices: [
-      { t: 'Settle out of court', cost: cost(2.5), fx: function (g) { spend(g, G.cost(g, 2.5)); return 'Settled quietly.'; } },
-      { t: 'Fight it in court', cost: cost(1), fx: function (g) { spend(g, G.cost(g, 1)); if (U.chance(0.55)) { rep(g, 3); return 'You won. The case was thrown out.'; } spend(g, G.cost(g, 6)); rep(g, -8); return 'You lost. It is all over the news.'; } }
-    ] });
-
-  def({ id: 'accident', cat: 'Major', icon: '🚑', w: 0.6, minWeek: 15, cd: 40,
-    setup: function (g) { var a = pickEmp(g, function (e) { return e.role === 'front'; }); return a ? { a: a.id } : null; },
-    title: 'Workplace accident',
-    text: function (g, c) { return N(g, c.a) + ' was hurt at work. They will be okay, but it was serious. Staff are asking questions about safety.'; },
-    choices: [
-      { t: 'Pay their costs and upgrade safety', cost: cost(1.5), fx: function (g, c) { spend(g, G.cost(g, 1.5)); team(g, 8); emp(g, c.a).loyalty += 25; return 'The team trusts you more.'; } },
-      { t: 'Pay the minimum required', cost: cost(0.4), fx: function (g, c) { spend(g, G.cost(g, 0.4)); team(g, -10); if (U.chance(0.4)) G.schedule(g, 'strike', U.ri(2, 5), {}); return 'The team is angry.'; } }
-    ] });
-
-  def({ id: 'bad_batch', cat: 'Major', icon: '☣️', w: 0.7, minWeek: 12, cd: 40,
-    title: 'Something you sold was faulty',
-    text: 'A batch of your product was faulty. A few customers noticed. Most have not yet.',
-    choices: [
-      { t: 'Recall everything and refund', cost: cost(1.8), fx: function (g) { spend(g, G.cost(g, 1.8)); rep(g, 3); return 'Customers praise your honesty.'; } },
-      { t: 'Quietly fix it going forward', fx: function (g) { if (U.chance(0.5)) return 'Nobody ever found out.'; rep(g, -18); G.mod(g, 'demand', 0.8, 6, 'Cover-up scandal'); return 'A journalist found out you covered it up.'; } }
-    ] });
-
-  def({ id: 'strike', cat: 'Major', icon: '🪧', w: function (g) { return G.avgMorale(g) < 38 ? 2 : 0; }, minWeek: 10, cd: 30, cond: staff(4),
-    title: 'Your employees are on strike',
-    text: 'The team has walked out. Nothing is getting done until you respond.',
-    choices: [
-      { t: 'Agree to a 10% raise for everyone', fx: function (g) { g.employees.forEach(function (e) { G.raise(g, e, 0.1); }); return 'Everyone is back at work.'; } },
-      { t: 'Negotiate', fx: function (g) { if (U.chance(0.5)) { g.employees.forEach(function (e) { G.raise(g, e, 0.05); }); return 'You met in the middle: 5%.'; } G.mod(g, 'closed', 1, 1, 'Strike'); team(g, -5); return 'Talks failed. You are closed next week.'; } },
-      { t: 'Hold out', fx: function (g) { G.mod(g, 'closed', 1, 2, 'Strike'); team(g, -10); rep(g, -5); return 'You are closed for two weeks.'; } }
-    ] });
-
-  def({ id: 'cyberattack', cat: 'Major', icon: '🦠', w: 0.6, minWeek: 20, cd: 40,
-    title: 'Cyberattack',
-    text: function (g) { return 'Hackers locked your systems and demand ' + M(G.cost(g, 1.2)) + ' in crypto.'; },
-    choices: [
-      { t: 'Pay the ransom', cost: cost(1.2), fx: function (g) { spend(g, G.cost(g, 1.2)); if (U.chance(0.8)) return 'They unlocked everything.'; G.mod(g, 'capacity', 0.7, 2, 'Locked systems'); return 'They took the money and did not unlock anything.'; } },
-      { t: 'Restore from backups', cost: cost(0.4), fx: function (g) { spend(g, G.cost(g, 0.4)); G.mod(g, 'capacity', 0.8, 1, 'Restoring systems'); return 'It takes a week, but you are back.'; } }
-    ] });
-
-  def({ id: 'supplier_collapse', cat: 'Major', icon: '🏚️', w: 0.5, minWeek: 20, cd: 50,
-    title: 'Your main supplier went bankrupt',
-    text: 'Your biggest supplier closed overnight. You need a new one now.',
-    choices: [
-      { t: 'Pay a premium to a fast replacement', fx: function (g) { G.mod(g, 'supply', 0.06, 8, 'Emergency supplier'); return 'Supplies keep flowing, at a price.'; } },
-      { t: 'Take time to find a good one', fx: function (g) { G.mod(g, 'capacity', 0.6, 2, 'No supplier'); return 'Two slow weeks, then back to normal.'; } }
+      { t: '👯 Hire the twin!', fx: { fans: 10, run: function (g, c) { var a = G.emp(g, c.a); if (!a) return ''; var t = G.makeEmployee(g, a.role, { name: 'Twin ' + a.name, face: a.face, skill: a.skill, traits: a.traits.slice() }); G.addEmployee(g, t); return 'Now nobody knows who is who. 😂'; } } },
+      { t: '🙅 One is enough', fx: { say: 'The twin waves goodbye. 👋' } }
     ] });
 
   CS.EVENTS = E;
   CS.EV = {};
   E.forEach(function (d) { CS.EV[d.id] = d; });
 
-  // Choice labels may depend on who is involved.
-  G.choiceLabel = function (g, x, c) { return c.label ? c.label(g, x.ctx) : c.t; };
+  // Name shown in the Event Book, with people's names taken out.
+  G.bookName = function (d) {
+    var t = typeof d.title === 'string' ? d.title : (d.fx && d.fx.say) || (d.fx && d.fx.chance && d.fx.chance.win.say) || d.id;
+    return t.replace(/\{[abm]\}/g, 'Someone').replace(/\{rival\}/g, 'A rival').replace(/\{company\}/g, 'Your company')
+      .replace(/\{\w+\}/g, '...').split(/[.!?]/)[0].slice(0, 44);
+  };
 })();

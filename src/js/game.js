@@ -1,28 +1,37 @@
-// Game engine: company state, weekly simulation, staff, loans, events, saves.
+// Game engine: company state, weekly simulation, staff, money, events, progression, saves.
 var CS = globalThis.CS = globalThis.CS || {};
 
 (function () {
   var U = CS.U;
   var G = CS.G = {};
-  var SAVE_KEY = 'companysim_save_v1';
-  var LEGACY_KEY = 'companysim_legacy_v1';
+  var KEYS = {
+    main: 'companysim_save_v2', daily: 'companysim_daily_v2', legacy: 'companysim_legacy_v1',
+    book: 'companysim_book_v1', settings: 'companysim_settings_v1', gift: 'companysim_gift_v1', best: 'companysim_dailybest_v1'
+  };
   var MAX_DECISIONS = 3;
+  var MINIGAMES = { boxes: 1, wheel: 1, tap: 1, post: 1, quiz: 1, deal: 1, vs: 1, interview: 1 };
+  G.MINIGAMES = MINIGAMES;
 
   function store() { try { return globalThis.localStorage || null; } catch (e) { return null; } }
+  function readJSON(k) { var s = store(); if (!s) return null; try { return JSON.parse(s.getItem(k)); } catch (e) { return null; } }
+  function writeJSON(k, v) { var s = store(); if (s) try { s.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function removeKey(k) { var s = store(); if (s) try { s.removeItem(k); } catch (e) {} }
 
   // ---------- creation ----------
 
   G.rivalName = function () { return U.pick(CS.RIVAL_A) + ' ' + U.pick(CS.RIVAL_B); };
+  G.randomName = function () { return U.pick(CS.NAME_A) + ' ' + U.pick(CS.NAME_B); };
+  G.tierOf = function (g) { return CS.TIERS[CS.IND[g.company.industry].tier]; };
 
   G.newGame = function (o) {
+    U.seed(o.seed != null ? o.seed : (Math.random() * 4294967296) >>> 0);
     var ind = CS.IND[o.industry], tier = CS.TIERS[ind.tier], city = CS.CITIES[o.city], fund = CS.FUNDING[o.funding];
-    var legacy = G.loadLegacy();
-    var runs = legacy.companies.length;
+    var runs = o.mode === 'daily' ? 0 : G.loadLegacy().companies.length;
     var comp = tier.comp;
     var weight = comp.front + comp.sales + comp.acct * 1.1 + comp.mgr * 1.6;
     var demand = tier.rv / ind.t;
     var g = {
-      v: 1,
+      v: 2, mode: o.mode || 'main', dailyNum: o.dailyNum || 0,
       company: { name: o.name, logo: o.logo, color: o.color, industry: ind.id, city: o.city, funding: o.funding },
       eco: {
         demand: demand, ticket: ind.t, supply: ind.s,
@@ -30,14 +39,17 @@ var CS = globalThis.CS = globalThis.CS || {};
         wage: tier.rv * ind.l / weight,
         cap: demand * city.demand * 1.25 / comp.front
       },
-      week: 0, cash: 0, reputation: Math.min(70, 50 + runs * 2), satisfaction: 60, awareness: 0,
-      price: 1, priceIndex: 1, ownership: 100 * fund.own * (tier.startOwnership || 1),
+      week: 0, cash: 0, reputation: Math.min(66, 50 + runs * 2), satisfaction: 60, awareness: 0,
+      followers: 25 * tier.stars * tier.stars, price: 1, priceIndex: 1, rentMult: 1,
+      ownership: 100 * fund.own * (tier.startOwnership || 1),
       employees: [], nextId: 1, candidates: [], loans: [], history: [], news: [], pending: [], queue: [],
-      mods: [], rel: {}, dating: {}, cooldowns: {}, flags: { equip: 1 }, formers: [],
-      stats: { decisions: 0, fired: 0, revenue: 0, peakCash: 0, fullStreak: 0, maxStaff: 0, bigWeeks: 0 },
+      mods: [], rel: {}, dating: {}, cooldowns: {}, flags: { equip: 1 }, formers: [], upgrades: {},
+      xp: 0, level: 1, missions: [], streak: 0, bestStreak: 0, posted: false, rank: 0,
+      stats: { decisions: 0, fired: 0, revenue: 0, peakCash: 0, fullStreak: 0, maxStaff: 0, bigWeeks: 0, hires: 0, posts: 0,
+        upgrades: 0, weeksPlayed: 0, minigames: 0, ads: 0, missionsDone: 0, quizRight: 0, vsWins: 0, virals: 0 },
       achievements: {}, economy: { state: 'normal', weeks: U.ri(15, 30) },
       rivals: [G.rivalName(), G.rivalName(), G.rivalName()],
-      negWeeks: 0, over: null, last: null
+      negWeeks: 0, over: null, last: null, tips: 0
     };
     g.cash = tier.cash * fund.cash * (1 + Math.min(0.5, runs * 0.05));
     if (fund.loan) G.addLoan(g, tier.cash * fund.loan, 0.07, 104, true);
@@ -45,11 +57,31 @@ var CS = globalThis.CS = globalThis.CS || {};
     var add = function (role, n) { for (var i = 0; i < n; i++) g.employees.push(G.makeEmployee(g, role, { hired: true })); };
     add('front', comp.front); add('sales', comp.sales); add('acct', comp.acct); add('mgr', comp.mgr);
     G.refreshCandidates(g);
-    G.news(g, o.name + ' opens its doors in ' + city.name + '.', 'good');
-    if (runs) G.news(g, 'Your experience from ' + runs + ' earlier compan' + (runs > 1 ? 'ies' : 'y') + ' gives you a head start.', 'neutral');
+    while (g.missions.length < 3) g.missions.push(G.newMission(g));
+    g.rank = G.rankIndex(g);
+    G.news(g, '🎉 ' + o.name + ' opens in ' + city.name + '!', 'good');
+    if (runs) G.news(g, '🧠 You learned from ' + runs + ' old compan' + (runs > 1 ? 'ies' : 'y') + '. Bonus cash!', 'good');
     G.save(g);
     return g;
   };
+
+  // The same company for everyone today.
+  G.dailyInfo = function () {
+    var today = U.today();
+    var num = Math.floor((new Date(today + 'T00:00:00') - new Date('2026-01-01T00:00:00')) / 864e5) + 1;
+    var seed = U.hash('company-sim-daily-' + today);
+    var keep = U.state();
+    U.seed(seed);
+    var inds = CS.INDUSTRIES.filter(function (i) { return i.tier !== 'large'; });
+    var info = {
+      mode: 'daily', dailyNum: num, date: today, seed: U.hash('run-' + today),
+      industry: U.pick(inds).id, city: U.pick(Object.keys(CS.CITIES)), logo: U.pick(CS.LOGOS),
+      color: U.pick(CS.COLORS), name: G.randomName(), funding: 'savings'
+    };
+    U.seed(keep);
+    return info;
+  };
+  G.DAILY_WEEKS = 52;
 
   // ---------- employees ----------
 
@@ -69,15 +101,25 @@ var CS = globalThis.CS = globalThis.CS || {};
     return [a, b];
   }
 
+  var TONES = ['\u{1F3FB}', '\u{1F3FC}', '\u{1F3FD}', '\u{1F3FE}', '\u{1F3FF}'];
+  function makeFace(age) {
+    var base = U.pick(['👩', '👨', '🧑']), hair = U.pick(['', '‍🦱', '‍🦰', '']);
+    if (age > 52) hair = '‍🦳';
+    if (base === '🧑') hair = '';
+    return base + U.pick(TONES) + hair;
+  }
+
   G.makeEmployee = function (g, role, opts) {
     opts = opts || {};
-    var traits = rollTraits();
+    var traits = opts.traits || rollTraits();
     var skill = opts.skill != null ? opts.skill : U.ri(opts.hired ? 40 : 20, opts.hired ? 62 : 88);
+    var age = opts.age || U.ri(19, 58);
     var e = {
       id: g.nextId++,
-      name: U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST),
-      age: U.ri(19, 58), role: role, level: 1,
-      skill: skill, morale: U.ri(58, 75), loyalty: U.ri(40, 65), reliability: U.ri(60, 85),
+      name: opts.name || (U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST)),
+      face: opts.face || makeFace(age),
+      age: age, role: role, level: 1,
+      skill: skill, morale: U.ri(62, 78), loyalty: U.ri(40, 65), reliability: U.ri(60, 85),
       traits: traits, weeks: opts.hired ? U.ri(4, 40) : 0, hue: U.ri(0, 359)
     };
     if (G.has(e, 'reliable')) e.reliability = Math.min(99, e.reliability + 15);
@@ -85,13 +127,15 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (G.has(e, 'loyal')) e.loyalty += 20;
     var ask = 0.8 + skill / 250;
     if (G.has(e, 'greedy')) ask *= 1.15;
-    e.salary = Math.round(G.market(g, role, 1) * ask);
+    e.salary = Math.round(G.market(g, role, 1) * ask * (opts.salaryMult || 1));
     return e;
   };
 
   G.has = function (e, t) { return e.traits.indexOf(t) >= 0; };
   G.emp = function (g, id) { for (var i = 0; i < g.employees.length; i++) if (g.employees[i].id === id) return g.employees[i]; return null; };
-  G.traitKnown = function (e, i) { return i === 0 || e.weeks >= 4; };
+  G.traitKnown = function (e, i) { return i === 0 || e.weeks >= 4 || e.revealed; };
+  G.first = function (e) { return e ? e.name.split(' ')[0] : 'Someone'; };
+  G.moodFace = function (m) { return m >= 75 ? '😁' : m >= 58 ? '🙂' : m >= 42 ? '😐' : m >= 25 ? '😟' : '😡'; };
 
   G.productivity = function (e) {
     var p = (0.5 + e.skill / 100) * (0.7 + 0.3 * e.morale / 100) * [1, 1.15, 1.3][e.level - 1];
@@ -112,26 +156,32 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   G.hire = function (g, id) {
     var c = g.candidates.find(function (x) { return x.id === id; });
-    if (!c) return;
+    if (!c) return null;
     g.candidates = g.candidates.filter(function (x) { return x.id !== id; });
     g.cash -= c.salary; // recruiting fee: one week of pay
-    g.employees.push(c);
+    G.addEmployee(g, c);
+    return c;
+  };
+  G.addEmployee = function (g, e) {
+    g.employees.push(e);
     g.flags.hired = true;
-    G.news(g, 'Hired ' + c.name + ' as ' + G.title(g, c) + '.', 'neutral');
+    g.stats.hires++;
+    G.news(g, '🤝 ' + e.name + ' joined as ' + G.title(g, e) + '.', 'good');
   };
 
-  // Removes an employee. reason: 'fired' | 'quit'.
+  // reason: 'fired' | 'quit'
   G.removeEmp = function (g, e, reason, silent) {
+    if (!e) return;
     g.employees = g.employees.filter(function (x) { return x.id !== e.id; });
     g.formers.unshift({ id: e.id, name: e.name, creative: G.has(e, 'creative'), role: e.role });
     g.formers = g.formers.slice(0, 20);
     G.friendsOf(g, e).forEach(function (f) { f.morale -= 8; });
     if (reason === 'fired') {
       g.stats.fired++;
-      g.cash -= e.salary; // severance
+      g.cash -= e.salary; // one week severance
       g.employees.forEach(function (x) { x.morale -= 2; });
     }
-    if (!silent) G.news(g, e.name + (reason === 'fired' ? ' was let go.' : ' left the company.'), 'bad');
+    if (!silent) G.news(g, (reason === 'fired' ? '🚪 ' + e.name + ' was fired.' : '👋 ' + e.name + ' quit.'), 'bad');
   };
 
   G.raise = function (g, e, pct) {
@@ -148,17 +198,23 @@ var CS = globalThis.CS = globalThis.CS || {};
     else e.level = Math.min(3, e.level + 1);
     e.salary = Math.max(Math.round(e.salary * 1.15), Math.round(G.market(g, e.role, e.level)));
     e.morale += 20; e.loyalty += 10;
-    G.news(g, e.name + ' was promoted to ' + G.title(g, e) + '.', 'good');
-    // A jealous colleague may react.
+    G.news(g, '🎖️ ' + e.name + ' is now ' + G.title(g, e) + '!', 'good');
     var rivals = g.employees.filter(function (x) { return x.id !== e.id && (G.has(x, 'ambitious') || G.has(x, 'greedy')); });
-    if (rivals.length && U.chance(0.4)) G.schedule(g, 'jealous', U.ri(1, 3), { a: U.pick(rivals).id, b: e.id });
+    if (rivals.length && U.chance(0.4)) {
+      var r = U.pick(rivals);
+      G.schedule(g, 'jealous', U.ri(1, 3), { a: r.id, an: G.first(r), b: e.id, bn: G.first(e) });
+    }
   };
   G.demote = function (g, e) {
     if (e.role === 'mgr') { e.role = 'front'; e.level = 2; }
     else e.level = Math.max(1, e.level - 1);
     e.salary = Math.round(e.salary * 0.88);
     e.morale -= 25; e.loyalty -= 15;
-    G.news(g, e.name + ' was demoted to ' + G.title(g, e) + '.', 'bad');
+    G.news(g, '⬇️ ' + e.name + ' was moved down to ' + G.title(g, e) + '.', 'bad');
+  };
+  G.rename = function (g, id, name) {
+    var e = G.emp(g, id); name = String(name || '').trim().slice(0, 24);
+    if (e && name) e.name = name;
   };
 
   // ---------- relationships ----------
@@ -175,20 +231,22 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   G.scale = function (g) {
     var h = g.history.slice(-4);
-    var tierRv = CS.TIERS[CS.IND[g.company.industry].tier].rv;
+    var tierRv = G.tierOf(g).rv;
     if (!h.length) return tierRv;
     var avg = h.reduce(function (s, x) { return s + x.revenue; }, 0) / h.length;
     return Math.max(tierRv * 0.5, avg);
   };
-  // A cost as a fraction of normal weekly revenue, rounded to a readable price.
-  G.cost = function (g, frac) { return U.nice(G.scale(g) * frac * 0.45); };
+  // An event price as a share of normal weekly sales, rounded to look like a real price.
+  G.cost = function (g, frac) { return U.nice(G.scale(g) * frac * 0.55); };
+  // Event prizes are a bit smaller than event costs so luck never replaces running the business.
+  G.prize = function (g, frac) { return U.nice(G.scale(g) * frac * 0.35); };
 
   G.addLoan = function (g, amount, apr, weeks, silent) {
     var r = apr / 52;
     var pay = amount * r / (1 - Math.pow(1 + r, -weeks));
     g.loans.push({ id: g.nextId++, principal: amount, balance: amount, rate: r, payment: pay, weeks: weeks, apr: apr });
     g.cash += amount;
-    if (!silent) G.news(g, 'Took a ' + U.money(amount) + ' loan at ' + (apr * 100).toFixed(1) + '% APR.', 'neutral');
+    if (!silent) G.news(g, '🏦 Borrowed ' + U.money(amount) + '.', 'neutral');
   };
   G.debt = function (g) { return g.loans.reduce(function (s, l) { return s + l.balance; }, 0); };
   G.loanOffers = function (g) {
@@ -205,7 +263,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     g.cash -= l.balance;
     g.loans = g.loans.filter(function (x) { return x.id !== id; });
     g.flags.debtfree = true;
-    G.news(g, 'Paid off a loan early.', 'good');
+    G.news(g, '🕊️ Paid off a loan!', 'good');
     return true;
   };
 
@@ -215,31 +273,181 @@ var CS = globalThis.CS = globalThis.CS || {};
     var v = G.scale(g) * 52 * 0.9 + Math.max(0, profit) * 52 * 3 + g.cash - G.debt(g) + g.reputation * G.scale(g) * 0.4;
     return Math.max(G.scale(g) * 10, v);
   };
-  G.stakeOffer = function (g, pct) {
-    return U.nice(G.valuation(g) * pct / 100 * (g.cash < 0 ? 0.7 : 0.9));
-  };
+  G.stakeOffer = function (g, pct) { return U.nice(G.valuation(g) * pct / 100 * (g.cash < 0 ? 0.7 : 0.9)); };
   G.sellStake = function (g, pct) {
     if (g.ownership - pct < 10) return 0;
     var amt = G.stakeOffer(g, pct);
     g.ownership -= pct; g.cash += amt;
-    G.news(g, 'Sold ' + pct + '% of the company to investors for ' + U.money(amt) + '.', 'neutral');
+    G.news(g, '💼 Sold ' + pct + '% of the company for ' + U.money(amt) + '.', 'neutral');
     return amt;
   };
 
-  G.ads = [
-    { id: 'flyers', name: 'Local flyers', frac: 0.25, aw: 6, weeks: 1 },
-    { id: 'online', name: 'Online ads', frac: 0.9, aw: 20, weeks: 1 }
-  ];
+  G.rankIndex = function (g) {
+    var v = G.valuation(g), i = 0;
+    CS.RANKS.forEach(function (r, k) { if (v >= r.min) i = k; });
+    return i;
+  };
+
+  // ---------- fans, ads, posts ----------
+
+  G.awCap = function (g) { return 300 + G.upLevel(g, 'space') * 40; };
+  // Followers grow toward a ceiling that rises with fame and every viral hit.
+  G.fanCeiling = function (g) { return 5000 * [1, 4, 20][G.tierOf(g).stars - 1] * (1 + g.awareness / 25) * (1 + g.stats.virals * 0.3); };
+  G.fanRoom = function (g) { return Math.max(0.02, 1 - g.followers / G.fanCeiling(g)); };
+  // A viral hit adds a chunk of the follower ceiling, less as you get close to it.
+  G.viralGain = function (g, views) { return Math.round(Math.min(views * U.rand(0.01, 0.02), G.fanCeiling(g) * 0.12) * Math.max(0.15, G.fanRoom(g))); };
+  G.addFans = function (g, pts) {
+    g.awareness = U.clamp(g.awareness + pts, 0, G.awCap(g));
+    if (pts > 0) g.followers += Math.round(pts * (8 * G.tierOf(g).stars + g.followers * 0.002) * U.rand(0.8, 1.2) * G.fanRoom(g));
+    else g.followers = Math.max(0, g.followers + Math.round(pts * 5));
+  };
+
+  G.adCost = function (g, ad) { return G.cost(g, ad.frac); };
   G.advertise = function (g, id) {
-    var ad = G.ads.find(function (a) { return a.id === id; });
-    var cost = G.cost(g, ad.frac);
+    var ad = CS.ADS.find(function (a) { return a.id === id; });
+    if (!ad || g.level < ad.lvl) return 0;
+    var cost = G.adCost(g, ad);
     g.cash -= cost;
-    g.awareness = Math.min(G.awCap(g), g.awareness + ad.aw * U.rand(0.7, 1.3));
-    g.adsThisWeek = (g.adsThisWeek || 0) + 1;
-    G.news(g, 'Ran ' + ad.name.toLowerCase() + ' for ' + U.money(cost) + '.', 'neutral');
+    G.addFans(g, ad.fans * U.rand(0.7, 1.3));
+    g.stats.ads++;
+    G.addXP(g, 6);
+    G.news(g, ad.emoji + ' Ran ' + ad.name.toLowerCase() + ' for ' + U.money(cost) + '.', 'neutral');
     return cost;
   };
-  G.awCap = function (g) { return 300; };
+
+  G.postOptions = function (g) {
+    var seed = U.hash(g.company.name + g.week);
+    var list = CS.POSTS.slice().sort(function (a, b) { return (U.hash(a.id + seed) % 97) - (U.hash(b.id + seed) % 97); });
+    return list.slice(0, 4);
+  };
+
+  // Publishes a social media post and returns what happened.
+  G.post = function (g, id) {
+    var p = CS.POSTS.find(function (x) { return x.id === id; });
+    var funny = g.employees.filter(function (e) { return G.has(e, 'funny') || G.has(e, 'creative'); }).length;
+    var tierMul = [1, 4, 20][G.tierOf(g).stars - 1];
+    if (p.cost) g.cash -= G.cost(g, p.cost);
+    var base = 250 * tierMul;
+    var views = (g.followers * 2.5 + base) * p.views * U.rand(0.5, 1.6) * (0.6 + g.satisfaction / 100);
+    var r = { post: p, viral: false, backfire: false };
+    if (U.chance(p.risk)) {
+      r.backfire = true;
+      views *= 0.6;
+      g.reputation -= U.ri(2, 6);
+      g.followers = Math.max(0, g.followers - Math.round(g.followers * 0.02));
+      r.text = U.pick(['People did not like it 😬', 'The comments are not nice... 😬', 'Oops. That did not go well.']);
+    } else if (U.chance(p.viral * (1 + funny * 0.08))) {
+      r.viral = true;
+      views *= U.rand(12, 40);
+      g.flags.viral = true;
+      g.stats.virals++;
+      r.text = U.pick(['IT WENT VIRAL! 🔥🔥🔥', 'Everyone is sharing it! 🚀', 'You broke the internet! 🤯']);
+    } else {
+      r.text = U.pick(['Nice post! People liked it. 👍', 'Your followers loved it! 💖', 'Solid post. 📈']);
+    }
+    r.views = Math.round(views);
+    r.likes = Math.round(views * U.rand(0.05, 0.12));
+    r.comments = Math.round(r.likes * U.rand(0.03, 0.08));
+    r.shares = Math.round(views * U.rand(0.005, 0.02) * (r.viral ? 3 : 1));
+    // Gains are capped so followers grow fast but never explode.
+    var gained = r.backfire ? 0 : r.viral ? G.viralGain(g, views) :
+      Math.round(Math.min(g.followers * 0.05 + base * 0.3, views * U.rand(0.01, 0.025) * p.fans) * G.fanRoom(g));
+    g.followers += gained;
+    r.followers = gained;
+    if (!r.backfire) g.awareness = U.clamp(g.awareness + (r.viral ? 30 : 2 + Math.log10(Math.max(10, views)) * 0.8) * p.fans, 0, G.awCap(g));
+    g.posted = true;
+    g.stats.posts++;
+    G.addXP(g, 8);
+    G.news(g, p.emoji + ' Your post got ' + U.num(r.views) + ' views' + (r.viral ? ' and went VIRAL!' : '.'), r.backfire ? 'bad' : 'good');
+    return r;
+  };
+
+  // ---------- upgrades ----------
+
+  G.upLevel = function (g, id) { return g.upgrades[id] || 0; };
+  G.upCost = function (g, id) {
+    var u = CS.UP[id], lv = G.upLevel(g, id);
+    if (lv >= u.cost.length) return 0;
+    return U.nice(G.tierOf(g).rv * u.cost[lv] * (G.tierOf(g).stars === 3 ? 0.5 : 1));
+  };
+  G.upNeedLevel = function (g, id) { var u = CS.UP[id], lv = G.upLevel(g, id); return lv < u.lvl.length ? u.lvl[lv] : 0; };
+  G.buyUpgrade = function (g, id) {
+    var cost = G.upCost(g, id);
+    if (!cost || g.cash < cost || g.level < G.upNeedLevel(g, id)) return false;
+    g.cash -= cost;
+    g.upgrades[id] = G.upLevel(g, id) + 1;
+    g.stats.upgrades++;
+    G.addXP(g, 15);
+    G.news(g, CS.UP[id].emoji + ' Bought ' + CS.UP[id].name + ' (level ' + g.upgrades[id] + ').', 'good');
+    return true;
+  };
+
+  // ---------- XP, levels, missions ----------
+
+  G.xpNeed = function (level) { return Math.round(80 * Math.pow(level, 1.5)); };
+  G.addXP = function (g, n) {
+    g.xp += n;
+    var ups = 0;
+    while (g.xp >= G.xpNeed(g.level)) {
+      g.xp -= G.xpNeed(g.level);
+      g.level++; ups++;
+      var gift = U.nice(G.scale(g) * 0.1 * g.level);
+      g.cash += gift;
+      g.levelUps = (g.levelUps || []).concat([{ level: g.level, gift: gift }]);
+      G.news(g, '🎖️ You reached CEO level ' + g.level + '! Gift: ' + U.money(gift), 'good');
+    }
+    return ups;
+  };
+  G.takeLevelUps = function (g) { var l = g.levelUps || []; g.levelUps = []; return l; };
+
+  G.newMission = function (g) {
+    var have = g.missions.map(function (m) { return m.id; });
+    var t = U.pick(CS.MISSIONS.filter(function (m) { return have.indexOf(m.id) < 0; }));
+    var m = { id: t.id, emoji: t.emoji };
+    var s = G.scale(g);
+    if (t.special === 'rep') {
+      var opts = t.n.filter(function (n) { return n > g.reputation + 2; });
+      m.target = opts.length ? opts[0] : Math.min(100, Math.round(g.reputation) + 5);
+    } else if (t.special === 'fans') {
+      m.target = U.nice(Math.max(g.followers * 1.5, g.followers + 200));
+    } else if (t.special === 'cash') {
+      m.target = U.nice(Math.max(g.cash * 1.35, s * 6));
+    } else if (t.special === 'streak') {
+      m.target = U.pick(t.n);
+    } else {
+      m.target = U.pick(t.n);
+      m.base = g.stats[t.stat];
+    }
+    m.reward = U.nice(s * U.rand(0.15, 0.3));
+    m.xp = 30 + Math.round(U.rand(0, 2)) * 10;
+    return m;
+  };
+  G.missionText = function (m) {
+    var t = CS.MISSIONS.find(function (x) { return x.id === m.id; });
+    var n = t.special === 'cash' ? U.short(m.target) : t.special === 'fans' ? U.num(m.target) : m.target;
+    return t.text.replace('{n}', n);
+  };
+  G.missionProgress = function (g, m) {
+    var t = CS.MISSIONS.find(function (x) { return x.id === m.id; });
+    var cur;
+    if (t.special === 'rep') cur = g.reputation;
+    else if (t.special === 'fans') cur = g.followers;
+    else if (t.special === 'cash') cur = g.cash;
+    else if (t.special === 'streak') cur = g.streak;
+    else cur = g.stats[t.stat] - m.base;
+    return [Math.max(0, Math.min(cur, m.target)), m.target];
+  };
+  G.missionDone = function (g, m) { var p = G.missionProgress(g, m); return p[0] >= p[1]; };
+  G.claimMission = function (g, idx) {
+    var m = g.missions[idx];
+    if (!m || !G.missionDone(g, m)) return null;
+    g.cash += m.reward;
+    G.addXP(g, m.xp);
+    g.stats.missionsDone++;
+    g.missions[idx] = G.newMission(g);
+    return m;
+  };
+  G.readyMissions = function (g) { return g.missions.filter(function (m) { return G.missionDone(g, m); }).length; };
 
   // ---------- modifiers ----------
   // Temporary effects on the business: { type, value, weeks, label }.
@@ -255,6 +463,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     });
     return t;
   }
+  G.modGood = function (m) {
+    return (m.type === 'demand' || m.type === 'capacity') ? m.value >= 1 : m.type === 'supply' ? m.value < 0 : m.type === 'extra';
+  };
 
   // ---------- the weekly simulation ----------
 
@@ -271,18 +482,19 @@ var CS = globalThis.CS = globalThis.CS || {};
       var absent = !preview && U.chance((100 - e.reliability) / 400);
       if (!absent) cap += g.eco.cap * G.productivity(e);
     });
-    cap *= m.capacity * g.flags.equip * (covered ? 1.05 : 0.9);
+    cap *= m.capacity * g.flags.equip * (1 + 0.08 * G.upLevel(g, 'equip')) * (covered ? 1.05 : 0.9);
     var salesBoost = Math.min(0.45, sales.reduce(function (s, e) { return s + 0.07 * G.productivity(e); }, 0));
     var demand = g.eco.demand * city.demand * (0.5 + g.reputation / 100) * (1 + g.awareness / 100) *
-      [1.25, 1, 0.75][g.price] * (1 + salesBoost) * econ.demand * m.demand * (preview ? 1 : U.rand(0.92, 1.08));
+      [1.25, 1, 0.75][g.price] * (1 + salesBoost) * (1 + 0.12 * G.upLevel(g, 'space')) * econ.demand * m.demand *
+      (preview ? 1 : U.rand(0.92, 1.08));
     var served = m.closed ? 0 : Math.min(demand, cap);
     var ticket = g.eco.ticket * city.ticket * [0.8, 1, 1.3][g.price] * g.priceIndex;
     var sales$ = served * ticket;
     var acctCut = Math.min(0.05, acct.reduce(function (s, e) { return s + 0.015 * (0.5 + e.skill / 100); }, 0));
-    var supplyRate = Math.max(0.03, g.eco.supply + m.supply + econ.supply - acctCut);
+    var supplyRate = Math.max(0.03, g.eco.supply + m.supply + econ.supply - acctCut - 0.015 * G.upLevel(g, 'register'));
     var supplies = sales$ * supplyRate;
     var wages = emps.reduce(function (s, e) { return s + e.salary; }, 0);
-    var rent = g.eco.rent * city.rent * g.priceIndex;
+    var rent = g.eco.rent * city.rent * g.priceIndex * g.rentMult * (1 + 0.15 * G.upLevel(g, 'space'));
     var loans = g.loans.reduce(function (s, l) { return s + Math.min(l.payment, l.balance * (1 + l.rate)); }, 0);
     var revenue = sales$ + m.extra;
     var profit = revenue - supplies - wages - rent;
@@ -296,52 +508,73 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (g.queue.length || g.over) return null;
     g.week++;
     var minor = [];
+    var rankBefore = g.rank;
     var econMsg = stepEconomy(g);
     if (econMsg) minor.push(econMsg);
 
     var f = G.compute(g, false);
-    // Loans
     g.loans.forEach(function (l) {
       var interest = l.balance * l.rate;
       var pay = Math.min(l.payment, l.balance + interest);
       l.balance = l.balance + interest - pay;
     });
-    var paid = g.loans.filter(function (l) { return l.balance < 1; });
-    if (paid.length) { g.flags.debtfree = true; minor.push('🏦 You made the final payment on a loan.'); }
+    if (g.loans.some(function (l) { return l.balance < 1; })) { g.flags.debtfree = true; minor.push('🕊️ You paid off a loan!'); }
     g.loans = g.loans.filter(function (l) { return l.balance >= 1; });
 
     g.cash += f.net;
     g.stats.revenue += f.revenue;
+    g.stats.weeksPlayed++;
     g.history.push({ week: g.week, revenue: f.revenue, profit: f.profit, net: f.net, cash: g.cash, served: f.served, demand: f.demand, capacity: f.capacity });
     if (g.history.length > 260) g.history.shift();
     g.stats.fullStreak = f.served >= f.demand * 0.999 && !f.closed ? g.stats.fullStreak + 1 : 0;
+
+    // Profit streak with a bonus every 5 weeks.
+    var streakBonus = 0;
+    if (f.net > 0) {
+      g.streak++;
+      g.bestStreak = Math.max(g.bestStreak, g.streak);
+      G.addXP(g, 5);
+      if (g.streak % 5 === 0) {
+        streakBonus = U.nice(G.scale(g) * 0.1 * Math.min(4, g.streak / 5));
+        g.cash += streakBonus;
+      }
+    } else g.streak = 0;
 
     stepCustomers(g, f);
     stepStaff(g, f, minor);
 
     g.mods.forEach(function (m) { m.weeks--; });
     g.mods = g.mods.filter(function (m) { return m.weeks > 0; });
-    g.adsThisWeek = 0;
+    g.posted = false;
 
-    var events = rollEvents(g, minor);
+    var count = rollEvents(g, minor);
     G.refreshCandidates(g);
 
-    // Cash crisis tracking
     if (g.cash < 0) {
       g.negWeeks++;
-      if (g.negWeeks === 1) minor.push('⚠️ You are out of cash. Fix it within 8 weeks or the company goes bankrupt.');
+      if (g.negWeeks === 1) minor.push('⚠️ You ran out of money! Fix it in 8 weeks or you go bankrupt.');
     } else g.negWeeks = 0;
-    if (g.negWeeks >= 8 || g.cash < -G.scale(g) * 25) {
-      g.over = { reason: 'bankrupt', week: g.week };
-    }
+    if (g.negWeeks >= 8 || g.cash < -G.scale(g) * 25) g.over = { reason: 'bankrupt', week: g.week };
+    if (!g.over && g.mode === 'daily' && g.week >= G.DAILY_WEEKS) g.over = { reason: 'daily', week: g.week };
 
     g.stats.maxStaff = Math.max(g.stats.maxStaff, g.employees.length);
     g.stats.peakCash = Math.max(g.stats.peakCash, g.cash);
+    g.rank = Math.max(g.rank, G.rankIndex(g));
+    var best = bestWorker(g);
     var unlocked = G.checkAchievements(g);
-    g.last = { week: g.week, fin: f, minor: minor, count: events, unlocked: unlocked };
+    g.last = {
+      week: g.week, fin: f, minor: minor, count: count, unlocked: unlocked, streak: g.streak, streakBonus: streakBonus,
+      rankUp: g.rank > rankBefore ? g.rank : null, levelUps: G.takeLevelUps(g), star: best ? { name: best.name, face: best.face } : null
+    };
     G.save(g);
     return g.last;
   };
+
+  function bestWorker(g) {
+    var best = null;
+    g.employees.forEach(function (e) { if (!best || G.productivity(e) > G.productivity(best)) best = e; });
+    return best;
+  }
 
   function stepEconomy(g) {
     if (g.economy.state === 'inflation') g.priceIndex *= 1.003;
@@ -352,9 +585,10 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (prev === 'recession' && next !== 'recession') g.flags.survivedRecession = true;
     g.economy = { state: next, weeks: U.ri(12, 36) };
     if (next === prev) return null;
-    var msg = { normal: 'The economy has stabilized.', boom: 'The economy is booming. Customers are spending.', recession: 'A recession has hit. Customers are cutting back.', inflation: 'Inflation is rising. Costs are going up.' }[next];
-    G.news(g, msg, CS.ECON[next].tone === 'good' ? 'good' : CS.ECON[next].tone === 'bad' ? 'bad' : 'neutral');
-    return '📉 ' + msg;
+    var e = CS.ECON[next];
+    var msg = e.emoji + ' ' + e.name + ' ' + e.tip;
+    G.news(g, msg, e.tone === 'good' ? 'good' : e.tone === 'bad' ? 'bad' : 'neutral');
+    return msg;
   }
 
   function stepCustomers(g, f) {
@@ -363,11 +597,14 @@ var CS = globalThis.CS = globalThis.CS || {};
     var morale = G.avgMorale(g);
     var ratio = f.demand > 0 ? f.capacity / f.demand : 1;
     var target = 48 + (quality - 50) * 0.4 + (morale - 50) * 0.2 + [8, 0, -8][g.price] +
-      (g.price === 2 ? (quality - 55) * 0.4 : 0) + (ratio < 1 ? -40 * (1 - ratio) : 6);
+      (g.price === 2 ? (quality - 55) * 0.4 : 0) + (ratio < 1 ? -40 * (1 - ratio) : 6) + 4 * G.upLevel(g, 'decor');
     if (f.closed) target -= 15;
     g.satisfaction = U.clamp(g.satisfaction + (target - g.satisfaction) * 0.3, 0, 100);
     g.reputation = U.clamp(g.reputation + (g.satisfaction - g.reputation) * 0.06, 0, 100);
-    g.awareness = U.clamp(g.awareness * 0.99 + (g.satisfaction - 55) / 14, 0, G.awCap(g));
+    var awGain = (g.satisfaction - 55) / 14 + 0.8 * G.upLevel(g, 'neon');
+    g.awareness = U.clamp(g.awareness * 0.985 + awGain, 0, G.awCap(g));
+    var fd = ((g.awareness / 10 + g.followers * 0.01) * (g.satisfaction - 40) / 40 * U.rand(0.6, 1.4) + G.upLevel(g, 'neon') * 3) * G.fanRoom(g);
+    g.followers = Math.max(0, Math.round(g.followers + fd));
   }
 
   G.avgMorale = function (g) {
@@ -377,29 +614,29 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   function stepStaff(g, f, minor) {
     var emps = g.employees;
-    var funny = emps.filter(function (e) { return G.has(e, 'funny') || G.has(e, 'friendly'); }).length;
+    var cheer = emps.filter(function (e) { return G.has(e, 'funny') || G.has(e, 'friendly'); }).length;
     var overwork = f.capacity > 0 && f.demand / f.capacity > 1.25;
+    var learn = 1 + 0.4 * G.upLevel(g, 'training');
     emps.forEach(function (e) {
       e.weeks++;
-      var grow = e.skill < 60 ? 0.35 : e.skill < 80 ? 0.18 : 0.06;
+      var grow = (e.skill < 60 ? 0.35 : e.skill < 80 ? 0.18 : 0.06) * learn;
       if (G.has(e, 'ambitious')) grow *= 1.8;
       if (G.has(e, 'lazy')) grow *= 0.5;
       e.skill = Math.min(100, e.skill + grow);
       var pay = U.clamp((e.salary / G.market(g, e.role, e.level) - 1) * 100, -25, 25);
-      var target = 62 + pay + Math.min(8, funny * 1.5) + (f.covered ? 0 : -12) + (overwork && e.role === 'front' ? -10 : 0) +
-        G.friendsOf(g, e).length * 3 - G.enemiesOf(g, e).length * 6 + (G.partnerOf(g, e) ? 5 : 0);
+      var target = 62 + pay + Math.min(8, cheer * 1.5) + (f.covered ? 0 : -12) + (overwork && e.role === 'front' ? -10 : 0) +
+        G.friendsOf(g, e).length * 3 - G.enemiesOf(g, e).length * 6 + (G.partnerOf(g, e) ? 5 : 0) + 5 * G.upLevel(g, 'breakroom');
       if (G.has(e, 'serious')) target -= 2;
       e.morale += (target - e.morale) * 0.2;
       e.loyalty += e.morale > 60 ? 0.25 : e.morale < 35 ? -0.6 : 0;
       clampEmp(e);
     });
-    // Relationships drift between random pairs.
     var pairs = Math.min(4, Math.floor(emps.length / 2));
     for (var i = 0; i < pairs; i++) {
       var a = U.pick(emps), b = U.pick(emps);
       if (!a || !b || a === b) continue;
-      var d = U.rand(-3, 6), both = [a, b];
-      both.forEach(function (x) {
+      var d = U.rand(-3, 6);
+      [a, b].forEach(function (x) {
         if (G.has(x, 'friendly')) d += 3;
         if (G.has(x, 'funny')) d += 2;
         if (G.has(x, 'aggressive')) d -= 6;
@@ -408,13 +645,12 @@ var CS = globalThis.CS = globalThis.CS || {};
       var before = G.getRel(g, a.id, b.id);
       G.addRel(g, a.id, b.id, d);
       var after = G.getRel(g, a.id, b.id);
-      if (before < 40 && after >= 40) minor.push('🤝 ' + a.name + ' and ' + b.name + ' have become friends.');
-      if (before > -40 && after <= -40) minor.push('😠 ' + a.name + ' and ' + b.name + ' can no longer stand each other.');
+      if (before < 40 && after >= 40) minor.push('🤝 ' + G.first(a) + ' and ' + G.first(b) + ' are now friends.');
+      if (before > -40 && after <= -40) minor.push('😠 ' + G.first(a) + ' and ' + G.first(b) + ' don\'t like each other anymore.');
     }
-    // Very unhappy people may decide to leave.
     emps.forEach(function (e) {
       if (e.morale < 22 && U.chance(0.25 * (1 - e.loyalty / 120)) && !g.pending.some(function (p) { return p.id === 'resign' && p.ctx.a === e.id; })) {
-        G.schedule(g, 'resign', 0, { a: e.id });
+        G.schedule(g, 'resign', 0, { a: e.id, an: G.first(e) });
       }
     });
   }
@@ -430,6 +666,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     g.reputation = U.clamp(g.reputation, 0, 100);
     g.satisfaction = U.clamp(g.satisfaction, 0, 100);
     g.awareness = U.clamp(g.awareness, 0, G.awCap(g));
+    g.followers = Math.max(0, Math.round(g.followers));
   };
 
   // ---------- events ----------
@@ -441,23 +678,62 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (g.news.length > 150) g.news.length = 150;
   };
 
-  // How many things happen this week. Usually 0-2, occasionally a lot.
   function rollCount(g) {
-    var r = Math.random(), n;
-    if (r < 0.24) n = 0;
-    else if (r < 0.56) n = 1;
-    else if (r < 0.76) n = 2;
+    var r = U.random(), n;
+    if (r < 0.18) n = 0;
+    else if (r < 0.52) n = 1;
+    else if (r < 0.75) n = 2;
     else if (r < 0.88) n = 3;
     else if (r < 0.945) n = 4;
     else { n = 5; while (U.chance(0.35)) n++; }
     if (g.employees.length > 20 && U.chance(0.3)) n++;
-    if (g.week <= 2) n = Math.min(n, 1);
+    if (g.week <= 2) n = Math.max(1, Math.min(n, 1));
     return n;
   }
 
-  // Checks that every employee an event refers to still works here.
   function ctxValid(g, ctx) {
     return ['a', 'b', 'm'].every(function (k) { return ctx[k] == null || G.emp(g, ctx[k]); });
+  }
+
+  // Picks the people an event is about, following def.who, e.g. { a: 'aggressive', b: 'any' }.
+  var ROLE_KEYS = { front: 1, sales: 1, acct: 1, mgr: 1 };
+  function castActors(g, def) {
+    var ctx = {}, used = {};
+    var who = def.who || {};
+    var keys = Object.keys(who);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i], spec = who[k];
+      var list = g.employees.filter(function (e) {
+        if (used[e.id]) return false;
+        if (ROLE_KEYS[spec] && e.role !== spec) return false;
+        if (spec === 'new' && e.weeks > 6) return false;
+        if (spec === 'veteran' && e.weeks < 52) return false;
+        if (spec === 'notmgr' && e.role === 'mgr') return false;
+        return true;
+      });
+      if (!list.length) return null;
+      var e = U.weighted(list, function (x) {
+        if (CS.TRAITS[spec]) return G.has(x, spec) ? 8 : 1;
+        if (spec === 'lowmood') return x.morale < 45 ? 6 : 1;
+        if (spec === 'star') return x.skill >= 60 ? 6 : 1;
+        return 1;
+      });
+      used[e.id] = 1;
+      ctx[k] = e.id;
+      ctx[k + 'n'] = G.first(e);
+    }
+    return ctx;
+  }
+
+  function eventWeight(g, d, picked) {
+    if (d.chainOnly || picked[d.id]) return 0;
+    if ((g.cooldowns[d.id] || -99) > g.week) return 0;
+    if (d.minWeek && g.week < d.minWeek) return 0;
+    if (d.need && g.employees.length < d.need) return 0;
+    if (d.cond && !d.cond(g)) return 0;
+    if (MINIGAMES[d.kind] && picked._mini) return 0;
+    var w = typeof d.w === 'function' ? d.w(g) : (d.w == null ? 1 : d.w);
+    return w * CS.RARITY[d.rarity || 'common'].w;
   }
 
   function rollEvents(g, minor) {
@@ -468,20 +744,16 @@ var CS = globalThis.CS = globalThis.CS || {};
       var def = CS.EV[p.id];
       if (def && ctxValid(g, p.ctx) && (!def.cond || def.cond(g, p.ctx))) inst.push({ id: p.id, ctx: p.ctx, chain: true });
     });
-    var n = rollCount(g), used = {};
-    inst.forEach(function (x) { used[x.id] = 1; });
-    for (var k = 0, tries = 0; k < n && tries < n * 4; tries++) {
-      var def = U.weighted(CS.EVENTS, function (d) {
-        if (d.chainOnly || used[d.id]) return 0;
-        if ((g.cooldowns[d.id] || -99) > g.week) return 0;
-        if (d.minWeek && g.week < d.minWeek) return 0;
-        if (d.cond && !d.cond(g)) return 0;
-        return typeof d.w === 'function' ? d.w(g) : (d.w || 1);
-      });
+    var n = rollCount(g), picked = {};
+    inst.forEach(function (x) { picked[x.id] = 1; });
+    for (var k = 0, tries = 0; k < n && tries < n * 5; tries++) {
+      var def = U.weighted(CS.EVENTS, function (d) { return eventWeight(g, d, picked); });
       if (!def) break;
-      var ctx = def.setup ? def.setup(g) : {};
-      if (!ctx) { used[def.id] = 1; continue; }
-      used[def.id] = 1;
+      picked[def.id] = 1;
+      var ctx = castActors(g, def);
+      if (ctx && def.init && def.init(g, ctx) === false) ctx = null;
+      if (!ctx) continue;
+      if (MINIGAMES[def.kind]) picked._mini = 1;
       g.cooldowns[def.id] = g.week + (def.cd || 8);
       inst.push({ id: def.id, ctx: ctx });
       k++;
@@ -489,60 +761,284 @@ var CS = globalThis.CS = globalThis.CS || {};
     var total = inst.length;
     if (total >= 4) g.stats.bigWeeks++;
     if (total >= 5) g.flags.chaos = true;
-    // Minor events resolve on their own. Only a few decisions per week reach the player;
-    // the rest are handled by your staff using the event's default choice.
     var decisions = 0;
     inst.forEach(function (x) {
       var def = CS.EV[x.id];
       if (!ctxValid(g, x.ctx)) return; // an earlier event this week removed someone involved
-      if (def.start) def.start(g, x.ctx);
-      if (!def.choices) {
-        var txt = def.fx(g, x.ctx);
-        minor.push(def.icon + ' ' + (txt || G.render(def.text, g, x.ctx)));
+      if (def.start) G.apply(g, def.start, x.ctx);
+      if (!def.choices && !MINIGAMES[def.kind]) {
+        G.seen(x.id);
+        if (def.rarity === 'legendary') g.flags.legendary = true;
+        var txt = G.apply(g, def.fx, x.ctx);
+        minor.push(def.icon + ' ' + G.fill(txt || def.text, g, x.ctx));
         G.clampAll(g);
       } else if (decisions < MAX_DECISIONS) {
         decisions++;
         g.queue.push(x);
-      } else {
+      } else if (def.choices) {
+        // Too busy: your team handles it with the default answer.
+        G.seen(x.id);
         var c = def.choices[def.auto != null ? def.auto : def.choices.length - 1];
-        var res = c.fx(g, x.ctx);
+        var res = G.apply(g, c.fx, x.ctx);
         G.clampAll(g);
-        minor.push(def.icon + ' ' + G.render(def.title, g, x.ctx) + ' Your team handled it: ' + G.choiceLabel(g, x, c).toLowerCase() + '. ' + (res || ''));
+        minor.push(def.icon + ' ' + G.fill(def.title, g, x.ctx) + ' Your team chose: "' + G.fill(c.t, g, x.ctx) + '". ' + (res || ''));
       }
     });
     return total;
   }
 
-  G.render = function (v, g, ctx) { return typeof v === 'function' ? v(g, ctx) : v; };
+  // Replaces {a}, {b}, {m}, {rival}, {amt}... in event text.
+  G.fill = function (v, g, c) {
+    if (typeof v === 'function') v = v(g, c);
+    if (v == null) return '';
+    c = c || {};
+    var ind = CS.IND[g.company.industry];
+    return String(v).replace(/\{(\w+)\}/g, function (m, k) {
+      if (k === 'a' || k === 'b' || k === 'm') { var e = G.emp(g, c[k]); return e ? G.first(e) : (c[k + 'n'] || 'Someone'); }
+      if (k === 'amt') return U.money(c.amt || 0);
+      if (k === 'amt2') return U.money(c.amt2 || 0);
+      if (k === 'company') return g.company.name;
+      if (k === 'front') return ind.front.toLowerCase();
+      if (k === 'fronts') return ind.front.toLowerCase() + 's';
+      if (k === 'unit') return ind.unit;
+      if (k === 'industry') return ind.name.toLowerCase();
+      if (k === 'city') return CS.CITIES[g.company.city].name;
+      if (k === 'rival') return c.rival || g.rivals[0];
+      if (c[k] != null) return c[k];
+      return m;
+    });
+  };
+
+  // Applies a declarative effect (see events.js for the list of keys) and returns the result text.
+  G.apply = function (g, fx, c) {
+    if (!fx) return '';
+    if (typeof fx === 'function') return fx(g, c) || '';
+    var E = function (k) { return G.emp(g, c[k]); };
+    var say = fx.say ? G.fill(fx.say, g, c) : '';
+    var extra = [];
+    if (fx.cash) g.cash += fx.cash < 0 ? -G.cost(g, -fx.cash) : G.prize(g, fx.cash);
+    if (fx.money) g.cash += fx.money;
+    if (fx.rep) g.reputation += fx.rep;
+    if (fx.happy) g.satisfaction += fx.happy;
+    if (fx.fans) G.addFans(g, fx.fans);
+    if (fx.team) g.employees.forEach(function (e) { e.morale += fx.team; });
+    ['a', 'b', 'm'].forEach(function (k) { if (fx[k] && E(k)) E(k).morale += fx[k]; });
+    if (fx.skill) Object.keys(fx.skill).forEach(function (k) { if (E(k)) E(k).skill += fx.skill[k]; });
+    if (fx.loyal) Object.keys(fx.loyal).forEach(function (k) { if (E(k)) E(k).loyalty += fx.loyal[k]; });
+    if (fx.reliable) Object.keys(fx.reliable).forEach(function (k) { if (E(k)) E(k).reliability += fx.reliable[k]; });
+    if (fx.rel && c[fx.rel[0]] && c[fx.rel[1]]) G.addRel(g, c[fx.rel[0]], c[fx.rel[1]], fx.rel[2]);
+    if (fx.date && c.a && c.b) { g.dating[rk(c.a, c.b)] = true; G.addRel(g, c.a, c.b, 40); }
+    if (fx.breakup && c.a && c.b) delete g.dating[rk(c.a, c.b)];
+    if (fx.raise && E(fx.raise[0])) G.raise(g, E(fx.raise[0]), fx.raise[1]);
+    if (fx.teamRaise) g.employees.forEach(function (e) { G.raise(g, e, fx.teamRaise); });
+    if (fx.teamBonus) g.employees.forEach(function (e) { G.bonus(g, e); });
+    if (fx.bonus && E(fx.bonus)) G.bonus(g, E(fx.bonus));
+    if (fx.promote && E(fx.promote)) G.promote(g, E(fx.promote), E(fx.promote).level >= 3);
+    if (fx.mgr && E(fx.mgr)) G.promote(g, E(fx.mgr), true);
+    if (fx.demote && E(fx.demote)) G.demote(g, E(fx.demote));
+    if (fx.demand) G.mod(g, 'demand', fx.demand[0], fx.demand[1], fx.demand[2]);
+    if (fx.capacity) G.mod(g, 'capacity', fx.capacity[0], fx.capacity[1], fx.capacity[2]);
+    if (fx.supply) G.mod(g, 'supply', fx.supply[0], fx.supply[1], fx.supply[2]);
+    if (fx.extra) G.mod(g, 'extra', U.nice(G.scale(g) * fx.extra[0]), fx.extra[1], fx.extra[2]);
+    if (fx.closed) G.mod(g, 'closed', 1, fx.closed[0], fx.closed[1]);
+    if (fx.price) g.price = U.clamp(g.price + fx.price, 0, 2);
+    if (fx.equip) g.flags.equip = Math.min(1.5, g.flags.equip * (1 + fx.equip));
+    if (fx.rent) g.rentMult *= 1 + fx.rent;
+    if (fx.viral) {
+      var views = Math.round((g.followers * 3 + 5000) * U.rand(fx.viral[0], fx.viral[1]));
+      g.flags.viral = true; g.stats.virals++;
+      g.followers += G.viralGain(g, views);
+      G.addFans(g, 25);
+      extra.push('🔥 ' + U.num(views) + ' views!');
+    }
+    if (fx.hire === 'cand' && c.cand) { var cand = c.cand; cand.id = g.nextId++; G.addEmployee(g, cand); }
+    if (fx.hireSpecial) { var sp = G.makeEmployee(g, fx.hireSpecial.role || 'front', fx.hireSpecial); G.addEmployee(g, sp); }
+    if (fx.xp) G.addXP(g, fx.xp);
+    if (fx.flag) g.flags[fx.flag] = true;
+    if (fx.next) {
+      var list = typeof fx.next[0] === 'string' ? [fx.next] : fx.next;
+      list.forEach(function (n) {
+        if (n[3] == null || U.chance(n[3])) G.schedule(g, n[0], U.ri(n[1], n[2]), JSON.parse(JSON.stringify(c)));
+      });
+    }
+    if (fx.run) { var r = fx.run(g, c); if (r) extra.push(G.fill(r, g, c)); }
+    // Firing and quitting come last so the text above can still use their names.
+    if (fx.fire && E(fx.fire)) G.removeEmp(g, E(fx.fire), 'fired');
+    if (fx.quit && E(fx.quit)) G.quitToRival(g, E(fx.quit));
+    var out = [say].concat(extra);
+    if (fx.chance) {
+      var p = typeof fx.chance.p === 'function' ? fx.chance.p(g, c) : fx.chance.p;
+      c._won = U.chance(p);
+      out.push(G.apply(g, c._won ? fx.chance.win : fx.chance.lose, c));
+    }
+    return out.filter(Boolean).join(' ');
+  };
+
+  G.quitToRival = function (g, e) {
+    var rv = U.pick(g.rivals);
+    G.removeEmp(g, e, 'quit');
+    if (U.chance(0.5)) G.schedule(g, 'joined_rival', U.ri(1, 3), { name: e.name, rival: rv, creative: G.has(e, 'creative') });
+  };
+
+  // What a choice will cost up front, for the price tag on the button.
+  G.fxCost = function (g, fx) {
+    if (!fx || typeof fx === 'function') return 0;
+    if (fx.cash < 0) return G.cost(g, -fx.cash);
+    if (fx.money < 0) return -fx.money;
+    return 0;
+  };
+  G.fxRisk = function (g, fx, c) {
+    if (!fx || !fx.chance) return null;
+    var p = typeof fx.chance.p === 'function' ? fx.chance.p(g, c) : fx.chance.p;
+    return Math.round(p * 100);
+  };
 
   G.currentEvent = function (g) {
     while (g.queue.length) {
       var x = g.queue[0];
       if (ctxValid(g, x.ctx)) return x;
-      g.queue.shift(); // someone involved already left
+      g.queue.shift();
     }
     return null;
+  };
+
+  // Before/after snapshot so the result screen can show what changed.
+  G.snap = function (g) {
+    return { cash: g.cash, rep: g.reputation, happy: g.satisfaction, fans: g.followers, mood: G.avgMorale(g), staff: g.employees.length, mods: g.mods.length };
+  };
+  G.diff = function (b, g) {
+    var a = G.snap(g), out = [];
+    function add(d, txt, good) { out.push({ txt: txt, good: good }); }
+    var dc = a.cash - b.cash;
+    if (Math.abs(dc) >= 1) add(dc, (dc > 0 ? '+' : '-') + U.money(Math.abs(dc)).replace('-', '') + ' 💰', dc > 0);
+    var dr = Math.round(a.rep - b.rep);
+    if (dr) add(dr, '⭐ Reputation ' + (dr > 0 ? '+' : '') + dr, dr > 0);
+    var dh = Math.round(a.happy - b.happy);
+    if (dh) add(dh, '😊 Happiness ' + (dh > 0 ? '+' : '') + dh, dh > 0);
+    var df = a.fans - b.fans;
+    if (Math.abs(df) >= 1) add(df, '📱 ' + (df > 0 ? '+' : '') + U.num(df) + ' followers', df > 0);
+    var dm = Math.round(a.mood - b.mood);
+    if (dm) add(dm, '💪 Team mood ' + (dm > 0 ? '+' : '') + dm, dm > 0);
+    var ds = a.staff - b.staff;
+    if (ds) add(ds, '👥 ' + (ds > 0 ? '+' : '') + ds + ' worker' + (Math.abs(ds) > 1 ? 's' : ''), ds > 0);
+    g.mods.slice(b.mods).forEach(function (m) {
+      out.push({ txt: (G.modGood(m) ? '📈 ' : '📉 ') + m.label + ' (' + m.weeks + ' wk' + (m.weeks > 1 ? 's' : '') + ')', good: G.modGood(m) });
+    });
+    return out;
+  };
+
+  // Finishes the current event with the given effect. Used by every event type.
+  G.resolve = function (g, fx, pre) {
+    var x = G.currentEvent(g);
+    if (!x) return null;
+    var def = CS.EV[x.id];
+    var before = G.snap(g);
+    var text = G.apply(g, fx, x.ctx);
+    if (pre) text = pre + (text ? ' ' + text : '');
+    g.queue.shift();
+    G.seen(x.id);
+    if (def.rarity === 'legendary') g.flags.legendary = true;
+    if (MINIGAMES[def.kind]) { g.stats.minigames++; G.addXP(g, 20); }
+    else { g.stats.decisions++; G.addXP(g, 12); }
+    G.clampAll(g);
+    var res = { text: text, chips: G.diff(before, g), unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g), won: x.ctx._won };
+    G.save(g);
+    return res;
   };
 
   G.choose = function (g, idx) {
     var x = G.currentEvent(g);
     if (!x) return null;
-    var def = CS.EV[x.id], c = def.choices[idx];
-    var result = c.fx(g, x.ctx) || '';
-    g.queue.shift();
-    g.stats.decisions++;
-    G.clampAll(g);
-    var unlocked = G.checkAchievements(g);
-    G.save(g);
-    return { text: result, unlocked: unlocked };
+    var c = CS.EV[x.id].choices[idx];
+    return G.resolve(g, c.fx);
   };
 
-  G.choiceCost = function (g, x, c) { return c.cost ? c.cost(g, x.ctx) : 0; };
+  // ----- mini-game helpers -----
+
+  G.openBox = function (g, pick) {
+    var x = G.currentEvent(g), def = CS.EV[x.id];
+    var prizes = [0, 1, 2].map(function () { return def.prizes.indexOf(U.weighted(def.prizes, function (p) { return p.w || 1; })); });
+    var res = G.resolve(g, def.prizes[prizes[pick]].fx, 'You got: ' + def.prizes[prizes[pick]].emoji + ' ' + def.prizes[prizes[pick]].label + '!');
+    res.boxes = prizes.map(function (i) { return def.prizes[i]; });
+    res.pick = pick;
+    return res;
+  };
+  G.spin = function (g) {
+    var x = G.currentEvent(g), def = CS.EV[x.id];
+    var s = U.weighted(def.slices, function (p) { return p.w || 1; });
+    var idx = def.slices.indexOf(s);
+    if (s.jackpot) g.flags.jackpot = true;
+    var res = G.resolve(g, s.fx, 'The wheel landed on ' + s.emoji + ' ' + s.label + '!');
+    res.slice = idx;
+    return res;
+  };
+  G.tapDone = function (g, score) {
+    var x = G.currentEvent(g), def = CS.EV[x.id];
+    var won = score >= def.goal;
+    var res = G.resolve(g, won ? def.win : def.lose, won ? '🏆 You tapped ' + score + ' times!' : '⏱️ Only ' + score + ' of ' + def.goal + ' taps.');
+    res.won = won;
+    return res;
+  };
+  G.quizAnswer = function (g, i) {
+    var x = G.currentEvent(g), def = CS.EV[x.id];
+    var right = i === x.ctx.q.answer;
+    if (right) g.stats.quizRight++;
+    var res = G.resolve(g, right ? def.win : def.lose, right ? '✅ Correct!' : '❌ Not quite. The answer was ' + x.ctx.q.options[x.ctx.q.answer] + '.');
+    res.won = right;
+    return res;
+  };
+  G.dealPush = function (g) {
+    var x = G.currentEvent(g);
+    if (U.chance(0.3 + x.ctx.round * 0.15)) { x.ctx.walked = true; return false; }
+    x.ctx.round++;
+    x.ctx.offer = U.nice(x.ctx.offer * U.rand(1.15, 1.4));
+    G.save(g);
+    return true;
+  };
+  G.dealAccept = function (g) {
+    var x = G.currentEvent(g), def = CS.EV[x.id];
+    x.ctx.offerTxt = U.money(x.ctx.offer);
+    return G.resolve(g, def.accept(g, x.ctx), def.acceptSay ? G.fill(def.acceptSay, g, x.ctx) : 'Deal! 🤝');
+  };
+  G.dealEnd = function (g) {
+    return G.resolve(g, null, x0(g).ctx.walked ? 'They walked away. No deal. 😅' : 'You said no thanks.');
+  };
+  function x0(g) { return G.currentEvent(g); }
+  G.VS_MOVES = [
+    { id: 'price', label: 'Cut prices', emoji: '💸', beats: 'quality' },
+    { id: 'quality', label: 'Better quality', emoji: '⭐', beats: 'ads' },
+    { id: 'ads', label: 'Big ads', emoji: '📣', beats: 'price' }
+  ];
+  G.vsPlay = function (g, moveId) {
+    var x = G.currentEvent(g), def = CS.EV[x.id];
+    var me = G.VS_MOVES.find(function (m) { return m.id === moveId; });
+    var them = U.pick(G.VS_MOVES);
+    var out = me.id === them.id ? 'tie' : me.beats === them.id ? 'win' : 'lose';
+    if (out === 'win') g.stats.vsWins++;
+    var res = G.resolve(g, out === 'win' ? def.win : out === 'lose' ? def.lose : def.tie,
+      out === 'win' ? '🏆 You won the battle!' : out === 'lose' ? '😖 ' + x.ctx.rival + ' won this time.' : '🤝 It\'s a tie!');
+    res.me = me; res.them = them; res.outcome = out;
+    return res;
+  };
+  G.interviewAsk = function (g, i) {
+    var x = G.currentEvent(g);
+    x.ctx.asked = i;
+    x.ctx.cand.revealed = true;
+    G.save(g);
+  };
+  G.postEvent = function (g, id) {
+    var r = G.post(g, id);
+    var res = G.resolve(g, null, r.text);
+    res.post = r;
+    return res;
+  };
 
   // ---------- achievements ----------
 
   G.checkAchievements = function (g) {
     var s = g.stats, n = g.employees.length, out = [];
+    var maxed = CS.UPGRADES.some(function (u) { return G.upLevel(g, u.id) >= u.cost.length; });
+    var book = G.bookCount();
     var test = {
       open: g.week >= 1, hire1: g.flags.hired, team10: n >= 10, team25: n >= 25, team50: n >= 50,
       cash100k: g.cash >= 1e5, cash1m: g.cash >= 1e6, cash10m: g.cash >= 1e7, cash1b: g.cash >= 1e9,
@@ -550,34 +1046,98 @@ var CS = globalThis.CS = globalThis.CS || {};
       events50: s.decisions >= 50, events250: s.decisions >= 250, chaos: g.flags.chaos,
       recession: g.flags.survivedRecession, debtfree: g.flags.debtfree, viral: g.flags.viral,
       lovebirds: Object.keys(g.dating).length > 0, toughboss: s.fired >= 10, fullhouse: s.fullStreak >= 10,
-      bankrupt: !!g.over
+      streak10: g.bestStreak >= 10, level5: g.level >= 5, level10: g.level >= 10, upgrade1: s.upgrades >= 1, maxup: maxed,
+      missions10: s.missionsDone >= 10, vswin: s.vsWins >= 1, jackpot: g.flags.jackpot, quiz5: s.quizRight >= 5,
+      legendary: g.flags.legendary, book50: book >= 50, book100: book >= 100, rank4: g.rank >= 3, rank7: g.rank >= 6,
+      daily: g.over && g.over.reason === 'daily', bankrupt: g.over && g.over.reason === 'bankrupt'
     };
     CS.ACHIEVEMENTS.forEach(function (a) {
-      if (!g.achievements[a.id] && test[a.id]) { g.achievements[a.id] = g.week || 1; out.push(a); }
+      if (!g.achievements[a.id] && test[a.id]) { g.achievements[a.id] = g.week || 1; out.push(a); G.addXP(g, 25); }
     });
     return out;
   };
 
-  // ---------- saves & legacy ----------
+  // ---------- sharing ----------
 
-  G.save = function (g) { var s = store(); if (s) try { s.setItem(SAVE_KEY, JSON.stringify(g)); } catch (e) {} };
-  G.load = function () {
-    var s = store(); if (!s) return null;
-    try { var g = JSON.parse(s.getItem(SAVE_KEY)); return g && g.v === 1 ? g : null; } catch (e) { return null; }
+  G.shareText = function (g) {
+    var r = CS.RANKS[g.rank];
+    return g.company.logo + ' ' + g.company.name + ' (' + CS.IND[g.company.industry].name + ')\n' +
+      r.emoji + ' ' + r.name + ' · CEO level ' + g.level + '\n' +
+      '💰 Worth ' + U.short(G.valuation(g)) + ' after ' + g.week + ' weeks\n' +
+      '👥 ' + g.employees.length + ' workers · 📱 ' + U.num(g.followers) + ' followers\n' +
+      'Can you beat me? #CompanySimulator';
   };
-  G.clearSave = function () { var s = store(); if (s) try { s.removeItem(SAVE_KEY); } catch (e) {} };
-  G.loadLegacy = function () {
-    var s = store(), d = null;
-    if (s) try { d = JSON.parse(s.getItem(LEGACY_KEY)); } catch (e) {}
-    return d && d.companies ? d : { companies: [] };
+  G.dailyGrid = function (g) {
+    var cells = '', h = g.history;
+    for (var i = 0; i < 13; i++) {
+      var chunk = h.filter(function (x) { return x.week > i * 4 && x.week <= i * 4 + 4; });
+      if (!chunk.length) { cells += '⬜'; continue; }
+      var net = chunk.reduce(function (s, x) { return s + x.net; }, 0);
+      cells += net > G.tierOf(g).rv * 0.05 ? '🟩' : net < 0 ? '🟥' : '🟨';
+    }
+    return cells;
   };
+  G.dailyShare = function (g) {
+    return 'Company Sim Daily #' + g.dailyNum + ' ' + g.company.logo + '\n' +
+      '💰 ' + U.short(G.valuation(g)) + ' company value\n' +
+      G.dailyGrid(g) + '\n' +
+      '👥 ' + g.employees.length + ' · 📱 ' + U.num(g.followers) + ' · 🔥 ' + g.stats.virals + ' viral\n' +
+      '#CompanySimulator';
+  };
+
+  // ---------- saves, legacy, book, settings, daily gift ----------
+
+  G.save = function (g) { g.rng = U.state(); writeJSON(g.mode === 'daily' ? KEYS.daily : KEYS.main, g); };
+  G.load = function (mode) {
+    var g = readJSON(mode === 'daily' ? KEYS.daily : KEYS.main);
+    if (!g || g.v !== 2) return null;
+    if (mode === 'daily' && g.dailyNum !== G.dailyInfo().dailyNum) return null;
+    return g;
+  };
+  G.resume = function (g) { if (g.rng != null) U.seed(g.rng); };
+  G.clearSave = function (mode) { removeKey(mode === 'daily' ? KEYS.daily : KEYS.main); };
+
+  G.loadLegacy = function () { var d = readJSON(KEYS.legacy); return d && d.companies ? d : { companies: [] }; };
   G.recordLegacy = function (g, reason) {
+    if (g.mode === 'daily') return;
     var L = G.loadLegacy();
-    L.companies.unshift({
-      name: g.company.name, logo: g.company.logo, industry: g.company.industry, weeks: g.week,
-      peakCash: g.stats.peakCash, staff: g.stats.maxStaff, reason: reason
-    });
+    L.companies.unshift({ name: g.company.name, logo: g.company.logo, industry: g.company.industry, weeks: g.week, peakCash: g.stats.peakCash, staff: g.stats.maxStaff, reason: reason });
     L.companies = L.companies.slice(0, 30);
-    var s = store(); if (s) try { s.setItem(LEGACY_KEY, JSON.stringify(L)); } catch (e) {}
+    writeJSON(KEYS.legacy, L);
+  };
+
+  var bookCache = null;
+  G.book = function () { if (!bookCache) bookCache = readJSON(KEYS.book) || {}; return bookCache; };
+  G.seen = function (id) { var b = G.book(); if (!b[id]) { b[id] = 1; writeJSON(KEYS.book, b); } };
+  G.bookCount = function () { var b = G.book(); return CS.EVENTS.filter(function (d) { return b[d.id]; }).length; };
+
+  G.settings = function () { return Object.assign({ sound: true, vibe: true }, readJSON(KEYS.settings) || {}); };
+  G.setSetting = function (k, v) { var s = G.settings(); s[k] = v; writeJSON(KEYS.settings, s); };
+
+  G.dailyBest = function () { return readJSON(KEYS.best) || {}; };
+  G.recordDaily = function (g) {
+    var b = G.dailyBest(), v = Math.round(G.valuation(g));
+    if (!b[g.dailyNum] || v > b[g.dailyNum]) { b[g.dailyNum] = v; writeJSON(KEYS.best, b); }
+    return b[g.dailyNum];
+  };
+
+  G.GIFTS = [0.3, 0.4, 0.5, 0.7, 0.9, 1.2, 2];
+  G.giftStatus = function () {
+    var d = readJSON(KEYS.gift) || {}, today = U.today();
+    if (d.last === today) return { available: false, day: d.day || 1 };
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    var yest = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
+    var day = d.last === yest ? (d.day % 7) + 1 : 1;
+    return { available: true, day: day };
+  };
+  G.claimGift = function (g) {
+    var st = G.giftStatus();
+    if (!st.available) return 0;
+    var amt = U.nice(G.scale(g) * G.GIFTS[st.day - 1]);
+    g.cash += amt;
+    writeJSON(KEYS.gift, { last: U.today(), day: st.day });
+    G.news(g, '🎁 Daily gift: ' + U.money(amt), 'good');
+    G.save(g);
+    return amt;
   };
 })();
