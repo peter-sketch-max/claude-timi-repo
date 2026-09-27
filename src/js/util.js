@@ -77,6 +77,8 @@ var CS = globalThis.CS = globalThis.CS || {};
       return n.toLocaleString('en-US');
     },
     signed: function (n) { return (n >= 0 ? '+' : '') + CS.U.money(n); },
+    // coach -> coaches, baker -> bakers
+    plural: function (w) { return /(s|sh|ch|x|z)$/i.test(w) ? w + 'es' : w + 's'; },
     esc: function (str) {
       return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];

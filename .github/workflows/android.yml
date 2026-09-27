@@ -1,0 +1,73 @@
+name: Android build
+
+# Builds the Android app on GitHub's computers.
+# - Every push: a test APK you can install on your phone (Actions tab -> latest run -> Artifacts).
+# - When the KEYSTORE_BASE64 secret is set: also a signed AAB to upload to Google Play.
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install
+        run: npm ci
+
+      - name: Check events and run the game simulator
+        run: npm run check
+
+      - name: Build the web game
+        run: npm run build
+
+      - name: Copy the game into the Android project
+        run: npx cap sync android
+
+      - name: Build test APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: company-simulator-test-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Build signed release bundle (AAB)
+        if: env.HAS_KEY == 'true'
+        working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          export KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
+          ./gradlew bundleRelease --no-daemon
+          rm -f "$RUNNER_TEMP/upload.jks"
+
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_KEY == 'true'
+        with:
+          name: company-simulator-play-store-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab

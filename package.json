@@ -1,0 +1,26 @@
+{
+  "name": "company-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A colorful business simulator game for phones.",
+  "scripts": {
+    "build": "node tools/build.js",
+    "check": "node tools/check-events.js && node tools/simulate.js 104 1",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:icons": "npx capacitor-assets generate --android",
+    "android:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/share": "^8.0.2",
+    "cordova-plugin-purchase": "^13.12.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.0.0",
+    "@fontsource/fredoka": "^5.0.0",
+    "@fontsource/nunito": "^5.0.0"
+  }
+}

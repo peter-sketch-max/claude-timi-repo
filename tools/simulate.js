@@ -2,7 +2,7 @@
 // Usage: node tools/simulate.js [weeks] [runsPerIndustry]
 // Env: NOEVENTS=1 tests the base economy only.
 const fs = require('fs'), vm = require('vm'), path = require('path');
-['util', 'data', 'game', 'events'].forEach(f => vm.runInThisContext(fs.readFileSync(path.join(__dirname, '../src/js', f + '.js'), 'utf8'), { filename: f + '.js' }));
+['util', 'data', 'game', 'events', 'events-more', 'events-fun'].forEach(f => vm.runInThisContext(fs.readFileSync(path.join(__dirname, '../src/js', f + '.js'), 'utf8'), { filename: f + '.js' }));
 const CS = globalThis.CS, G = CS.G;
 if (process.env.NOEVENTS) CS.EVENTS.length = 0;
 const weeks = +process.argv[2] || 156, runs = +process.argv[3] || 6;
@@ -16,14 +16,14 @@ function playEvent(g) {
   ['title', 'text'].forEach(k => { const t = G.fill(def[k], g, x.ctx); if (/\{\w+\}/.test(t)) throw new Error('Unfilled text in ' + x.id + ': ' + t); });
   const r = Math.random;
   switch (def.kind) {
-    case 'boxes': return G.openBox(g, Math.floor(r() * 3));
-    case 'wheel': return G.spin(g);
-    case 'tap': return G.tapDone(g, Math.floor(r() * def.goal * 1.5));
+    case 'boxes': return G.openBox(g, Math.floor(r() * 4));
+    case 'wheel': return r() < 0.3 ? G.spin(g, 'golden') : G.spin(g, 'free');
+    case 'tap': { const lv = Math.floor(r() * 3); return G.tapDone(g, Math.floor(r() * G.tapGoal(def, lv) * 1.5), lv); }
     case 'quiz': return G.quizAnswer(g, Math.floor(r() * x.ctx.q.options.length));
-    case 'deal': while (r() < 0.5 && G.dealPush(g)); return G.currentEvent(g).ctx.walked ? G.dealEnd(g) : G.dealAccept(g);
-    case 'vs': return G.vsPlay(g, G.VS_MOVES[Math.floor(r() * 3)].id);
+    case 'deal': while (r() < 0.5 && G.dealPush(g, r() < 0.3)); return G.currentEvent(g).ctx.walked ? G.dealEnd(g) : G.dealAccept(g);
+    case 'vs': return G.vsPlay(g, G.VS_MOVES[Math.floor(r() * 4)].id);
     case 'post': return G.postEvent(g, G.postOptions(g)[0].id);
-    case 'interview': G.interviewAsk(g, 0); return G.resolve(g, r() < 0.5 ? { hire: 'cand' } : null);
+    case 'interview': G.interviewAsk(g, Math.floor(r() * 4)); return r() < 0.6 ? G.interviewHire(g, ['hire', 'rich', 'trial'][Math.floor(r() * 3)]) : G.resolve(g, null);
     default: {
       def.choices.forEach(c => { const t = G.fill(c.t, g, x.ctx); if (/\{\w+\}/.test(t)) throw new Error('Unfilled choice in ' + x.id + ': ' + t); });
       const res = G.choose(g, process.env.LAST ? def.choices.length - 1 : Math.floor(r() * def.choices.length));
@@ -52,14 +52,16 @@ for (const ind of CS.INDUSTRIES) {
         if (g.employees.length > 7 && !g.employees.some(e => e.role === 'mgr')) { const c = g.candidates.find(c => c.role === 'mgr'); if (c) G.hire(g, c.id); }
         g.missions.forEach((m, i) => { if (G.missionDone(g, m)) G.claimMission(g, i); });
         if (!g.posted) G.post(g, G.postOptions(g)[0].id);
+        CS.POWERS.forEach(p => { if (G.powerReadyIn(g, p.id) === 0 && Math.random() < 0.5) G.usePower(g, p.id); });
+        if (g.golden && Math.random() < 0.7) G.tapGolden(g);
         CS.UPGRADES.forEach(u => { const c = G.upCost(g, u.id); if (c && g.cash > c * 4 && g.level >= G.upNeedLevel(g, u.id)) G.buyUpgrade(g, u.id); });
         if (Number.isNaN(g.cash) || Number.isNaN(g.followers)) throw new Error('NaN at week ' + g.week);
       }
     } catch (e) { errors++; console.error(ind.id, e.stack); break; }
-    out.push({ over: g.over && g.over.reason === 'bankrupt', mult: (g.cash / start).toFixed(1), staff: g.employees.length, lvl: g.level, fans: g.followers });
+    out.push({ over: g.over && g.over.reason === 'bankrupt', mult: (g.cash / start).toFixed(1), staff: g.employees.length, lvl: g.level, fans: g.followers, cups: g.cups.gold });
   }
   const bust = out.filter(o => o.over).length;
-  console.log(ind.id.padEnd(14), 'bankrupt', bust + '/' + runs, ' cash x', out.map(o => o.mult).join(' '), ' lvl', out.map(o => o.lvl).join(','), ' fans', out.map(o => CS.U.num(o.fans)).join(','));
+  console.log(ind.id.padEnd(14), 'bankrupt', bust + '/' + runs, ' cash x', out.map(o => o.mult).join(' '), ' lvl', out.map(o => o.lvl).join(','), ' fans', out.map(o => CS.U.num(o.fans)).join(','), ' gold cups', out.map(o => o.cups).join(','));
 }
 console.log('event kinds played:', JSON.stringify(seenKinds));
 if (errors) { console.error(errors + ' errors'); process.exit(1); }

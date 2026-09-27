@@ -20,15 +20,30 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div id="loader" role="button" aria-label="Tap to play">
+  <div class="ld-logo">🏢</div>
+  <h1>COMPANY<br><span>SIMULATOR</span></h1>
+  <div class="ld-bar"><i></i></div>
+  <div class="ld-go">▶ TAP TO PLAY</div>
+  <div class="ld-tip">Tip: tap the golden customer 🤑 for bonus cash!</div>
+</div>
 <div id="app"></div>
 <div id="sheet-root"></div>
+<div id="overlay-root"></div>
 <div id="toast-root"></div>
 <script src="js/util.js"></script>
 <script src="js/data.js"></script>
 <script src="js/game.js"></script>
 <script src="js/events.js"></script>
+<script src="js/events-more.js"></script>
+<script src="js/events-fun.js"></script>
+<script src="js/store.js"></script>
+<script src="js/music.js"></script>
+<script src="js/scene.js"></script>
 <script src="js/ui.js"></script>
 <script>
+  // Random loading tips
+  (function () { var t = ['Tip: tap the golden customer 🤑 for bonus cash!', 'Tip: Boss Powers ⚡ are free. Use them!', 'Tip: win the Business Cup 🏆 to beat your rivals!', 'Tip: rename workers after your friends! ✏️', 'Tip: come back every day for a bigger gift 🎁', 'Tip: find all the legendary events 👽 in the Event Book!']; var el = document.querySelector('.ld-tip'); if (el) el.textContent = t[Math.floor(Math.random() * t.length)]; })();
   CS.boot();
   // Offline support when served over http(s). Opening the file directly still works, just without it.
   /*SW*/if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {

@@ -16,39 +16,68 @@ CS.TIERS = {
 // t = average sale, s = supply cost share of sales, l = wage share.
 // unit = what one "customer" means in this industry.
 CS.INDUSTRIES = [
-  { id: 'cafe', name: 'Café', emoji: '☕', tier: 'small', t: 7, s: 0.30, l: 0.33, front: 'Barista', unit: 'coffees sold' },
-  { id: 'restaurant', name: 'Restaurant', emoji: '🍝', tier: 'small', t: 28, s: 0.32, l: 0.32, front: 'Chef', unit: 'meals served' },
-  { id: 'bakery', name: 'Bakery', emoji: '🥐', tier: 'small', t: 9, s: 0.30, l: 0.30, front: 'Baker', unit: 'treats sold' },
-  { id: 'foodtruck', name: 'Food Truck', emoji: '🌮', tier: 'small', t: 12, s: 0.33, l: 0.28, front: 'Cook', unit: 'tacos sold' },
-  { id: 'carwash', name: 'Car Wash', emoji: '🚿', tier: 'small', t: 18, s: 0.12, l: 0.40, front: 'Washer', unit: 'cars washed' },
-  { id: 'clothing', name: 'Clothing Store', emoji: '👕', tier: 'small', t: 45, s: 0.45, l: 0.22, front: 'Sales Clerk', unit: 'outfits sold' },
-  { id: 'convenience', name: 'Mini Market', emoji: '🏪', tier: 'small', t: 14, s: 0.55, l: 0.18, front: 'Cashier', unit: 'baskets sold' },
-  { id: 'gamestudio', name: 'Game Studio', emoji: '🎮', tier: 'small', t: 20, s: 0.10, l: 0.55, front: 'Developer', unit: 'games sold' },
-  { id: 'phonerepair', name: 'Phone Repair', emoji: '📱', tier: 'small', t: 60, s: 0.30, l: 0.35, front: 'Technician', unit: 'phones fixed' },
-  { id: 'cleaning', name: 'Cleaning Company', emoji: '🧽', tier: 'small', t: 120, s: 0.12, l: 0.50, front: 'Cleaner', unit: 'houses cleaned' },
+  { id: 'cafe', tags: 'food', name: 'Café', emoji: '☕', tier: 'small', t: 7, s: 0.30, l: 0.33, front: 'Barista', unit: 'coffees sold' },
+  { id: 'restaurant', tags: 'food', name: 'Restaurant', emoji: '🍝', tier: 'small', t: 28, s: 0.32, l: 0.32, front: 'Chef', unit: 'meals served' },
+  { id: 'bakery', tags: 'food sweet', name: 'Bakery', emoji: '🥐', tier: 'small', t: 9, s: 0.30, l: 0.30, front: 'Baker', unit: 'treats sold' },
+  { id: 'foodtruck', tags: 'food', name: 'Food Truck', emoji: '🌮', tier: 'small', t: 12, s: 0.33, l: 0.28, front: 'Cook', unit: 'tacos sold' },
+  { id: 'carwash', tags: '', name: 'Car Wash', emoji: '🚿', tier: 'small', t: 18, s: 0.12, l: 0.40, front: 'Washer', unit: 'cars washed' },
+  { id: 'clothing', tags: 'fashion', name: 'Clothing Store', emoji: '👕', tier: 'small', t: 45, s: 0.45, l: 0.22, front: 'Sales Clerk', unit: 'outfits sold' },
+  { id: 'convenience', tags: 'food', name: 'Mini Market', emoji: '🏪', tier: 'small', t: 14, s: 0.55, l: 0.18, front: 'Cashier', unit: 'baskets sold' },
+  { id: 'gamestudio', tags: 'tech media', name: 'Game Studio', emoji: '🎮', tier: 'small', t: 20, s: 0.10, l: 0.55, front: 'Developer', unit: 'games sold' },
+  { id: 'phonerepair', tags: 'tech', name: 'Phone Repair', emoji: '📱', tier: 'small', t: 60, s: 0.30, l: 0.35, front: 'Technician', unit: 'phones fixed' },
+  { id: 'cleaning', tags: '', name: 'Cleaning Company', emoji: '🧽', tier: 'small', t: 120, s: 0.12, l: 0.50, front: 'Cleaner', unit: 'houses cleaned' },
+  { id: 'lemonade', tags: 'food sweet', name: 'Lemonade Stand', emoji: '🍋', tier: 'small', t: 3, s: 0.30, l: 0.30, front: 'Squeezer', unit: 'lemonades sold' },
+  { id: 'candy', tags: 'food sweet', name: 'Candy Shop', emoji: '🍬', tier: 'small', t: 6, s: 0.35, l: 0.28, front: 'Candy Maker', unit: 'candy bags' },
+  { id: 'icecream', tags: 'food sweet', name: 'Ice Cream Truck', emoji: '🍦', tier: 'small', t: 5, s: 0.32, l: 0.30, front: 'Scooper', unit: 'ice creams' },
+  { id: 'pizza', tags: 'food', name: 'Pizza Place', emoji: '🍕', tier: 'small', t: 15, s: 0.33, l: 0.30, front: 'Pizza Chef', unit: 'pizzas' },
+  { id: 'donut', tags: 'food sweet', name: 'Donut Shop', emoji: '🍩', tier: 'small', t: 4, s: 0.30, l: 0.30, front: 'Donut Maker', unit: 'donuts' },
+  { id: 'bubbletea', tags: 'food sweet', name: 'Bubble Tea', emoji: '🧋', tier: 'small', t: 6, s: 0.30, l: 0.32, front: 'Tea Maker', unit: 'bubble teas' },
+  { id: 'petshop', tags: 'animals', name: 'Pet Shop', emoji: '🐶', tier: 'small', t: 25, s: 0.45, l: 0.25, front: 'Pet Helper', unit: 'pet treats' },
+  { id: 'barber', tags: 'fashion', name: 'Barber Shop', emoji: '💈', tier: 'small', t: 22, s: 0.08, l: 0.50, front: 'Barber', unit: 'haircuts' },
+  { id: 'flowers', tags: '', name: 'Flower Shop', emoji: '💐', tier: 'small', t: 30, s: 0.40, l: 0.28, front: 'Florist', unit: 'bouquets' },
+  { id: 'youtube', tags: 'media tech', vip: true, name: 'YouTube Channel', emoji: '🎥', tier: 'small', t: 4, s: 0.10, l: 0.50, front: 'Video Editor', unit: 'thousand views' },
 
-  { id: 'supermarket', name: 'Supermarket', emoji: '🛒', tier: 'medium', t: 38, s: 0.58, l: 0.15, front: 'Clerk', unit: 'shopping carts' },
-  { id: 'hotel', name: 'Hotel', emoji: '🏨', tier: 'medium', t: 140, s: 0.20, l: 0.35, front: 'Housekeeper', unit: 'room nights' },
-  { id: 'gym', name: 'Gym', emoji: '🏋️', tier: 'medium', t: 45, s: 0.10, l: 0.35, front: 'Trainer', unit: 'gym visits' },
-  { id: 'construction', name: 'Construction', emoji: '🏗️', tier: 'medium', t: 25000, s: 0.45, l: 0.30, front: 'Builder', unit: 'buildings' },
-  { id: 'furniture', name: 'Furniture Maker', emoji: '🛋️', tier: 'medium', t: 600, s: 0.45, l: 0.25, front: 'Carpenter', unit: 'sofas sold' },
-  { id: 'electronics', name: 'Electronics', emoji: '🔌', tier: 'medium', t: 350, s: 0.55, l: 0.18, front: 'Technician', unit: 'gadgets sold' },
-  { id: 'delivery', name: 'Delivery Company', emoji: '📦', tier: 'medium', t: 15, s: 0.25, l: 0.45, front: 'Driver', unit: 'packages' },
-  { id: 'marketing', name: 'Marketing Agency', emoji: '📣', tier: 'medium', t: 4000, s: 0.10, l: 0.55, front: 'Creative', unit: 'ad campaigns' },
-  { id: 'software', name: 'App Company', emoji: '💻', tier: 'medium', t: 900, s: 0.08, l: 0.58, front: 'Developer', unit: 'app licenses' },
-  { id: 'toys', name: 'Toy Company', emoji: '🧸', tier: 'medium', t: 30, s: 0.45, l: 0.25, front: 'Toymaker', unit: 'toys sold' },
+  { id: 'supermarket', tags: 'food', name: 'Supermarket', emoji: '🛒', tier: 'medium', t: 38, s: 0.58, l: 0.15, front: 'Clerk', unit: 'shopping carts' },
+  { id: 'hotel', tags: 'food', name: 'Hotel', emoji: '🏨', tier: 'medium', t: 140, s: 0.20, l: 0.35, front: 'Housekeeper', unit: 'room nights' },
+  { id: 'gym', tags: 'sport', name: 'Gym', emoji: '🏋️', tier: 'medium', t: 45, s: 0.10, l: 0.35, front: 'Trainer', unit: 'gym visits' },
+  { id: 'construction', tags: '', name: 'Construction', emoji: '🏗️', tier: 'medium', t: 25000, s: 0.45, l: 0.30, front: 'Builder', unit: 'buildings' },
+  { id: 'furniture', tags: '', name: 'Furniture Maker', emoji: '🛋️', tier: 'medium', t: 600, s: 0.45, l: 0.25, front: 'Carpenter', unit: 'sofas sold' },
+  { id: 'electronics', tags: 'tech', name: 'Electronics', emoji: '🔌', tier: 'medium', t: 350, s: 0.55, l: 0.18, front: 'Technician', unit: 'gadgets sold' },
+  { id: 'delivery', tags: '', name: 'Delivery Company', emoji: '📦', tier: 'medium', t: 15, s: 0.25, l: 0.45, front: 'Driver', unit: 'packages' },
+  { id: 'marketing', tags: 'media', name: 'Marketing Agency', emoji: '📣', tier: 'medium', t: 4000, s: 0.10, l: 0.55, front: 'Creative', unit: 'ad campaigns' },
+  { id: 'software', tags: 'tech', name: 'App Company', emoji: '💻', tier: 'medium', t: 900, s: 0.08, l: 0.58, front: 'Developer', unit: 'app licenses' },
+  { id: 'toys', tags: 'fun', name: 'Toy Company', emoji: '🧸', tier: 'medium', t: 30, s: 0.45, l: 0.25, front: 'Toymaker', unit: 'toys sold' },
+  { id: 'banana', tags: 'food farm', name: 'Banana Farm', emoji: '🍌', tier: 'medium', t: 20, s: 0.30, l: 0.38, front: 'Farmer', unit: 'banana boxes' },
+  { id: 'chocolate', tags: 'food sweet', name: 'Chocolate Factory', emoji: '🍫', tier: 'medium', t: 4, s: 0.40, l: 0.25, front: 'Chocolatier', unit: 'chocolate bars' },
+  { id: 'football', tags: 'sport', name: 'Football Academy', emoji: '⚽', tier: 'medium', t: 150, s: 0.15, l: 0.45, front: 'Coach', unit: 'players trained' },
+  { id: 'burger', tags: 'food', name: 'Burger Chain', emoji: '🍔', tier: 'medium', t: 11, s: 0.35, l: 0.30, front: 'Burger Cook', unit: 'burgers' },
+  { id: 'fashion', tags: 'fashion', name: 'Fashion Brand', emoji: '👗', tier: 'medium', t: 80, s: 0.45, l: 0.22, front: 'Designer', unit: 'outfits sold' },
+  { id: 'sneakers', tags: 'fashion sport', name: 'Sneaker Brand', emoji: '👟', tier: 'medium', t: 120, s: 0.45, l: 0.20, front: 'Shoe Maker', unit: 'sneakers sold' },
+  { id: 'bakerychain', tags: 'food sweet', name: 'Cake Factory', emoji: '🎂', tier: 'medium', t: 25, s: 0.38, l: 0.26, front: 'Cake Artist', unit: 'cakes sold' },
+  { id: 'esports', tags: 'tech media sport', vip: true, name: 'Esports Team', emoji: '🕹️', tier: 'medium', t: 3000, s: 0.10, l: 0.55, front: 'Pro Gamer', unit: 'sponsor deals' },
+  { id: 'music', tags: 'media', vip: true, name: 'Music Label', emoji: '🎵', tier: 'medium', t: 4, s: 0.15, l: 0.45, front: 'Music Producer', unit: 'thousand streams' },
+  { id: 'zoo', tags: 'animals fun', vip: true, name: 'Zoo', emoji: '🦁', tier: 'medium', t: 25, s: 0.25, l: 0.40, front: 'Zookeeper', unit: 'visitors' },
 
-  { id: 'cars', name: 'Car Maker', emoji: '🚗', tier: 'large', t: 32000, s: 0.55, l: 0.18, front: 'Engineer', unit: 'cars sold' },
-  { id: 'airline', name: 'Airline', emoji: '✈️', tier: 'large', t: 320, s: 0.40, l: 0.30, front: 'Pilot', unit: 'passengers' },
-  { id: 'bank', name: 'Bank', emoji: '🏦', tier: 'large', t: 1500, s: 0.15, l: 0.45, front: 'Banker', unit: 'new accounts' },
-  { id: 'tech', name: 'Tech Giant', emoji: '🤖', tier: 'large', t: 1200, s: 0.20, l: 0.45, front: 'Engineer', unit: 'devices sold' },
-  { id: 'pharma', name: 'Medicine Maker', emoji: '💊', tier: 'large', t: 250, s: 0.30, l: 0.30, front: 'Scientist', unit: 'medicine packs' },
-  { id: 'energy', name: 'Energy Company', emoji: '⚡', tier: 'large', t: 2000, s: 0.50, l: 0.20, front: 'Engineer', unit: 'power deals' },
-  { id: 'realestate', name: 'Real Estate', emoji: '🏢', tier: 'large', t: 50000, s: 0.40, l: 0.15, front: 'Agent', unit: 'homes sold' },
-  { id: 'entertainment', name: 'Movie Studio', emoji: '🎬', tier: 'large', t: 18, s: 0.35, l: 0.35, front: 'Producer', unit: 'movie tickets' }
+  { id: 'cars', tags: '', name: 'Car Maker', emoji: '🚗', tier: 'large', t: 32000, s: 0.55, l: 0.18, front: 'Engineer', unit: 'cars sold' },
+  { id: 'airline', tags: '', name: 'Airline', emoji: '✈️', tier: 'large', t: 320, s: 0.40, l: 0.30, front: 'Pilot', unit: 'passengers' },
+  { id: 'bank', tags: '', name: 'Bank', emoji: '🏦', tier: 'large', t: 1500, s: 0.15, l: 0.45, front: 'Banker', unit: 'new accounts' },
+  { id: 'tech', tags: 'tech', name: 'Tech Giant', emoji: '🤖', tier: 'large', t: 1200, s: 0.20, l: 0.45, front: 'Engineer', unit: 'devices sold' },
+  { id: 'pharma', tags: '', name: 'Medicine Maker', emoji: '💊', tier: 'large', t: 250, s: 0.30, l: 0.30, front: 'Scientist', unit: 'medicine packs' },
+  { id: 'energy', tags: 'oil', name: 'Energy Company', emoji: '⚡', tier: 'large', t: 2000, s: 0.50, l: 0.20, front: 'Engineer', unit: 'power deals' },
+  { id: 'realestate', tags: '', name: 'Real Estate', emoji: '🏢', tier: 'large', t: 50000, s: 0.40, l: 0.15, front: 'Agent', unit: 'homes sold' },
+  { id: 'entertainment', tags: 'media fun', name: 'Movie Studio', emoji: '🎬', tier: 'large', t: 18, s: 0.35, l: 0.35, front: 'Producer', unit: 'movie tickets' },
+  { id: 'oil', tags: 'oil', name: 'Oil Company', emoji: '🛢️', tier: 'large', t: 80, s: 0.50, l: 0.15, front: 'Oil Worker', unit: 'barrels sold' },
+  { id: 'soda', tags: 'food sweet', name: 'Soda Company', emoji: '🥤', tier: 'large', t: 2, s: 0.40, l: 0.20, front: 'Flavor Mixer', unit: 'soda cans' },
+  { id: 'footballclub', tags: 'sport fun', name: 'Football Club', emoji: '🏟️', tier: 'large', t: 60, s: 0.15, l: 0.50, front: 'Player', unit: 'tickets sold' },
+  { id: 'shipping', tags: '', name: 'Shipping Company', emoji: '🚢', tier: 'large', t: 3000, s: 0.45, l: 0.20, front: 'Captain', unit: 'containers shipped' },
+  { id: 'goldmine', tags: 'oil', name: 'Gold Mine', emoji: '⛏️', tier: 'large', t: 40000, s: 0.40, l: 0.25, front: 'Miner', unit: 'gold bars' },
+  { id: 'themepark', tags: 'fun', vip: true, name: 'Theme Park', emoji: '🎢', tier: 'large', t: 60, s: 0.20, l: 0.35, front: 'Ride Operator', unit: 'visitors' },
+  { id: 'space', tags: 'tech', vip: true, name: 'Space Company', emoji: '🚀', tier: 'large', t: 2000000, s: 0.50, l: 0.20, front: 'Rocket Scientist', unit: 'rocket launches' },
+  { id: 'socialapp', tags: 'tech media', vip: true, name: 'Social Media App', emoji: '📲', tier: 'large', t: 30, s: 0.15, l: 0.45, front: 'Programmer', unit: 'thousand users' }
 ];
 CS.IND = {};
 CS.INDUSTRIES.forEach(function (i) { CS.IND[i.id] = i; });
+CS.hasTag = function (indId, tag) { return (' ' + (CS.IND[indId].tags || '') + ' ').indexOf(' ' + tag + ' ') >= 0; };
 
 // Multipliers against a neutral baseline city.
 CS.CITIES = {
@@ -104,7 +133,7 @@ CS.RIVAL_B = ['& Co.', 'Group', 'Bros', 'Inc.', 'Works', 'Squad', 'Corp', 'Expre
 CS.NAME_A = ['Happy', 'Rocket', 'Golden', 'Super', 'Tiny', 'Cosmic', 'Lucky', 'Sunny', 'Mega', 'Pixel', 'Turbo', 'Cozy', 'Bubble', 'Ninja', 'Royal', 'Neon', 'Crispy', 'Wild'];
 CS.NAME_B = ['Bean', 'Bros', 'Corner', 'Planet', 'Factory', 'Spot', 'Hub', 'Palace', 'Garage', 'Studio', 'Squad', 'Kingdom', 'Lab', 'Nest', 'World', 'Club'];
 
-CS.LOGOS = ['☕', '🍕', '🚀', '🦊', '🐝', '🌵', '🍩', '💎', '🔥', '🌊', '🍀', '⭐', '🦁', '🐙', '🎯', '👾', '🦄', '🐸', '🍉', '⚡'];
+CS.LOGOS = ['☕', '🍕', '🚀', '🦊', '🐝', '🌵', '🍩', '💎', '🔥', '🌊', '🍀', '⭐', '🦁', '🐙', '🎯', '👾', '🦄', '🐸', '🍉', '⚡', '🍫', '🍌', '⚽', '🍬', '🛢️', '🎮', '🦖', '🧁'];
 CS.COLORS = ['#FF5FA2', '#7C4DFF', '#2EA8FF', '#20C997', '#FFB020', '#FF7A3D', '#FF4D5E', '#2B2250'];
 
 CS.ECON = {
@@ -186,16 +215,16 @@ CS.CATS = {
 
 // Missions. Each gives a goal and a reward. check(g, m) returns [current, target].
 CS.MISSIONS = [
-  { id: 'hire', text: 'Hire {n} new people', emoji: '🧑‍💼', n: [1, 2, 3], stat: 'hires' },
+  { id: 'hire', text: 'Hire {n} new {person|people}', emoji: '🧑‍💼', n: [1, 2, 3], stat: 'hires' },
   { id: 'decide', text: 'Make {n} decisions', emoji: '🤔', n: [3, 5, 8], stat: 'decisions' },
-  { id: 'post', text: 'Post on social media {n} times', emoji: '📱', n: [1, 2, 3], stat: 'posts' },
-  { id: 'upgrade', text: 'Buy {n} upgrade(s)', emoji: '🛠️', n: [1, 2], stat: 'upgrades' },
+  { id: 'post', text: 'Post on social media {n} {time|times}', emoji: '📱', n: [1, 2, 3], stat: 'posts' },
+  { id: 'upgrade', text: 'Buy {n} {upgrade|upgrades}', emoji: '🛠️', n: [1, 2], stat: 'upgrades' },
   { id: 'weeks', text: 'Play {n} weeks', emoji: '📅', n: [4, 6, 10], stat: 'weeksPlayed' },
   { id: 'profit', text: 'Make a profit {n} weeks in a row', emoji: '🔥', n: [3, 5, 8], special: 'streak' },
   { id: 'rep', text: 'Reach {n} reputation', emoji: '⭐', n: [55, 65, 75, 85], special: 'rep' },
   { id: 'fans', text: 'Get {n} followers', emoji: '📣', special: 'fans' },
-  { id: 'games', text: 'Play {n} mini-games', emoji: '🎮', n: [1, 2, 3], stat: 'minigames' },
-  { id: 'ads', text: 'Run {n} ads', emoji: '📢', n: [1, 2, 3], stat: 'ads' },
+  { id: 'games', text: 'Play {n} {mini-game|mini-games}', emoji: '🎮', n: [1, 2, 3], stat: 'minigames' },
+  { id: 'ads', text: 'Run {n} {ad|ads}', emoji: '📢', n: [1, 2, 3], stat: 'ads' },
   { id: 'cash', text: 'Have {n} in the bank', emoji: '💰', special: 'cash' }
 ];
 
@@ -236,5 +265,34 @@ CS.ACHIEVEMENTS = [
   { id: 'rank4', emoji: '🌆', name: 'City Star', desc: 'Reach the City Star rank' },
   { id: 'rank7', emoji: '🌍', name: 'Global Giant', desc: 'Reach the Global Giant rank' },
   { id: 'daily', emoji: '📅', name: 'Daily Player', desc: 'Finish a Daily Challenge' },
+  { id: 'cupgold', emoji: '🥇', name: 'Champion', desc: 'Win the Business Cup' },
+  { id: 'powers10', emoji: '⚡', name: 'Power Boss', desc: 'Use Boss Powers 10 times' },
+  { id: 'golden5', emoji: '🤑', name: 'Golden Touch', desc: 'Catch 5 golden customers' },
+  { id: 'pet', emoji: '🐾', name: 'Pet Lover', desc: 'Get an office pet' },
   { id: 'bankrupt', emoji: '📉', name: 'Lesson Learned', desc: 'Go bankrupt. It happens!' }
 ];
+
+// Your face as the boss.
+CS.AVATARS = ['😎', '🤓', '🥳', '🤠', '🧐', '😺', '🦊', '🐼', '🐸', '🦁', '👸', '🤴', '🧙', '🦸', '🥷', '🤖', '👽', '🐵'];
+
+// Rival company looks.
+CS.RIVAL_LOOKS = [['😈', '#FF4D5E'], ['🦈', '#2EA8FF'], ['🐍', '#20C997'], ['🦂', '#FF8A3D'], ['🐺', '#7C4DFF'], ['🦅', '#FFB020'], ['🐗', '#C9306F'], ['🤖', '#625A8C']];
+
+// Boss Powers: special moves with a cooldown in weeks.
+CS.POWERS = [
+  { id: 'sale', emoji: '⚡', name: 'Flash Sale', desc: '+40% customers next week', cd: 6 },
+  { id: 'party', emoji: '🎉', name: 'Team Party', desc: 'Team mood +15', cd: 5, cost: 0.15 },
+  { id: 'stunt', emoji: '🤪', name: 'Crazy Stunt', desc: 'Big chance to go viral!', cd: 6 },
+  { id: 'overtime', emoji: '🔥', name: 'Overtime', desc: 'Work 30% faster next week', cd: 4 }
+];
+
+// What VIP unlocks.
+CS.VIP_PERKS = [
+  ['🏢', 'VIP companies', 'Space Company, Theme Park, Zoo, Esports Team and more'],
+  ['🎁', 'Double daily gifts', 'Every daily gift is worth 2x'],
+  ['⚡', 'Faster Boss Powers', 'Every power recharges 1 week sooner'],
+  ['🎯', '4 missions at once', 'One extra mission slot with bigger rewards'],
+  ['💤', 'Bigger offline earnings', 'Your shop earns 2x while you are away'],
+  ['👑', 'VIP look', 'Golden name badge and VIP logos']
+];
+CS.VIP_LOGOS = ['👑', '💰', '🏆', '🪐', '🐉', '🌈'];

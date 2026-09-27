@@ -46,9 +46,10 @@ var CS = globalThis.CS = globalThis.CS || {};
       mods: [], rel: {}, dating: {}, cooldowns: {}, flags: { equip: 1 }, formers: [], upgrades: {},
       xp: 0, level: 1, missions: [], streak: 0, bestStreak: 0, posted: false, rank: 0,
       stats: { decisions: 0, fired: 0, revenue: 0, peakCash: 0, fullStreak: 0, maxStaff: 0, bigWeeks: 0, hires: 0, posts: 0,
-        upgrades: 0, weeksPlayed: 0, minigames: 0, ads: 0, missionsDone: 0, quizRight: 0, vsWins: 0, virals: 0 },
+        upgrades: 0, weeksPlayed: 0, minigames: 0, ads: 0, missionsDone: 0, quizRight: 0, vsWins: 0, virals: 0, powers: 0, golden: 0 },
       achievements: {}, economy: { state: 'normal', weeks: U.ri(15, 30) },
-      rivals: [G.rivalName(), G.rivalName(), G.rivalName()],
+      rivals: [G.rivalName(), G.rivalName(), G.rivalName()], rivalCos: null, cupMine: 0, cups: { gold: 0, silver: 0, bronze: 0 },
+      powers: {}, golden: null, pet: null, avatar: o.avatar || '😎',
       negWeeks: 0, over: null, last: null, tips: 0
     };
     g.cash = tier.cash * fund.cash * (1 + Math.min(0.5, runs * 0.05));
@@ -57,7 +58,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     var add = function (role, n) { for (var i = 0; i < n; i++) g.employees.push(G.makeEmployee(g, role, { hired: true })); };
     add('front', comp.front); add('sales', comp.sales); add('acct', comp.acct); add('mgr', comp.mgr);
     G.refreshCandidates(g);
-    while (g.missions.length < 3) g.missions.push(G.newMission(g));
+    G.makeRivals(g);
+    G.fillMissions(g);
     g.rank = G.rankIndex(g);
     G.news(g, '🎉 ' + o.name + ' opens in ' + city.name + '!', 'good');
     if (runs) G.news(g, '🧠 You learned from ' + runs + ' old compan' + (runs > 1 ? 'ies' : 'y') + '. Bonus cash!', 'good');
@@ -425,7 +427,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   G.missionText = function (m) {
     var t = CS.MISSIONS.find(function (x) { return x.id === m.id; });
     var n = t.special === 'cash' ? U.short(m.target) : t.special === 'fans' ? U.num(m.target) : m.target;
-    return t.text.replace('{n}', n);
+    // {one|many} picks the right word: "Hire 1 new person", "Hire 2 new people".
+    return t.text.replace('{n}', n).replace(/\{([^|}]*)\|([^}]*)\}/g, function (_, one, many) { return m.target === 1 ? one : many; });
   };
   G.missionProgress = function (g, m) {
     var t = CS.MISSIONS.find(function (x) { return x.id === m.id; });
@@ -546,6 +549,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     g.mods.forEach(function (m) { m.weeks--; });
     g.mods = g.mods.filter(function (m) { return m.weeks > 0; });
     g.posted = false;
+    g.golden = U.chance(0.45) ? { tapped: false } : null;
+    var cup = stepRivals(g, f, minor);
+    if (g.pet) g.employees.forEach(function (e) { e.morale += 1; });
 
     var count = rollEvents(g, minor);
     G.refreshCandidates(g);
@@ -564,7 +570,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     var unlocked = G.checkAchievements(g);
     g.last = {
       week: g.week, fin: f, minor: minor, count: count, unlocked: unlocked, streak: g.streak, streakBonus: streakBonus,
-      rankUp: g.rank > rankBefore ? g.rank : null, levelUps: G.takeLevelUps(g), star: best ? { name: best.name, face: best.face } : null
+      rankUp: g.rank > rankBefore ? g.rank : null, cup: cup, levelUps: G.takeLevelUps(g), star: best ? { name: best.name, face: best.face } : null
     };
     G.save(g);
     return g.last;
@@ -799,7 +805,7 @@ var CS = globalThis.CS = globalThis.CS || {};
       if (k === 'amt2') return U.money(c.amt2 || 0);
       if (k === 'company') return g.company.name;
       if (k === 'front') return ind.front.toLowerCase();
-      if (k === 'fronts') return ind.front.toLowerCase() + 's';
+      if (k === 'fronts') return U.plural(ind.front.toLowerCase());
       if (k === 'unit') return ind.unit;
       if (k === 'industry') return ind.name.toLowerCase();
       if (k === 'city') return CS.CITIES[g.company.city].name;
@@ -854,6 +860,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (fx.hire === 'cand' && c.cand) { var cand = c.cand; cand.id = g.nextId++; G.addEmployee(g, cand); }
     if (fx.hireSpecial) { var sp = G.makeEmployee(g, fx.hireSpecial.role || 'front', fx.hireSpecial); G.addEmployee(g, sp); }
     if (fx.xp) G.addXP(g, fx.xp);
+    if (fx.pet) g.pet = fx.pet;
+    if (fx.rival && c.rival) G.rivalShift(g, c.rival, fx.rival);
     if (fx.flag) g.flags[fx.flag] = true;
     if (fx.next) {
       var list = typeof fx.next[0] === 'string' ? [fx.next] : fx.next;
@@ -953,29 +961,50 @@ var CS = globalThis.CS = globalThis.CS || {};
     return G.resolve(g, c.fx);
   };
 
-  // ----- mini-game helpers -----
+  // ----- mini-game helpers (every mini-game offers 4 ways to play) -----
+
+  // Multiplies the size of an effect, for easy/hard modes and golden spins.
+  function scaleFx(fx, m) {
+    if (!fx || typeof fx !== 'object') return fx;
+    var out = {};
+    Object.keys(fx).forEach(function (k) {
+      out[k] = (['cash', 'fans', 'rep', 'happy', 'team'].indexOf(k) >= 0 && typeof fx[k] === 'number' && fx[k] > 0) ? fx[k] * m : fx[k];
+    });
+    return out;
+  }
+  G.scaleFx = scaleFx;
 
   G.openBox = function (g, pick) {
     var x = G.currentEvent(g), def = CS.EV[x.id];
-    var prizes = [0, 1, 2].map(function () { return def.prizes.indexOf(U.weighted(def.prizes, function (p) { return p.w || 1; })); });
-    var res = G.resolve(g, def.prizes[prizes[pick]].fx, 'You got: ' + def.prizes[prizes[pick]].emoji + ' ' + def.prizes[prizes[pick]].label + '!');
+    var prizes = [0, 1, 2, 3].map(function () { return def.prizes.indexOf(U.weighted(def.prizes, function (p) { return p.w || 1; })); });
+    var p = def.prizes[prizes[pick]];
+    var res = G.resolve(g, p.fx, 'You got: ' + p.emoji + ' ' + p.label + '!');
     res.boxes = prizes.map(function (i) { return def.prizes[i]; });
     res.pick = pick;
     return res;
   };
-  G.spin = function (g) {
-    var x = G.currentEvent(g), def = CS.EV[x.id];
-    var s = U.weighted(def.slices, function (p) { return p.w || 1; });
+  // mode: 'free' | 'golden' (costs money, better odds)
+  G.spinCost = function (g) { return G.cost(g, 0.3); };
+  G.spin = function (g, mode) {
+    var x = G.currentEvent(g), def = CS.EV[x.id], golden = mode === 'golden';
+    if (golden) g.cash -= G.spinCost(g);
+    var s = U.weighted(def.slices, function (p) { var w = p.w || 1; return golden ? (p.jackpot ? w * 4 : p.bad ? w * 0.2 : w) : w; });
     var idx = def.slices.indexOf(s);
     if (s.jackpot) g.flags.jackpot = true;
-    var res = G.resolve(g, s.fx, 'The wheel landed on ' + s.emoji + ' ' + s.label + '!');
+    var res = G.resolve(g, golden ? scaleFx(s.fx, 1.5) : s.fx, 'The wheel landed on ' + s.emoji + ' ' + s.label + '!');
     res.slice = idx;
     return res;
   };
-  G.tapDone = function (g, score) {
-    var x = G.currentEvent(g), def = CS.EV[x.id];
-    var won = score >= def.goal;
-    var res = G.resolve(g, won ? def.win : def.lose, won ? '🏆 You tapped ' + score + ' times!' : '⏱️ Only ' + score + ' of ' + def.goal + ' taps.');
+  G.TAP_LEVELS = [
+    { id: 'easy', label: 'Easy', emoji: '🐢', goal: 0.6, prize: 0.5 },
+    { id: 'normal', label: 'Normal', emoji: '🙂', goal: 1, prize: 1 },
+    { id: 'hard', label: 'Hard', emoji: '🔥', goal: 1.4, prize: 2.2 }
+  ];
+  G.tapGoal = function (def, level) { return Math.max(5, Math.round(def.goal * G.TAP_LEVELS[level].goal)); };
+  G.tapDone = function (g, score, level) {
+    var x = G.currentEvent(g), def = CS.EV[x.id], lv = G.TAP_LEVELS[level || 1], goal = G.tapGoal(def, level || 1);
+    var won = score >= goal;
+    var res = G.resolve(g, won ? scaleFx(def.win, lv.prize) : def.lose, won ? '🏆 You tapped ' + score + ' times on ' + lv.label + '!' : '⏱️ Only ' + score + ' of ' + goal + ' taps.');
     res.won = won;
     return res;
   };
@@ -987,11 +1016,12 @@ var CS = globalThis.CS = globalThis.CS || {};
     res.won = right;
     return res;
   };
-  G.dealPush = function (g) {
+  // big = ask for WAY more: bigger jump, bigger chance they walk away.
+  G.dealPush = function (g, big) {
     var x = G.currentEvent(g);
-    if (U.chance(0.3 + x.ctx.round * 0.15)) { x.ctx.walked = true; return false; }
-    x.ctx.round++;
-    x.ctx.offer = U.nice(x.ctx.offer * U.rand(1.15, 1.4));
+    if (U.chance((big ? 0.5 : 0.28) + x.ctx.round * 0.12)) { x.ctx.walked = true; G.save(g); return false; }
+    x.ctx.round += big ? 2 : 1;
+    x.ctx.offer = U.nice(x.ctx.offer * (big ? U.rand(1.6, 2.1) : U.rand(1.15, 1.4)));
     G.save(g);
     return true;
   };
@@ -1001,20 +1031,22 @@ var CS = globalThis.CS = globalThis.CS || {};
     return G.resolve(g, def.accept(g, x.ctx), def.acceptSay ? G.fill(def.acceptSay, g, x.ctx) : 'Deal! 🤝');
   };
   G.dealEnd = function (g) {
-    return G.resolve(g, null, x0(g).ctx.walked ? 'They walked away. No deal. 😅' : 'You said no thanks.');
+    return G.resolve(g, null, G.currentEvent(g).ctx.walked ? 'They walked away. No deal. 😅' : 'You said no thanks.');
   };
-  function x0(g) { return G.currentEvent(g); }
+  // Four moves in a circle: each beats the next one, loses to the one before, and ties the opposite.
   G.VS_MOVES = [
     { id: 'price', label: 'Cut prices', emoji: '💸', beats: 'quality' },
     { id: 'quality', label: 'Better quality', emoji: '⭐', beats: 'ads' },
-    { id: 'ads', label: 'Big ads', emoji: '📣', beats: 'price' }
+    { id: 'ads', label: 'Big ads', emoji: '📣', beats: 'party' },
+    { id: 'party', label: 'Crazy party', emoji: '🎉', beats: 'price' }
   ];
   G.vsPlay = function (g, moveId) {
     var x = G.currentEvent(g), def = CS.EV[x.id];
     var me = G.VS_MOVES.find(function (m) { return m.id === moveId; });
     var them = U.pick(G.VS_MOVES);
-    var out = me.id === them.id ? 'tie' : me.beats === them.id ? 'win' : 'lose';
+    var out = me.beats === them.id ? 'win' : them.beats === me.id ? 'lose' : 'tie';
     if (out === 'win') g.stats.vsWins++;
+    G.rivalShift(g, x.ctx.rival, out === 'win' ? -0.08 : out === 'lose' ? 0.06 : 0);
     var res = G.resolve(g, out === 'win' ? def.win : out === 'lose' ? def.lose : def.tie,
       out === 'win' ? '🏆 You won the battle!' : out === 'lose' ? '😖 ' + x.ctx.rival + ' won this time.' : '🤝 It\'s a tie!');
     res.me = me; res.them = them; res.outcome = out;
@@ -1026,12 +1058,127 @@ var CS = globalThis.CS = globalThis.CS || {};
     x.ctx.cand.revealed = true;
     G.save(g);
   };
+  // how: 'hire' | 'rich' (pay more, very loyal) | 'trial' (pay less, a bit grumpy)
+  G.interviewHire = function (g, how) {
+    var c = G.currentEvent(g).ctx.cand;
+    if (how === 'rich') { c.salary = Math.round(c.salary * 1.1); c.loyalty += 20; c.morale += 10; }
+    if (how === 'trial') { c.salary = Math.round(c.salary * 0.9); c.morale -= 10; }
+    return G.resolve(g, { hire: 'cand' }, how === 'rich' ? '🤝 They are SO happy with the pay!' : how === 'trial' ? '🧪 They start on a trial. A bit nervous.' : '🤝 Welcome to the team!');
+  };
   G.postEvent = function (g, id) {
     var r = G.post(g, id);
     var res = G.resolve(g, null, r.text);
     res.post = r;
     return res;
   };
+
+  // ---------- rival companies & the Business Cup ----------
+
+  G.makeRivals = function (g) {
+    var looks = U.shuffle(CS.RIVAL_LOOKS);
+    g.rivalCos = g.rivals.map(function (n, i) { return { name: n, logo: looks[i][0], color: looks[i][1], power: U.rand(0.75, 1.3), sales: 0, cups: 0 }; });
+  };
+  G.rivalByName = function (g, name) { return (g.rivalCos || []).find(function (r) { return r.name === name; }); };
+  G.rivalShift = function (g, name, pct) { var r = G.rivalByName(g, name); if (r && pct) r.power = U.clamp(r.power * (1 + pct), 0.3, 3); };
+  G.CUP_WEEKS = 13;
+  var RIVAL_NEWS = [
+    '{r} started a silly dance trend. 💃', '{r} gave away free hats. 🧢', '{r} put up a GIANT billboard. 🪧',
+    '{r} hired a famous mascot. 🐻', '{r} cut their prices! 💸', '{r} opened a new shop across town. 🏪',
+    '{r}\'s boss was on TV bragging. 📺', '{r} launched a new product. 🆕', '{r} got a bad review from a critic. 👎',
+    '{r} had a power cut all weekend. 🔌', '{r}\'s website crashed. 💻', '{r} lost their best worker. 😬'
+  ];
+  function stepRivals(g, f, minor) {
+    if (!g.rivalCos) G.makeRivals(g);
+    var mine = f.revenue;
+    g.cupMine = (g.cupMine || 0) + mine;
+    g.rivalCos.forEach(function (r) {
+      r.power = U.clamp(r.power * U.rand(0.97, 1.035) + (g.week % 26 === 0 ? 0.05 : 0), 0.3, 3);
+      r.sales += G.scale(g) * r.power * U.rand(0.85, 1.15);
+    });
+    if (U.chance(0.4)) {
+      var r = U.pick(g.rivalCos), line = U.pick(RIVAL_NEWS).replace('{r}', r.name);
+      var good = /bad review|power cut|crashed|lost their/.test(line);
+      if (good) r.power *= 0.95; else if (/cut their prices|new shop|billboard/.test(line)) r.power *= 1.04;
+      minor.push('🥊 ' + line);
+      G.news(g, '🥊 ' + line, good ? 'good' : 'bad');
+    }
+    if (g.week % G.CUP_WEEKS !== 0) return null;
+    var board = G.cupBoard(g), place = board.findIndex(function (b) { return b.me; }) + 1;
+    var prize = [1.5, 0.6, 0.25, 0][place - 1] || 0;
+    var cash = prize ? U.nice(G.scale(g) * prize) : 0;
+    g.cash += cash;
+    g.cups = g.cups || { gold: 0, silver: 0, bronze: 0 };
+    if (place === 1) g.cups.gold++; else if (place === 2) g.cups.silver++; else if (place === 3) g.cups.bronze++;
+    G.addXP(g, [80, 50, 30, 15][place - 1]);
+    board.forEach(function (b) { if (!b.me && b.place === 1) G.rivalByName(g, b.name).cups++; });
+    G.news(g, '🏆 Business Cup: you finished #' + place + '!' + (cash ? ' Prize: ' + U.money(cash) : ''), place === 1 ? 'good' : 'neutral');
+    g.cupMine = 0;
+    g.rivalCos.forEach(function (r) { r.sales = 0; });
+    return { place: place, cash: cash, board: board };
+  }
+  G.cupBoard = function (g) {
+    if (!g.rivalCos) G.makeRivals(g);
+    var list = g.rivalCos.map(function (r) { return { name: r.name, logo: r.logo, color: r.color, sales: r.sales }; });
+    list.push({ me: true, name: g.company.name, logo: g.company.logo, color: g.company.color, sales: g.cupMine || 0 });
+    list.sort(function (a, b) { return b.sales - a.sales; });
+    list.forEach(function (b, i) { b.place = i + 1; });
+    return list;
+  };
+
+  // ---------- Boss Powers ----------
+
+  G.powerCd = function (g, p) { return Math.max(2, p.cd - (G.isVIP() ? 1 : 0)); };
+  G.powerReadyIn = function (g, id) { g.powers = g.powers || {}; return Math.max(0, (g.powers[id] || 0) - g.week); };
+  G.usePower = function (g, id) {
+    var p = CS.POWERS.find(function (x) { return x.id === id; });
+    if (!p || G.powerReadyIn(g, id) > 0) return null;
+    var before = G.snap(g), text;
+    if (id === 'sale') { G.mod(g, 'demand', 1.4, 1, 'Flash Sale'); g.satisfaction += 3; text = 'Flash Sale! Customers are lining up! ⚡'; }
+    else if (id === 'party') { g.cash -= G.cost(g, p.cost); g.employees.forEach(function (e) { e.morale += 15; }); text = 'PARTY TIME! 🎉 Everyone danced all night.'; }
+    else if (id === 'overtime') { G.mod(g, 'capacity', 1.3, 1, 'Overtime'); g.employees.forEach(function (e) { e.morale -= 5; }); text = 'Overtime! Everyone works extra hard. 🔥'; }
+    else {
+      if (U.chance(0.4)) { text = U.pick(['You jumped into a pool of ' + CS.IND[g.company.industry].unit + '. IT WENT VIRAL! 🤪🔥', 'You dressed as a giant ' + CS.IND[g.company.industry].emoji + ' and danced downtown. VIRAL! 🔥']); G.apply(g, { viral: [2, 6], fans: 20 }, {}); }
+      else { text = 'Your crazy stunt made people laugh. 😂 A few new fans!'; G.addFans(g, 10); }
+    }
+    g.powers[id] = g.week + G.powerCd(g, p);
+    g.stats.powers = (g.stats.powers || 0) + 1;
+    G.addXP(g, 10);
+    G.clampAll(g);
+    G.save(g);
+    return { text: text, chips: G.diff(before, g), power: p, unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g) };
+  };
+
+  // ---------- golden customer, pets, offline earnings ----------
+
+  G.tapGolden = function (g) {
+    if (!g.golden || g.golden.tapped) return 0;
+    g.golden.tapped = true;
+    var amt = G.prize(g, U.rand(0.8, 1.6));
+    g.cash += amt;
+    g.stats.golden = (g.stats.golden || 0) + 1;
+    G.addXP(g, 8);
+    G.save(g);
+    return amt;
+  };
+  G.offlineEarnings = function (g) {
+    if (g.mode !== 'main' || !g.savedAt || g.over) return null;
+    var mins = (Date.now() - g.savedAt) / 60000;
+    var last = g.history[g.history.length - 1];
+    if (mins < 20 || !last || last.net <= 0) return null;
+    var hours = Math.min(12, mins / 60);
+    var amt = U.nice(G.scale(g) * 0.04 * hours * (G.isVIP() ? 2 : 1));
+    if (!amt) return null;
+    g.cash += amt;
+    G.save(g);
+    return { amt: amt, hours: hours };
+  };
+
+  // ---------- VIP ----------
+
+  G.isVIP = function () { return !!(CS.Store && CS.Store.isVIP()); };
+  G.missionSlots = function () { return G.isVIP() ? 4 : 3; };
+  G.fillMissions = function (g) { while (g.missions.length < G.missionSlots()) g.missions.push(G.newMission(g)); };
+
 
   // ---------- achievements ----------
 
@@ -1049,6 +1196,7 @@ var CS = globalThis.CS = globalThis.CS || {};
       streak10: g.bestStreak >= 10, level5: g.level >= 5, level10: g.level >= 10, upgrade1: s.upgrades >= 1, maxup: maxed,
       missions10: s.missionsDone >= 10, vswin: s.vsWins >= 1, jackpot: g.flags.jackpot, quiz5: s.quizRight >= 5,
       legendary: g.flags.legendary, book50: book >= 50, book100: book >= 100, rank4: g.rank >= 3, rank7: g.rank >= 6,
+      cupgold: g.cups && g.cups.gold > 0, powers10: s.powers >= 10, golden5: s.golden >= 5, pet: !!g.pet,
       daily: g.over && g.over.reason === 'daily', bankrupt: g.over && g.over.reason === 'bankrupt'
     };
     CS.ACHIEVEMENTS.forEach(function (a) {
@@ -1087,14 +1235,24 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   // ---------- saves, legacy, book, settings, daily gift ----------
 
-  G.save = function (g) { g.rng = U.state(); writeJSON(g.mode === 'daily' ? KEYS.daily : KEYS.main, g); };
+  G.save = function (g) { g.rng = U.state(); g.savedAt = Date.now(); writeJSON(g.mode === 'daily' ? KEYS.daily : KEYS.main, g); };
   G.load = function (mode) {
     var g = readJSON(mode === 'daily' ? KEYS.daily : KEYS.main);
     if (!g || g.v !== 2) return null;
     if (mode === 'daily' && g.dailyNum !== G.dailyInfo().dailyNum) return null;
     return g;
   };
-  G.resume = function (g) { if (g.rng != null) U.seed(g.rng); };
+  // Restores the random number stream and fills in anything older saves are missing.
+  G.resume = function (g) {
+    if (g.rng != null) U.seed(g.rng);
+    if (!g.rivalCos) G.makeRivals(g);
+    g.powers = g.powers || {};
+    g.cups = g.cups || { gold: 0, silver: 0, bronze: 0 };
+    g.avatar = g.avatar || '😎';
+    g.stats.powers = g.stats.powers || 0;
+    g.stats.golden = g.stats.golden || 0;
+    G.fillMissions(g);
+  };
   G.clearSave = function (mode) { removeKey(mode === 'daily' ? KEYS.daily : KEYS.main); };
 
   G.loadLegacy = function () { var d = readJSON(KEYS.legacy); return d && d.companies ? d : { companies: [] }; };
@@ -1133,7 +1291,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   G.claimGift = function (g) {
     var st = G.giftStatus();
     if (!st.available) return 0;
-    var amt = U.nice(G.scale(g) * G.GIFTS[st.day - 1]);
+    var amt = U.nice(G.scale(g) * G.GIFTS[st.day - 1] * (G.isVIP() ? 2 : 1));
     g.cash += amt;
     writeJSON(KEYS.gift, { last: U.today(), day: st.day });
     G.news(g, '🎁 Daily gift: ' + U.money(amt), 'good');

@@ -1,0 +1,8 @@
+{
+  "appId": "com.companysim.game",
+  "appName": "Company Simulator",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#3EC5FF"
+  }
+}
