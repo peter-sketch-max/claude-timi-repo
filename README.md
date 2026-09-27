@@ -17,8 +17,9 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 - **Large:** oil company, soda company, football club, shipping, gold mine, airline, bank, movie studio and more.
 - **VIP:** YouTube channel, esports team, music label, zoo, theme park, space company, social media app.
 
-**700+ events, and every one has 4 answers**
+**800 events, and every one has 4 answers**
 - **Short and dramatic.** Every event is a one- or two-line situation with real stakes, like in a life simulator. Some answers are safe, some are a gamble (you see the chance), and some come back weeks later.
+- **Stories that continue.** Catch a scammer faking refunds, and the next event opens right away: "Omar is a scammer" (confront him, call the police, forgive him, or give a last chance). Forgive him, and a week or two later he's back with the same trick. There are 35+ stories like this: shoplifters, a spy on your team, a worker who steals for their sick mom, a greedy inspector, a loan shark, a pushy investor who tries to take over, a stray dog, a mystery tipper, and more.
 - **Every business has its own events** (7 each), so a football academy, a banana farm and an oil company feel completely different: a scout at training, a hurricane on the farm, an oil spill, a lion out of its enclosure.
 - **Angry customers:** someone screams at you, someone slaps you, "I want to speak to the owner".
 - **Shady deals:** a bribe, hidden cash or fake reviews can pay off, or come back as a tax raid or a police investigation.
@@ -46,10 +47,11 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 - Every 13 weeks the **Business Cup** crowns the top company, with 🥇🥈🥉 prizes.
 
 **⚔️ Company Wars (no server needed)**
-- A war is **5 rounds, one of each mini-game:** 💰 Coin Rush, 🎯 Perfect Stop, 🔨 Whack-a-Rival, 🧮 Quick Math and 🧠 Memory Grid. The order is different every war. Win more rounds to win the war.
+- A war is **5 rounds, picked from 10 mini-games:** 💰 Coin Rush, 🎯 Perfect Stop, 🔨 Whack-a-Rival, 🧮 Quick Math, 🧠 Memory Grid, 🔢 Number Rush, 🎨 Color Clash, 🏗️ Tower Stack, ⚡ Quick Draw and 🧺 Cash Catch. Win more rounds to win the war. Your best score in every game is saved.
 - **The winner takes 10% of the loser's fans.** Lose, and you lose 10% of yours.
 - Attack rival companies with war energy (+1 every week).
-- **Friend Wars:** play your 5 rounds, send your war code in any chat app, and your friend plays the same 5 games to beat your score. Quick rematch with one tap. 3 friend wars a day, unlimited with VIP. There's no server, so it's free forever, and codes have a checksum so they can't be edited.
+- **Friend Wars:** play your 5 rounds and get a short code like `K7P2-QX9M-0R0F-ZYV2-DFN0-8V4D`. Send it in any chat app, or just read it out loud. Your friend types it in (or pastes your message) and plays the same 5 games to beat your score. Quick rematch with one tap. 3 friend wars a day, unlimited with VIP. There's no server, so it's free forever, and codes have a checksum so they can't be changed.
+- **🏳️ Quit any time.** Before the first game it's free (you get your energy or friend war back). After that, the games you didn't play count as 0. The Android back button asks too.
 - Trophies and war ranks, from 🪖 Recruit to 👑 Emperor.
 
 **📺 Free Ads tab**
@@ -69,7 +71,7 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 **Feels alive**
 - Loading screen and animations on everything: cards fly in, numbers count up, confetti, coin bursts, screen shake, and a page-flip between weeks.
 - 🏙️ **Living town:** hand-drawn cartoon people walk by, go into your shop and come out with a bag. Cars drive past, trees sway, there's a city skyline, and workers wave from the windows. The building grows with your rank and has props that match your business: an oil pump, banana trees, a football goal, a rocket or a gold mine cart. The sky follows the real time of day and the weather follows the season.
-- 🎵 **Original background song and sound effects.** They're generated live in code, so there are no audio files and no copyright issues.
+- 🎵 **5 original songs and sound effects**, played live in code with chords, bass, melody, drums and a little echo, so there are no audio files and no copyright issues. The menu, the game and wars each have their own music, and the game moves between 3 songs.
 
 **VIP subscription** (Google Play Billing, product id `vip_monthly`)
 - VIP companies, double daily gifts, faster powers, a 4th mission slot, 2x offline earnings, an extra ad try, unlimited Friend Wars, more war energy and VIP logos.
@@ -87,11 +89,13 @@ src/js/events.js       events, part 1: your team (the format and style rules are
 src/js/events-more.js  events, part 2: customers, business, money and social media
 src/js/events-fun.js   events, part 3: rivals, world news, lucky breaks, mini-games and legendary moments
 src/js/events-life.js  events, part 4: your life, shady deals, trouble and sad goodbyes
+src/js/events-story.js stories that continue: follow-up events and people who come back
 src/js/events-biz*.js  events for one kind of business (small, medium and large businesses)
 src/js/store.js        VIP subscription (Google Play Billing via cordova-plugin-purchase)
 src/js/music.js        background song
 src/js/scene.js        the living town scene
 src/js/ui.js           screens, event cards, mini-games, sounds and animations
+src/js/music.js        the 5 songs and the little music engine that plays them
 android/               the Android project (Capacitor)
 store/                 Play Store icon, feature graphic, screenshots and listing text
 ```

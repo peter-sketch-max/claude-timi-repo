@@ -801,6 +801,56 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; font-we
 .memorial small { color: var(--ink-2); font-weight: 600; }
 .fame-meter .tries { color: var(--yellow); font-size: 13.5px; } .fame-meter b { font-size: 16px; }
 .war-end .face-big { font-size: 64px; line-height: 1.1; }
+
+/* Story chains: a hint on the result card when an event continues. */
+.story-hint { margin: 4px auto 12px; padding: 8px 14px; border-radius: 999px; font: 700 14px var(--body); width: fit-content; animation: pop .4s .35s both; }
+.story-hint.now { background: #FFE3F1; color: #B0105A; }
+.story-hint.later { background: #EEE9FF; color: #5B3FD6; }
+
+/* v6: wars */
+.war-sheet { position: relative; }
+.war-quit { position: absolute; top: -4px; right: 0; border: var(--stroke) solid var(--line); background: #fff; border-radius: 99px; padding: 5px 12px; font: 700 13px var(--body); color: var(--ink); box-shadow: 0 3px 0 var(--ink); z-index: 4; }
+.war-quit:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.war-vs .tally { display: inline-flex; align-items: center; gap: 4px; font-size: 34px; color: var(--ink); -webkit-text-stroke: 0; animation: pop .4s ease-out; }
+.war-vs .tally i { font-style: normal; color: var(--ink-2); font-size: 24px; }
+.war-intro .wi-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; font-size: 14px; font-weight: 700; }
+.war-intro .wi-row span { background: #fff; border: 2px solid var(--line); border-radius: 99px; padding: 3px 10px; }
+.new-best { display: inline-block; margin: 8px 0 2px; background: #FFF3C4; border: 2px solid var(--line); border-radius: 99px; padding: 4px 12px; font-weight: 800; animation: pop .45s .3s ease-out backwards; }
+.round-table { display: grid; gap: 6px; margin: 10px 0 14px; text-align: left; }
+.round-table div { display: grid; grid-template-columns: 1fr 52px 52px; align-items: center; gap: 6px; background: #F7F5FF; border: 2px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; font-weight: 700; animation: rise-in .35s backwards; }
+.round-table div:nth-child(2) { animation-delay: .06s; } .round-table div:nth-child(3) { animation-delay: .12s; } .round-table div:nth-child(4) { animation-delay: .18s; } .round-table div:nth-child(5) { animation-delay: .24s; }
+.round-table div.w { background: #DDFBE6; } .round-table div.l { background: #FFE3E7; }
+.round-table b, .round-table i { text-align: center; font-family: var(--display); font-style: normal; font-size: 16px; }
+.round-table i { color: var(--ink-2); }
+.code-row { display: flex; gap: 8px; align-items: stretch; margin: 6px 0 10px; }
+.code-input { flex: 1; min-width: 0; border: var(--stroke) solid var(--line); border-radius: 14px; padding: 12px; font: 700 16px/1.2 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 1px; text-transform: uppercase; background: #FBFAFF; color: var(--ink); -webkit-user-select: text; user-select: text; }
+.code-input::placeholder { color: #B9B2D9; letter-spacing: 0; font-size: 13px; }
+.code-row .btn { flex: none; }
+.code-box { font: 800 20px/1.3 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 2px; background: #FFF9DB; border: var(--stroke) dashed var(--line); border-radius: 16px; padding: 12px 8px; margin: 6px 0 10px; -webkit-user-select: all; user-select: all; overflow-wrap: anywhere; }
+.wh-games span b { color: var(--yellow); }
+
+/* new war games */
+.ws-grid.num { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); height: calc(100% - 38px); gap: 8px; }
+.num-t { border: var(--stroke) solid var(--line); border-radius: 14px; background: #fff; font: 700 26px var(--display); color: var(--ink); padding: 0; box-shadow: 0 3px 0 var(--ink); }
+.num-t.ok { background: var(--green); color: #fff; transform: scale(.92); box-shadow: none; }
+.num-t.bad { background: #FF9AA8; }
+.ws-word { font: 700 52px var(--display); text-align: center; margin: 34px 0 6px; -webkit-text-stroke: 1.5px var(--ink); }
+.ws-word.flash { animation: pop .2s ease-out; }
+.ws-swatches { position: absolute; left: 12px; right: 12px; bottom: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ws-swatches .sw { border: var(--stroke) solid var(--line); border-radius: 16px; min-height: 58px; color: #fff; font: 700 17px var(--display); text-shadow: 0 2px 0 rgba(0,0,0,.35); box-shadow: 0 3px 0 var(--ink); }
+.ws-colors .ws-tip, .ws-swatches + .ws-tip { bottom: 8px; }
+.stk { position: absolute; inset: 0 0 34px 0; transition: transform .25s ease-out; }
+.stk-b { position: absolute; height: 22px; border: 2px solid var(--line); border-radius: 6px; box-shadow: inset 0 -5px 0 rgba(0,0,0,.15); }
+.stk-b.moving { box-shadow: inset 0 -5px 0 rgba(0,0,0,.15), 0 0 0 3px rgba(255,255,255,.7); }
+.stk-b.fall { transition: transform .5s ease-in, opacity .5s; transform: translateY(260px) rotate(25deg); opacity: 0; }
+.rx { position: absolute; inset: 12px; border: var(--stroke) solid var(--line); border-radius: 20px; display: grid; place-content: center; text-align: center; gap: 4px; transition: background .08s; }
+.rx b { font: 700 34px var(--display); } .rx small { font: 700 22px var(--display); }
+.rx.wait { background: #FFB3BE; } .rx.go { background: #34D77B; } .rx.go b { color: #fff; font-size: 52px; }
+.rx.miss { background: #E8E4F7; } .rx.hit { background: #BFF5CF; }
+.basket { position: absolute; bottom: 30px; width: 56px; height: 56px; font-size: 48px; line-height: 56px; text-align: center; pointer-events: none; z-index: 2; }
+.basket.bump { animation: bump .25s ease-out; }
+.drop { position: absolute; left: 0; top: 0; width: 36px; height: 36px; font-size: 30px; line-height: 36px; text-align: center; pointer-events: none; will-change: transform; }
+.drop.gold { filter: drop-shadow(0 0 6px #FFD23F); }
 </style>
 
 <div id="loader" role="button" aria-label="Tap to play">
@@ -1252,7 +1302,12 @@ CS.WAR_GAMES = [
   { id: 'stop', emoji: '🎯', name: 'Perfect Stop', desc: 'Tap to stop the bar in the green zone. 5 tries, and it gets faster!', typical: 300 },
   { id: 'whack', emoji: '🔨', name: 'Whack-a-Rival', desc: 'Hit your rival\'s logo when it pops up. Don\'t hit your own!', typical: 11 },
   { id: 'math', emoji: '🧮', name: 'Quick Math', desc: 'Answer as many as you can in 15 seconds.', typical: 6 },
-  { id: 'memory', emoji: '🧠', name: 'Memory Grid', desc: 'Remember the lit squares, then tap them. One mistake and it\'s over! 25 seconds.', typical: 12 }
+  { id: 'memory', emoji: '🧠', name: 'Memory Grid', desc: 'Remember the lit squares, then tap them. One mistake and it\'s over! 25 seconds.', typical: 12 },
+  { id: 'numbers', emoji: '🔢', name: 'Number Rush', desc: 'Tap the numbers in order, 1 to 12. Finish a board and a new one appears. 20 seconds.', typical: 22 },
+  { id: 'colors', emoji: '🎨', name: 'Color Clash', desc: 'Tap the COLOR the word is painted in, not what it says! 15 seconds.', typical: 12 },
+  { id: 'stack', emoji: '🏗️', name: 'Tower Stack', desc: 'Tap to drop each block on the tower. Miss the edge and it gets smaller!', typical: 9 },
+  { id: 'reaction', emoji: '⚡', name: 'Quick Draw', desc: 'Wait for GREEN, then tap as fast as you can. Too early and you get 0! 5 tries.', typical: 330 },
+  { id: 'catch', emoji: '🧺', name: 'Cash Catch', desc: 'Drag the basket to catch the falling money. Dodge the bombs! 15 seconds.', typical: 15 }
 ];
 CS.WAR_RANKS = [
   { emoji: '🪖', name: 'Recruit', min: 0 },
@@ -2114,7 +2169,7 @@ var CS = globalThis.CS = globalThis.CS || {};
         var txt = G.apply(g, def.fx, x.ctx);
         minor.push(def.icon + ' ' + G.fill(txt || def.text, g, x.ctx));
         G.clampAll(g);
-      } else if (decisions < MAX_DECISIONS) {
+      } else if (decisions < MAX_DECISIONS || x.chain) { // a story that continues is never skipped
         decisions++;
         g.queue.push(x);
       } else if (def.choices) {
@@ -2126,6 +2181,9 @@ var CS = globalThis.CS = globalThis.CS || {};
         minor.push(def.icon + ' ' + G.fill(def.title, g, x.ctx) + ' Your team chose: "' + G.fill(c.t, g, x.ctx) + '". ' + (res || ''));
       }
     });
+    // A story the team handled for you continues next week instead.
+    (g.thenQ || []).forEach(function (t) { g.pending.push({ id: t.id, due: g.week + 1, ctx: t.ctx }); });
+    g.thenQ = []; delete g._later;
     return total;
   }
 
@@ -2202,13 +2260,16 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (fx.next) {
       var list = typeof fx.next[0] === 'string' ? [fx.next] : fx.next;
       list.forEach(function (n) {
-        if (n[3] == null || U.chance(n[3])) G.schedule(g, n[0], U.ri(n[1], n[2]), JSON.parse(JSON.stringify(c)));
+        if (n[3] == null || U.chance(n[3])) { G.schedule(g, n[0], U.ri(n[1], n[2]), chainCtx(c)); g._later = true; }
       });
     }
+    // then: the story continues right away with another event (it opens after this one).
+    if (fx.then) (g.thenQ = g.thenQ || []).push({ id: fx.then, ctx: chainCtx(c), chain: true });
     if (fx.run) { var r = fx.run(g, c); if (r) extra.push(G.fill(r, g, c)); }
     // Firing and quitting come last so the text above can still use their names.
     if (fx.fire && E(fx.fire)) G.removeEmp(g, E(fx.fire), 'fired');
     if (fx.quit && E(fx.quit)) G.quitToRival(g, E(fx.quit));
+    if (fx.leave && E(fx.leave)) G.removeEmp(g, E(fx.leave), 'left'); // leaves on good terms (retires, starts a business...)
     if (fx.die && E(fx.die)) G.removeEmp(g, E(fx.die), 'died');
     var out = [say].concat(extra);
     if (fx.chance) {
@@ -2218,6 +2279,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     }
     return out.filter(Boolean).join(' ');
   };
+
+  function chainCtx(c) { var o = JSON.parse(JSON.stringify(c)); delete o._won; return o; }
 
   G.quitToRival = function (g, e) {
     var rv = U.pick(g.rivals);
@@ -2281,12 +2344,15 @@ var CS = globalThis.CS = globalThis.CS || {};
     var text = G.apply(g, fx, x.ctx);
     if (pre) text = pre + (text ? ' ' + text : '');
     g.queue.shift();
+    var then = g.thenQ && g.thenQ.length, later = !!g._later;
+    if (then) { g.queue.unshift.apply(g.queue, g.thenQ); g.thenQ = []; }
+    delete g._later;
     G.seen(x.id);
     if (def.rarity === 'legendary') g.flags.legendary = true;
     if (MINIGAMES[def.kind]) { g.stats.minigames++; G.addXP(g, 20); }
     else { g.stats.decisions++; G.addXP(g, 12); }
     G.clampAll(g);
-    var res = { text: text, chips: G.diff(before, g), unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g), won: x.ctx._won };
+    var res = { text: text, chips: G.diff(before, g), unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g), won: x.ctx._won, then: !!then, later: later && !then };
     G.save(g);
     return res;
   };
@@ -2514,6 +2580,10 @@ var CS = globalThis.CS = globalThis.CS || {};
     var d = readJSON(KEYS.friendwar) || {};
     return d.day === U.today() ? Math.max(0, G.FRIEND_WARS_PER_DAY - d.used) : G.FRIEND_WARS_PER_DAY;
   };
+  function refundFriendWar() {
+    var d = readJSON(KEYS.friendwar) || {};
+    if (d.day === U.today() && d.used > 0) writeJSON(KEYS.friendwar, { day: d.day, used: d.used - 1 });
+  }
   function useFriendWar() {
     if (G.isVIP()) return;
     var d = readJSON(KEYS.friendwar) || {};
@@ -2530,11 +2600,14 @@ var CS = globalThis.CS = globalThis.CS || {};
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
+  G.WAR_ROUNDS = 5;
+  // Each war picks 5 of the games, in a random order made from the seed.
   G.warOrder = function (seed) {
     var r = srng(seed), ids = CS.WAR_GAMES.map(function (w) { return w.id; });
     for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
-    return ids;
+    return ids.slice(0, G.WAR_ROUNDS);
   };
+  G.warSeed = function () { return Math.floor(Math.random() * 65536); };
   // Everything a game needs (coin spots, questions, lit squares...), made from the seed.
   G.warGameData = function (id, seed) {
     var r = srng(seed * 31 + U.hash(id)), list = [], t, k;
@@ -2564,6 +2637,26 @@ var CS = globalThis.CS = globalThis.CS || {};
       }
       return { secs: 15, questions: list };
     }
+    if (id === 'numbers') { // boards with 1..12 in a random order
+      for (k = 0; k < 12; k++) list.push(shuffleWith(r, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]));
+      return { secs: 20, boards: list };
+    }
+    if (id === 'colors') { // a color word printed in a (usually different) color
+      for (k = 0; k < 70; k++) { var word = Math.floor(r() * 4), ink = r() < 0.8 ? (word + 1 + Math.floor(r() * 3)) % 4 : word; list.push({ word: word, ink: ink }); }
+      return { secs: 15, items: list };
+    }
+    if (id === 'stack') { // how fast each new block slides (share of the width per second)
+      for (k = 0; k < 20; k++) list.push({ speed: 0.5 + k * 0.07 + r() * 0.08, left: r() < 0.5 });
+      return { secs: 30, blocks: list };
+    }
+    if (id === 'reaction') { // how long to wait before each GO
+      for (k = 0; k < 5; k++) list.push(Math.round(1100 + r() * 2300));
+      return { waits: list };
+    }
+    if (id === 'catch') {
+      for (t = 300; t < 14200; t += 260 + r() * 200) list.push({ t: Math.round(t), x: r(), kind: r() < 0.2 ? 'bomb' : r() < 0.12 ? 'gold' : 'coin', spd: 0.5 + r() * 0.3 + t / 14000 * 0.45 });
+      return { secs: 15, drops: list };
+    }
     // memory: 5 levels with 3, 4, 5, 6 and 7 lit squares out of 9
     for (k = 3; k <= 7; k++) {
       var cells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -2572,6 +2665,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     }
     return { levels: list, show: 1300, secs: 25 };
   };
+
+  function shuffleWith(r, a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
   G.rivalFans = function (g, rv) { return Math.max(40, Math.round(g.followers * (0.6 + 0.4 * rv.power))); };
   function aiScores(g, games, power) {
@@ -2587,7 +2682,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     var w = G.warInit(g), rv = G.rivalByName(g, name);
     if (!rv || w.energy < 1 || (w.battle && !w.battle.done)) return null;
     w.energy--;
-    var seed = Math.floor(Math.random() * 1e9), games = G.warOrder(seed);
+    var seed = G.warSeed(), games = G.warOrder(seed);
     return newBattle(g, 'rival', { name: rv.name, logo: rv.logo, color: rv.color, fans: G.rivalFans(g, rv), scores: aiScores(g, games, rv.power) }, seed);
   };
   G.warStartFriend = function (g, foe) {
@@ -2600,7 +2695,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   G.warStartChallenge = function (g) {
     var w = G.warInit(g);
     if (w.battle && !w.battle.done) return null;
-    return newBattle(g, 'challenge', null, Math.floor(Math.random() * 1e9));
+    return newBattle(g, 'challenge', null, G.warSeed());
   };
   G.warRematch = function (g) {
     var w = G.warInit(g), last = w.last;
@@ -2613,9 +2708,12 @@ var CS = globalThis.CS = globalThis.CS || {};
   G.warSubmit = function (g, score) {
     var w = G.warInit(g), b = w.battle;
     if (!b || b.done) return null;
-    var i = b.mine.length, mine = Math.max(0, Math.round(score) || 0);
+    var i = b.mine.length, mine = Math.max(0, Math.min(1023, Math.round(score) || 0));
     b.mine.push(mine);
-    var round = { game: b.games[i], mine: mine };
+    w.best = w.best || {};
+    var gid = b.games[i], newBest = !b.forfeit && mine > (w.best[gid] || 0);
+    if (newBest) w.best[gid] = mine;
+    var round = { game: gid, mine: mine, best: newBest };
     if (b.foe) { round.theirs = b.foe.scores[i]; round.win = mine > round.theirs ? 1 : mine < round.theirs ? -1 : 0; }
     b.rounds.push(round);
     if (b.mine.length === b.games.length) finishBattle(g, b);
@@ -2631,11 +2729,12 @@ var CS = globalThis.CS = globalThis.CS || {};
       return;
     }
     var mineWins = b.rounds.filter(function (r) { return r.win > 0; }).length, theirWins = b.rounds.filter(function (r) { return r.win < 0; }).length;
-    if (mineWins === theirWins) { // tie-break: who was better overall
+    var won = mineWins > theirWins, tiebreak = mineWins === theirWins;
+    if (tiebreak) { // same number of rounds: whoever did better overall wins (a full tie goes to the defender)
       var edge = b.rounds.reduce(function (s, r) { return s + (r.mine - r.theirs) / G.warGame(r.game).typical; }, 0);
-      if (edge > 0) mineWins++; else if (edge < 0) theirWins++;
+      won = edge > 0;
     }
-    var won = mineWins > theirWins, friend = b.kind === 'friend', fans;
+    var friend = b.kind === 'friend', fans;
     if (won) {
       fans = Math.max(1, Math.round(b.foe.fans * G.WAR_FAN_SHARE));
       g.followers += fans;
@@ -2659,38 +2758,77 @@ var CS = globalThis.CS = globalThis.CS || {};
     G.clampAll(g);
     var chips = G.diff(before, g), dt = w.trophies - t0;
     if (dt) chips.unshift({ txt: '🏆 ' + (dt > 0 ? '+' : '') + dt + ' war trophies', good: dt > 0 });
-    b.result = { won: won, score: [mineWins, theirWins], fans: fans, text: text, chips: chips, unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g) };
+    if (b.forfeit) text = 'You quit the war. ' + text;
+    else if (tiebreak) text = 'Tied ' + mineWins + '-' + theirWins + ' in rounds, decided on total points. ' + text;
+    b.result = { won: won, score: [mineWins, theirWins], tiebreak: tiebreak, fans: fans, text: text, chips: chips, unlocked: G.checkAchievements(g), levelUps: G.takeLevelUps(g) };
     G.save(g);
   }
   G.warClose = function (g) { if (g.war && g.war.battle && g.war.battle.done) g.war.battle = null; };
+  // Quit a war. Before the first game starts it's free (you get your energy or friend war back).
+  // After that, the games you haven't played count as 0.
+  G.warQuit = function (g) {
+    var w = G.warInit(g), b = w.battle;
+    if (!b || b.done) { w.battle = null; return { closed: true }; }
+    if (!b.started || b.kind === 'challenge') {
+      if (!b.started) { if (b.kind === 'rival') w.energy = Math.min(G.warMaxEnergy() + 1, w.energy + 1); else if (b.kind === 'friend') refundFriendWar(); }
+      w.battle = null; G.save(g);
+      return { canceled: true, kind: b.kind };
+    }
+    b.forfeit = true;
+    while (!b.done) G.warSubmit(g, 0);
+    return { forfeit: true };
+  };
 
-  // War codes (v2): your company, fans and your 5 scores on one seed, with a checksum so they can't be edited easily.
-  function warSum(json) { return (U.hash(json + '|cs-war2') >>> 0).toString(36).slice(0, 6); }
+  // War codes (v3) are short enough to type: 24 letters and numbers like K7P2-QX9M-... They hold the seed that
+  // picks the games, your 5 scores, your fans, trophies, business, logo and color, plus a checksum so nobody can
+  // change the scores. A name doesn't fit, so the share message carries it (and the code works without it).
+  var B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // no I, L, O or U, so nothing looks alike
+  var CODE_V = 3;
+  var FIELDS = [['v', 3], ['s', 16], ['a', 10], ['b', 10], ['c', 10], ['d', 10], ['e', 10], ['f', 7], ['t', 9], ['i', 6], ['l', 6], ['k', 3], ['id', 8]];
+  function allLogos() { return CS.LOGOS.concat(CS.VIP_LOGOS || []); }
+  function codeSum(bits) { return (U.hash(bits + '|cs-war3') >>> 0) & 4095; }
+  function nbits(v, n) { return (Math.max(0, Math.min(Math.pow(2, n) - 1, v | 0)) + Math.pow(2, n)).toString(2).slice(1); }
   G.warCode = function (g, b) {
-    var w = G.warInit(g);
-    var json = JSON.stringify({ v: 2, id: w.id, n: g.company.name.slice(0, 24), l: g.company.logo, c: g.company.color, i: g.company.industry, f: g.followers, t: w.trophies, s: b.seed, sc: b.mine });
-    return 'CSW2.' + U.b64enc(json) + '.' + warSum(json);
+    var w = G.warInit(g), sc = b.mine, logos = allLogos();
+    var vals = { v: CODE_V, s: b.seed, a: sc[0], b: sc[1], c: sc[2], d: sc[3], e: sc[4],
+      f: Math.min(127, Math.round(Math.log2(g.followers + 1) * 4)), t: w.trophies, i: Object.keys(CS.IND).indexOf(g.company.industry),
+      l: logos.indexOf(g.company.logo) < 0 ? 63 : logos.indexOf(g.company.logo), k: Math.max(0, CS.COLORS.indexOf(g.company.color)), id: U.hash(w.id) & 255 };
+    var bits = FIELDS.map(function (f) { return nbits(vals[f[0]], f[1]); }).join('');
+    bits += nbits(codeSum(bits), 12);
+    var out = '';
+    for (var i = 0; i < bits.length; i += 5) out += B32[parseInt(bits.slice(i, i + 5), 2)];
+    var code = out.match(/.{4}/g).join('-');
+    w.sent = w.sent || [];
+    if (w.sent.indexOf(code) < 0) w.sent = w.sent.concat(code).slice(-10);
+    return code;
   };
   G.warCodeText = function (g, b) {
-    var total = b.mine.reduce(function (s, x) { return s + x; }, 0);
-    return '⚔️ ' + g.company.logo + ' ' + g.company.name + ' challenges you to a Company War! 5 games, and the winner takes 10% of the loser\'s fans.\n' +
+    var total = b.mine.reduce(function (s, x) { return s + x; }, 0), code = G.warCode(g, b);
+    return '⚔️ ' + g.company.logo + ' ' + g.company.name + ' challenges you to a Company War! The winner takes 10% of the loser\'s fans.\n' +
       'My scores: ' + b.mine.join(' · ') + ' (total ' + total + '). Can you beat them?\n' +
-      'Open Company Simulator → ⚔️ Wars → paste this code:\n' + G.warCode(g, b) + (CS.SHARE_URL ? '\n' + CS.SHARE_URL : '');
+      'In Company Simulator, open ⚔️ Wars and type this code:\n' + code + (CS.SHARE_URL ? '\n' + CS.SHARE_URL : '');
   };
-  // Returns a foe, or { error } if the code is broken.
+  // Reads a typed or pasted code (spaces, dashes and small letters are fine). Returns a foe, or { error }.
   G.readWarCode = function (g, text) {
-    if (/CSW1\./.test(text || '')) return { error: 'That\'s an old war code. Ask your friend to send a new one!' };
-    var m = /CSW2\.([A-Za-z0-9_-]+)\.([a-z0-9]+)/.exec(text || '');
-    if (!m) return { error: 'That doesn\'t look like a war code. It starts with CSW2.' };
-    var json, d;
-    try { json = U.b64dec(m[1]); d = JSON.parse(json); } catch (e) { return { error: 'This code is broken. Ask your friend to send it again.' }; }
-    if (warSum(json) !== m[2]) return { error: 'This code was changed. Nice try!' };
-    var ok = d && typeof d.n === 'string' && typeof d.s === 'number' && Array.isArray(d.sc) && d.sc.length === CS.WAR_GAMES.length &&
-      d.sc.every(function (x) { return typeof x === 'number' && x >= 0 && x < 10000; });
-    if (!ok) return { error: 'This code is broken. Ask your friend to send it again.' };
-    if (d.id === G.warInit(g).id) return { error: 'That\'s your own code! Send it to a friend.' };
-    return { kind: 'friend', id: String(d.id).slice(0, 16), name: d.n.slice(0, 24) || 'Mystery Co', logo: Array.from(String(d.l || '🏢')).slice(0, 3).join(''),
-      color: /^#[0-9A-Fa-f]{6}$/.test(d.c) ? d.c : '#7C4DFF', fans: Math.max(0, Math.min(1e9, Math.round(d.f) || 0)), trophies: d.t || 0, seed: d.s >>> 0, scores: d.sc.map(Math.round) };
+    text = String(text || '');
+    if (/CSW[12]\./.test(text)) return { error: 'That code is from an older version. Ask your friend to update the game and send a new one!' };
+    // A pasted message has the code with dashes in it. Something typed by hand can be just the 24 characters.
+    var m = /(^|[^0-9A-Za-z])([0-9A-Za-z]{4}(?:-[0-9A-Za-z]{4}){5})(?![0-9A-Za-z])/.exec(text);
+    var raw = (m ? m[2] : text).toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+    if (raw.length !== 24) return { error: raw.length ? 'A war code has 24 letters and numbers. Check it again!' : 'Type or paste your friend\'s war code first.' };
+    var bits = '';
+    for (var i = 0; i < raw.length; i++) { var n = B32.indexOf(raw[i]); if (n < 0) return { error: 'There\'s a typo in the code. Check it again!' }; bits += nbits(n, 5); }
+    var pos = 0, d = {};
+    FIELDS.forEach(function (f) { d[f[0]] = parseInt(bits.slice(pos, pos + f[1]), 2); pos += f[1]; });
+    if (parseInt(bits.slice(pos, pos + 12), 2) !== codeSum(bits.slice(0, pos))) return { error: 'That code doesn\'t work. Check for a typo!' };
+    if (d.v !== CODE_V) return { error: 'That code is from a different version of the game. Both of you need the newest update!' };
+    var inds = Object.keys(CS.IND), ind = CS.IND[inds[d.i]];
+    if (!ind) return { error: 'That code doesn\'t work. Check for a typo!' };
+    var code = raw.match(/.{4}/g).join('-'), w = G.warInit(g);
+    if ((w.sent || []).indexOf(code) >= 0) return { error: 'That\'s your own code! Send it to a friend.' };
+    var named = /⚔️\s*\S+\s+(.{1,24}?)\s+challenges you/.exec(text), logos = allLogos();
+    return { kind: 'friend', id: 'c' + d.id, code: code, name: named ? named[1] : 'Your friend\'s ' + ind.name, logo: logos[d.l] || ind.emoji, color: CS.COLORS[d.k] || '#7C4DFF',
+      fans: Math.round(Math.pow(2, d.f / 4) - 1), trophies: d.t, seed: d.s, scores: [d.a, d.b, d.c, d.d, d.e] };
   };
   G.warShareText = function (g) {
     var b = g.war && g.war.battle;
@@ -2908,11 +3046,12 @@ var CS = globalThis.CS = globalThis.CS || {};
 //
 // Effect (fx) keys: cash (share of weekly sales, negative = cost), money ($), rep, happy, fans, team,
 //   a/b/m (mood of that person), skill/loyal/reliable ({a: n}), rel ['a','b',n], date, breakup,
-//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a', die 'a',
+//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a' (may join a rival),
+//   leave 'a' (leaves on good terms), die 'a',
 //   demand/capacity/supply [value, weeks, label], extra [share, weeks, label], closed [weeks, label],
 //   price (+1/-1), equip (permanent speed), rent (permanent), viral [min, max], hire 'cand', hireSpecial {...},
 //   pet (emoji), rival (+/- share of that rival's strength), next ['id', minWeeks, maxWeeks, chance],
-//   chance { p, win, lose }, say, xp, flag, run(g, c).
+//   chance { p, win, lose }, say, xp, flag, run(g, c), then 'id' (the story continues right away with that event).
 var CS = globalThis.CS = globalThis.CS || {};
 
 (function () {
@@ -2936,8 +3075,14 @@ var CS = globalThis.CS = globalThis.CS || {};
     season: function (from, to) { return function (g) { var w = ((g.week - 1) % 52) + 1; return w >= from && w <= to; }; },
     busy: function (g) { var h = g.history[g.history.length - 1]; return h && h.demand > h.capacity * 1.08; },
     isInd: function (id) { return function (g) { return g.company.industry === id; }; },
-    person: function (g, c) { c.name = U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST); }
+    person: function (g, c) { c.name = U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST); },
+    // For stories that say "he" or "she": a name that fits.
+    man: function (g, c) { c.name = U.pick(MEN) + ' ' + U.pick(CS.LAST); },
+    woman: function (g, c) { c.name = U.pick(WOMEN) + ' ' + U.pick(CS.LAST); },
+    boy: function (g, c) { c.name = U.pick(MEN); }
   };
+  var MEN = ['Liam', 'Noah', 'Leo', 'Mateo', 'Omar', 'Ethan', 'Lucas', 'Diego', 'Felix', 'Jonah', 'Ravi', 'Tariq', 'Marcus', 'Kofi', 'Oscar', 'Ivan', 'Malik', 'Theo', 'Hugo', 'Bruno', 'Arjun', 'Emeka', 'Max', 'Finn', 'Axel', 'Ezra'];
+  var WOMEN = ['Ava', 'Maya', 'Zara', 'Priya', 'Chloe', 'Amara', 'Sofia', 'Nia', 'Hana', 'Aisha', 'Ines', 'Grace', 'Elena', 'Lena', 'Mei', 'Leila', 'Freya', 'Rosa', 'Tess', 'Nora', 'Imani', 'Keiko', 'Ruby', 'Lola', 'Jade', 'Luna', 'Isla', 'Mila', 'Nala'];
   // Short way to write a normal event: CS.E(id, category, icon, title, text, [[answer, effect] x4], extra fields).
   CS.E = function (id, cat, icon, title, text, choices, o) {
     var d = { id: id, cat: cat, icon: icon, title: title, text: text };
@@ -3016,9 +3161,9 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { chainOnly: true });
 
   E('theft', 'team', '💸', 'Money is missing from the register', 'It happened three times this month. {a} was working every time.', [
-    ['🔍 Confront {a}', { chance: { p: 0.5, win: { fire: 'a', rep: 1, say: '{a} confessed and was fired.' }, lose: { a: -20, team: -6, say: '{a} was innocent. The team is upset with you.' } } }],
+    ['🔍 Confront {a}', { chance: { p: 0.5, win: { then: 'theft_confession', say: '{a} went pale.' }, lose: { a: -20, team: -6, say: '{a} was innocent. The team is upset with you.' } } }],
     ['📹 Install cameras', { cash: -0.4, next: ['theft_again', 3, 6, 0.5], say: 'Now you\'ll see everything.' }],
-    ['🪤 Set a trap with marked bills', { chance: { p: 0.6, win: { fire: 'a', rep: 2, say: 'Marked bills in {a}\'s bag. Busted.' }, lose: { say: 'Nothing. The thief got careful.' } } }],
+    ['🪤 Set a trap with marked bills', { chance: { p: 0.6, win: { then: 'theft_confession', say: 'Marked bills in {a}\'s bag. Caught.' }, lose: { say: 'Nothing. The thief got careful.' } } }],
     ['🤷 Let it slide', { cash: -0.3, next: ['theft_again', 2, 5, 0.7], say: 'More money went missing.' }]
   ], { w: 2, cd: 20, need: 2, who: { a: 'any' }, cond: noCams });
 
@@ -3030,8 +3175,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { chainOnly: true });
 
   E('spy', 'team', '🕵️', '{a} might be a spy for {rival}', 'You saw {a} texting {rival}\'s manager. Twice.', [
-    ['📱 Check {a}\'s work phone', { chance: { p: 0.5, win: { fire: 'a', rival: -0.05, say: 'It was true. You caught a spy.' }, lose: { a: -15, loyal: { a: -15 }, say: 'Innocent. {a} feels betrayed.' } } }],
-    ['🎭 Feed {a} fake plans', { chance: { p: 0.5, win: { rival: -0.1, say: '{rival} copied your fake plan. It flopped.' }, lose: { say: 'Nothing happened. Maybe it wasn\'t {a}.' } } }],
+    ['📱 Check {a}\'s work phone', { chance: { p: 0.5, win: { then: 'spy_caught', say: 'The messages are all there.' }, lose: { a: -15, loyal: { a: -15 }, say: 'Innocent. {a} feels betrayed.' } } }],
+    ['🎭 Feed {a} fake plans', { chance: { p: 0.5, win: { rival: -0.05, next: ['fake_plan_flop', 2, 4], say: '{a} passed it on. Now you know.' }, lose: { say: 'Nothing happened. Maybe it wasn\'t {a}.' } } }],
     ['💬 Ask {a} straight out', { chance: { p: 0.6, win: { loyal: { a: 15 }, say: 'They were friends from school. Nothing more.' }, lose: { quit: 'a', say: '{a} quit on the spot. Suspicious.' } } }],
     ['🙈 Do nothing', { next: ['idea_stolen', 3, 6, 0.4], say: 'You let it go.' }]
   ], { w: 1.5, cd: 25, minWeek: 8, who: { a: 'any' }, init: rival });
@@ -3142,8 +3287,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25, who: { a: 'any' } });
 
   E('worker_viral', 'team', '📱', '{a} went viral', 'A video of {a} working super fast has 2 million views.', [
-    ['📱 Repost it', { fans: 20, a: 8, say: 'New fans are pouring in.' }],
-    ['🎥 Put {a} in your ads', { raise: ['a', 0.1], fans: 30, a: 15, say: '{a} is a local star.' }],
+    ['📱 Repost it', { fans: 20, a: 8, next: ['viral_offer', 4, 8, 0.3], say: 'New fans are pouring in.' }],
+    ['🎥 Put {a} in your ads', { raise: ['a', 0.1], fans: 30, a: 15, next: ['viral_offer', 4, 8, 0.5], say: '{a} is a local star.' }],
     ['🤐 Keep it low-key', { a: -3, say: 'It faded in a week.' }],
     ['🔒 Sign {a} to a contract', { cash: -0.2, loyal: { a: 20 }, fans: 10, say: 'Nobody can steal {a} now.' }]
   ], { w: 1.5, cd: 25, who: { a: 'front' } });
@@ -3157,7 +3302,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('bully', 'team', '😠', '{a} is bullying {b}', '{b} is afraid to come to work. Everyone knows why.', [
     ['🚪 Fire {a}', { fire: 'a', b: 15, team: 6, say: 'The team feels safer.' }],
-    ['⚠️ Final warning for {a}', { a: -10, b: 5, say: '{a} backed off. For now.' }],
+    ['⚠️ Final warning for {a}', { a: -10, b: 5, next: ['bully_again', 3, 6, 0.5], say: '{a} backed off. For now.' }],
     ['🔀 Separate them', { rel: ['a', 'b', -10], capacity: [0.97, 4, 'Separate shifts'], say: 'Out of sight, out of mind.' }],
     ['🙈 "Sort it out yourselves"', { b: -20, chance: { p: 0.5, win: { say: '{b} is holding on. Barely.' }, lose: { quit: 'b', say: '{b} quit. Everyone knows why.' } } }]
   ], { w: 1.5, cd: 20, need: 2, who: { a: 'aggressive', b: 'any' } });
@@ -3173,7 +3318,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🚪 Fire {a}', { fire: 'a', say: 'No liars here.' }],
     ['💬 Give them a chance', { chance: { p: 0.5, win: { skill: { a: 5 }, loyal: { a: 20 }, say: '{a} works harder than anyone now.' }, lose: { rep: -2, say: '{a} kept messing up.' } } }],
     ['📉 Cut their pay', { raise: ['a', -0.15], a: -10, say: '{a} took the pay cut.' }],
-    ['🤐 Ignore it', { rep: -1, say: 'Customers noticed the mistakes.' }]
+    ['🤐 Ignore it', { rep: -1, next: ['fake_cv_exposed', 3, 6, 0.6], say: 'You hope nobody finds out.' }]
   ], { w: 1.5, cd: 20, who: { a: 'new' } });
 
   E('manager_raise', 'team', '👔', 'Manager {m} wants a raise', null, [
@@ -3254,10 +3399,10 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.2, cd: 30, who: { a: 'any' } });
 
   E('worker_jackpot', 'team', '🎰', '{a} won the lottery', null, [
-    ['🎉 "Go live your dream!"', { quit: 'a', rep: 2, say: '{a} left happy. They bought a boat.' }],
-    ['💼 "Invest in our company!"', { chance: { p: 0.5, win: { cash: 4, quit: 'a', say: '{a} invested, then retired to a beach.' }, lose: { quit: 'a', say: '{a} said no thanks and left.' } } }],
-    ['🙏 "Please stay!"', { chance: { p: 0.35, win: { a: 20, say: '{a} stays because they love the job.' }, lose: { quit: 'a', say: '{a} said sorry and left.' } } }],
-    ['🤔 "Can I borrow some?"', { chance: { p: 0.3, win: { cash: 1, say: '{a} gave the company a gift.' }, lose: { quit: 'a', say: '{a} left without saying goodbye.' } } }]
+    ['🎉 "Go live your dream!"', { leave: 'a', rep: 2, say: '{a} left happy. They bought a boat.' }],
+    ['💼 "Invest in our company!"', { chance: { p: 0.5, win: { cash: 4, leave: 'a', say: '{a} invested, then retired to a beach.' }, lose: { leave: 'a', say: '{a} said no thanks and left.' } } }],
+    ['🙏 "Please stay!"', { chance: { p: 0.35, win: { a: 20, say: '{a} stays because they love the job.' }, lose: { leave: 'a', say: '{a} said sorry and left.' } } }],
+    ['🤔 "Can I borrow some?"', { chance: { p: 0.3, win: { cash: 1, say: '{a} gave the company a gift.' }, lose: { leave: 'a', say: '{a} left without saying goodbye.' } } }]
   ], { kind: 'chat', from: 'a', msgs: ['BOSS', 'I WON THE LOTTERY', 'like... A LOT', 'I don\'t need to work anymore'], rarity: 'rare', w: 1, cd: 50, who: { a: 'any' } });
 
   E('cpr_hero', 'team', '🚑', '{a} saved a customer\'s life', 'A customer collapsed. {a} did CPR until the ambulance came.', [
@@ -3284,7 +3429,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('whistleblower', 'team', '📣', '{a} wants to report you', '{a} says you\'re breaking safety rules and wants to tell the city.', [
     ['🛠️ Fix the problems now', { cash: -0.6, rep: 3, a: 15, say: 'You fixed everything. {a} is satisfied.' }],
     ['🤝 Thank {a} for the warning', { cash: -0.4, loyal: { a: 20 }, say: 'You fixed it together.' }],
-    ['🤫 Pay {a} to keep quiet', { cash: -0.3, chance: { p: 0.5, win: { say: '{a} took the money. For now.' }, lose: { rep: -10, cash: -1, say: '{a} reported it anyway. Now you\'re fined for bribery too.' } } }],
+    ['🤫 Pay {a} to keep quiet', { cash: -0.3, chance: { p: 0.5, win: { next: ['hush_money', 3, 6, 0.6], say: '{a} took the money. For now.' }, lose: { rep: -10, cash: -1, say: '{a} reported it anyway. Now you\'re fined for bribery too.' } } }],
     ['🚪 Fire {a}', { fire: 'a', rep: -8, cash: -1, say: '{a} reported you anyway. The fine was huge.' }]
   ], { w: 1, cd: 40, minWeek: 10, who: { a: 'serious' } });
 
@@ -3296,10 +3441,10 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25, need: 4, who: { a: 'any' } });
 
   E('worker_drunk', 'team', '🍺', '{a} showed up drunk', 'Slurring words, dropping things. Customers are staring.', [
-    ['🏠 Send {a} home', { a: -5, capacity: [0.95, 1, '{a} sent home'], say: '{a} left, embarrassed.' }],
-    ['💬 Talk tomorrow, in private', { chance: { p: 0.6, win: { a: 10, loyal: { a: 15 }, say: '{a} is going through a divorce. You offered help.' }, lose: { say: '{a} brushed it off.' } } }],
+    ['🏠 Send {a} home', { a: -5, capacity: [0.95, 1, '{a} sent home'], next: ['worker_drunk_again', 2, 5, 0.4], say: '{a} left, embarrassed.' }],
+    ['💬 Talk tomorrow, in private', { chance: { p: 0.6, win: { a: 10, loyal: { a: 15 }, next: ['worker_recovered', 8, 14, 0.6], say: '{a} is going through a divorce. You offered help.' }, lose: { say: '{a} brushed it off.' } } }],
     ['🚪 Fire {a}', { fire: 'a', say: 'Zero tolerance.' }],
-    ['🙈 Pretend you didn\'t see', { rep: -4, say: 'A customer complained to the city.' }]
+    ['🙈 Pretend you didn\'t see', { rep: -4, next: ['worker_drunk_again', 1, 3, 0.6], say: 'A customer complained to the city.' }]
   ], { w: 1.2, cd: 30, who: { a: 'any' } });
 
   E('salary_leak', 'team', '📄', 'Everyone saw everyone\'s salary', 'A payslip was left on the printer. {a} earns much less than {b} for the same job.', [
@@ -3331,23 +3476,23 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 0.8, cd: 50, need: 6, minWeek: 20, who: { a: 'serious' } });
 
   E('retirement', 'team', '🎣', '{a} wants to retire', 'After many years. "I\'m tired. I want to see my grandkids."', [
-    ['🎉 A big farewell party', { quit: 'a', cash: -0.1, team: 8, rep: 2, say: 'Everyone cried. Good tears.' }],
-    ['🎁 A retirement gift', { quit: 'a', cash: -0.3, team: 6, say: '{a} was very touched.' }],
-    ['🧑‍🏫 Train a replacement first', { skill: { b: 8 }, quit: 'a', say: '{b} learned everything from {a}.' }],
-    ['🙏 Ask {a} to stay a bit', { chance: { p: 0.5, win: { a: 5, say: 'One more year.' }, lose: { quit: 'a', say: '{a} said no, kindly.' } } }]
+    ['🎉 A big farewell party', { leave: 'a', cash: -0.1, team: 8, rep: 2, say: 'Everyone cried. Good tears.' }],
+    ['🎁 A retirement gift', { leave: 'a', cash: -0.3, team: 6, say: '{a} was very touched.' }],
+    ['🧑‍🏫 Train a replacement first', { skill: { b: 8 }, leave: 'a', say: '{b} learned everything from {a}.' }],
+    ['🙏 Ask {a} to stay a bit', { chance: { p: 0.5, win: { a: 5, say: 'One more year.' }, lose: { leave: 'a', say: '{a} said no, kindly.' } } }]
   ], { w: 0.8, cd: 40, who: { a: 'old', b: 'any' } });
 
   E('stalker', 'team', '😨', 'A customer follows {a} home', 'Every night. {a} is scared to leave work alone.', [
     ['👮 Call the police', { a: 12, team: 4, say: 'He was warned. It stopped.' }],
     ['🚗 Drive {a} home yourself', { a: 15, loyal: { a: 15 }, say: '{a} feels safe.' }],
-    ['🚫 Ban him from the shop', { a: 10, rep: 1, say: 'He hasn\'t come back.' }],
+    ['🚫 Ban him from the shop', { a: 10, rep: 1, next: ['stalker_back', 2, 4, 0.5], say: 'He hasn\'t come back. Yet.' }],
     ['🤷 "Probably nothing"', { a: -20, next: ['resign', 1, 3, 0.6], say: '{a} feels alone.' }]
   ], { w: 0.8, cd: 40, who: { a: 'front' } });
 
   E('two_quit', 'team', '🚪', '{a} and {b} quit together', 'Same day. Same letter. They\'re opening their own shop.', [
-    ['💰 Big raises to stay', { raise: ['a', 0.2], chance: { p: 0.5, win: { raise: ['b', 0.2], say: 'Both stayed.' }, lose: { quit: 'b', say: '{a} stayed. {b} left.' } } }],
-    ['🤝 Invest in their shop', { quit: 'a', chance: { p: 1, win: { quit: 'b', cash: -0.5, extra: [0.05, 16, 'Their shop'], say: 'They left. You own a piece of their shop.' }, lose: { say: 'They left.' } } }],
-    ['👋 Wish them luck', { quit: 'a', chance: { p: 1, win: { quit: 'b', say: 'Two gone. A new rival.' }, lose: { say: 'They left.' } } }],
+    ['💰 Big raises to stay', { raise: ['a', 0.2], chance: { p: 0.5, win: { raise: ['b', 0.2], say: 'Both stayed.' }, lose: { leave: 'b', say: '{a} stayed. {b} left.' } } }],
+    ['🤝 Invest in their shop', { leave: 'a', chance: { p: 1, win: { leave: 'b', cash: -0.5, extra: [0.05, 16, 'Their shop'], say: 'They left. You own a piece of their shop.' }, lose: { say: 'They left.' } } }],
+    ['👋 Wish them luck', { leave: 'a', chance: { p: 1, win: { leave: 'b', say: 'Two gone. A new rival.' }, lose: { say: 'They left.' } } }],
     ['⚖️ Remind them of their contracts', { a: -20, b: -20, team: -6, say: 'They stayed. Angry.' }]
   ], { w: 0.8, cd: 40, need: 4, minWeek: 15, who: { a: 'ambitious', b: 'any' } });
 
@@ -3387,8 +3532,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🙏 Stay calm and apologize', { happy: 3, rep: 2, say: 'They ran out of steam. People respected how calm you were.' }],
     ['🎁 Give them a full refund', { cash: -0.05, chance: { p: 0.6, win: { happy: 2, say: 'They took the money and left quietly.' }, lose: { rep: -2, say: 'They took the money and still left a bad review.' } } }],
     ['😤 Yell back', { chance: { p: 0.3, win: { fans: 10, say: 'The crowd clapped. Somehow you won.' }, lose: { rep: -6, say: 'The video of you yelling is everywhere.' } } }],
-    ['🚪 "Get out. You\'re banned."', { rep: -1, team: 4, say: 'Your team cheered when the door closed.' }]
-  ], { w: 3, cd: 10 });
+    ['🚪 "Get out. You\'re banned."', { rep: -1, team: 4, next: ['banned_lawyer', 2, 4, 0.4], say: 'Your team cheered when the door closed.' }]
+  ], { w: 3, cd: 10, init: H.person });
 
   E('customer_yell_worker', 'customers', '📢', 'A customer is screaming at {a}', '{a} is shaking. The customer says their order was wrong. It wasn\'t.', [
     ['🛡️ Step in and defend {a}', { a: 15, loyal: { a: 15 }, happy: -2, say: '{a} will never forget you had their back.' }],
@@ -3398,11 +3543,11 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 2.5, cd: 10, who: { a: 'front' } });
 
   E('slapped_you', 'customers', '✋', 'A customer slapped you', 'Their order was late. They slapped you across the face in front of everyone.', [
-    ['👮 Call the police', { rep: 3, say: 'They were arrested outside. Customers were shocked.' }],
+    ['👮 Call the police', { rep: 3, next: ['slap_court', 3, 6, 0.8], say: 'They were arrested outside. Customers were shocked.' }],
     ['✋ Slap them back', { chance: { p: 0.25, win: { fans: 15, say: 'Somehow the video made you look like a hero.' }, lose: { rep: -8, cash: -0.5, say: 'They sued you. The video only showed your slap.' } } }],
-    ['🧊 Stay calm and walk away', { rep: 4, team: 5, say: 'Your team saw how calm you were. Respect.' }],
+    ['🧊 Stay calm and walk away', { rep: 4, team: 5, next: ['slapper_apology', 1, 3, 0.5], say: 'Your team saw how calm you were. Respect.' }],
     ['🚫 Ban them for life', { rep: 1, team: 3, say: 'Their photo is now behind the counter.' }]
-  ], { w: 1.5, cd: 25 });
+  ], { w: 1.5, cd: 25, init: H.person });
 
   E('slapped_worker', 'customers', '✋', 'A customer slapped {a}', 'Over a coupon that had expired. {a} is in shock.', [
     ['👮 Call the police', { a: 12, team: 6, say: 'The customer was arrested. {a} feels protected.' }],
@@ -3411,19 +3556,19 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🤐 Keep it quiet', { a: -20, team: -8, say: 'The team can\'t believe you did nothing.' }]
   ], { w: 1.5, cd: 25, who: { a: 'front' } });
 
-  E('karen_manager', 'customers', '🗣️', '"I want to speak to the owner"', 'A customer wants 50% off because the music was "too loud". The line is growing.', [
-    ['💸 Give them the discount', { cash: -0.03, happy: -2, say: 'They left smiling. The people in line saw everything.' }],
-    ['🙂 Politely say no', { chance: { p: 0.6, win: { rep: 2, say: 'They grumbled and paid in full.' }, lose: { rep: -2, say: 'They left a 1-star review. "Rude owner."' } } }],
-    ['🔉 Turn the music down', { happy: 1, say: 'They paid full price and left.' }],
-    ['🚪 Ask them to leave', { team: 4, say: 'The line clapped. Your team loved it.' }]
-  ], { w: 2.5, cd: 12 });
+  E('karen_manager', 'customers', '🗣️', '"I want to speak to the owner"', '{name} wants 50% off because the music was "too loud". The line is growing.', [
+    ['💸 Give her the discount', { cash: -0.03, happy: -2, next: ['karen_returns', 1, 3, 0.8], say: 'She left smiling. The people in line saw everything.' }],
+    ['🙂 Politely say no', { chance: { p: 0.6, win: { rep: 2, say: 'She grumbled and paid in full.' }, lose: { rep: -2, say: 'She left a 1-star review. "Rude owner."' } } }],
+    ['🔉 Turn the music down', { happy: 1, say: 'She paid full price and left.' }],
+    ['🚪 Ask her to leave', { team: 4, say: 'The line clapped. Your team loved it.' }]
+  ], { w: 2.5, cd: 12, init: H.woman });
 
-  E('shoplifter', 'customers', '🏃', 'A shoplifter just ran out', 'They grabbed an armful of stock and ran for the door.', [
-    ['🏃 Chase them yourself', { chance: { p: 0.45, win: { rep: 4, fans: 10, say: 'You caught them two blocks away.' }, lose: { cash: -0.2, say: 'You lost them in the crowd.' } } }],
+  E('shoplifter', 'customers', '🏃', 'A shoplifter just ran out', 'A kid in a hoodie grabbed an armful of stock and ran for the door.', [
+    ['🏃 Chase them yourself', { chance: { p: 0.45, win: { rep: 2, then: 'thief_caught', say: 'You caught him two blocks away.' }, lose: { cash: -0.2, say: 'You lost them in the crowd.' } } }],
     ['👮 Call the police', { chance: { p: 0.5, win: { rep: 2, say: 'The police caught them. Stock returned.' }, lose: { cash: -0.2, say: 'The police never found them.' } } }],
-    ['📹 Post the video online', { chance: { p: 0.6, win: { fans: 12, say: 'Someone recognized them. They returned it all.' }, lose: { cash: -0.2, say: 'Lots of views. No thief.' } } }],
-    ['🤷 Let it go', { cash: -0.2, team: -2, say: 'Your team saw you do nothing.' }]
-  ], { w: 2, cd: 12, cond: noCams });
+    ['📹 Post the video online', { chance: { p: 0.6, win: { fans: 12, then: 'thief_caught', say: 'Someone recognized him. His name is {name}.' }, lose: { cash: -0.2, say: 'Lots of views. No thief.' } } }],
+    ['🤷 Let it go', { cash: -0.2, team: -2, next: ['thief_returns', 2, 4, 0.5], say: 'Your team saw you do nothing.' }]
+  ], { w: 2, cd: 12, cond: noCams, init: H.boy });
 
   E('slip_lawsuit', 'customers', '⚖️', 'A customer slipped and is suing', 'They fell on a wet floor. Their lawyer wants {amt}.', [
     ['💸 Pay it', { cash: -1, say: 'Paid. The case is closed.' }],
@@ -3439,16 +3584,16 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🙈 Stay open like nothing happened', { chance: { p: 0.4, win: { say: 'No one else got sick. Lucky.' }, lose: { rep: -12, closed: [2, 'Shut down'], say: 'More people got sick. The city shut you down.' } } }]
   ], { w: 1.2, cd: 30, cond: FOOD });
 
-  E('refund_scam', 'customers', '🧾', 'Is this customer scamming you?', 'They want a refund for the fifth time this month. Always a new excuse.', [
-    ['💸 Refund again', { cash: -0.05, say: 'They\'ll be back next week.' }],
-    ['🔍 Check the receipts', { chance: { p: 0.7, win: { cash: 0.1, say: 'Fake receipts. They left fast.' }, lose: { rep: -2, say: 'The receipts were real. Awkward.' } } }],
-    ['🚫 Ban them', { rep: -1, say: 'They told their friends you\'re rude.' }],
+  E('refund_scam', 'customers', '🧾', 'Is this customer scamming you?', '{name} wants a refund for the fifth time this month. Always a new excuse.', [
+    ['💸 Refund again', { cash: -0.05, next: ['scammer_returns', 1, 3, 0.8], say: 'He\'ll be back next week.' }],
+    ['🔍 Inspect his receipts', { chance: { p: 0.75, win: { then: 'scammer_caught', say: 'The receipts are fake. You caught him.' }, lose: { rep: -2, say: 'The receipts were real. Awkward.' } } }],
+    ['🚫 Ban him', { rep: -1, next: ['scammer_revenge', 1, 3, 0.4], say: 'He told his friends you\'re rude.' }],
     ['📜 New refund rules for everyone', { happy: -2, cash: 0.1, say: 'Refund scams stopped. Honest customers grumbled.' }]
-  ], { w: 1.5, cd: 20 });
+  ], { w: 1.8, cd: 16, init: H.man });
 
   E('influencer_blackmail', 'customers', '📸', 'An influencer wants free stuff', '"Free stuff for a month, or I tell my 200,000 followers you\'re awful."', [
-    ['🎁 Give it to them', { cash: -0.4, fans: 8, say: 'They posted nice things. It felt gross.' }],
-    ['🚫 Say no', { chance: { p: 0.5, win: { fans: 12, say: 'Their fans took YOUR side.' }, lose: { rep: -5, say: 'Their video hurt. Customers stayed away.' } } }],
+    ['🎁 Give it to them', { cash: -0.4, fans: 8, next: ['influencer_more', 2, 4, 0.7], say: 'They posted nice things. It felt gross.' }],
+    ['🚫 Say no', { chance: { p: 0.5, win: { fans: 12, say: 'Their fans took YOUR side.' }, lose: { then: 'influencer_war', say: 'They posted the video.' } } }],
     ['🎥 Film them and post it', { chance: { p: 0.6, win: { fans: 30, rep: 3, say: 'The blackmail video went viral. They apologized.' }, lose: { rep: -3, say: 'People said you were petty.' } } }],
     ['🤝 Offer a real paid deal', { cash: -0.2, fans: 15, say: 'Fair deal. Good posts.' }]
   ], { w: 1.5, cd: 20 });
@@ -3456,21 +3601,21 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('lost_kid', 'customers', '🧒', 'A little kid lost their parents', 'A crying 5-year-old walks up to your counter. No parents in sight.', [
     ['📢 Announce it on the speakers', { rep: 3, say: 'The mom came running in two minutes.' }],
     ['👮 Call the police', { rep: 2, say: 'The police found the parents quickly.' }],
-    ['🍪 Stay with them and wait', { rep: 4, happy: 3, say: 'The dad hugged you. He left a big tip.' }],
+    ['🍪 Stay with them and wait', { rep: 4, happy: 3, next: ['kid_parents', 1, 3, 0.6], say: 'The dad hugged you. He took your card.' }],
     ['📱 Post a photo online', { chance: { p: 0.6, win: { fans: 15, rep: 2, say: 'The post went round town. Parents found in 10 minutes.' }, lose: { rep: -3, say: 'People said you shouldn\'t post a kid\'s photo.' } } }]
   ], { w: 1.2, cd: 30 });
 
   E('proposal', 'customers', '💍', 'A customer wants to propose here', 'He wants to hide a ring in his girlfriend\'s order tonight. He needs your help.', [
-    ['💍 Help him', { chance: { p: 0.8, win: { fans: 15, rep: 3, say: 'She said YES. The whole shop cheered.' }, lose: { happy: -2, say: 'She said no. Nobody knew where to look.' } } }],
-    ['🎉 Go all out with decorations', { cash: -0.1, chance: { p: 0.8, win: { fans: 25, rep: 4, say: 'She said YES. The video went round town.' }, lose: { say: 'She said no. In front of everyone.' } } }],
+    ['💍 Help him', { chance: { p: 0.8, win: { fans: 15, rep: 3, next: ['wedding_booking', 4, 8, 0.7], say: 'She said YES. The whole shop cheered.' }, lose: { happy: -2, say: 'She said no. Nobody knew where to look.' } } }],
+    ['🎉 Go all out with decorations', { cash: -0.1, chance: { p: 0.8, win: { fans: 25, rep: 4, next: ['wedding_booking', 4, 8, 0.8], say: 'She said YES. The video went round town.' }, lose: { say: 'She said no. In front of everyone.' } } }],
     ['🎥 Film it for your page', { chance: { p: 0.7, win: { fans: 30, say: 'She said yes. Your video got thousands of likes.' }, lose: { rep: -3, say: 'She said no. Your post made it worse.' } } }],
     ['🙅 Too risky', { say: 'He proposed at a restaurant down the street.' }]
   ], { w: 1.2, cd: 30 });
 
   E('big_order', 'customers', '📦', 'A huge order just came in', 'A company wants 10x your normal order. By Friday.', [
-    ['💪 Accept and work overtime', { extra: [0.6, 1, 'Big order'], team: -8, say: 'Done on time. The team is exhausted.' }],
+    ['💪 Accept and work overtime', { extra: [0.6, 1, 'Big order'], team: -8, next: ['big_client_returns', 4, 8, 0.5], say: 'Done on time. The team is exhausted.' }],
     ['🤝 Accept half', { extra: [0.3, 1, 'Half order'], say: 'A solid week of extra money.' }],
-    ['📈 Say yes, charge 30% more', { chance: { p: 0.5, win: { extra: [0.8, 1, 'Big order'], team: -8, say: 'They paid it. Huge week.' }, lose: { say: 'They went to {rival} instead.' } } }],
+    ['📈 Say yes, charge 30% more', { chance: { p: 0.5, win: { extra: [0.8, 1, 'Big order'], team: -8, next: ['big_client_returns', 4, 8, 0.6], say: 'They paid it. Huge week.' }, lose: { say: 'They went to {rival} instead.' } } }],
     ['🙅 Turn it down', { say: 'You kept things normal.' }]
   ], { w: 1.8, cd: 15, init: rival });
 
@@ -3489,7 +3634,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25 });
 
   E('elderly_scam', 'customers', '👵', 'Someone is scamming an old lady', 'A man outside is pressuring an old lady to hand over her bank card.', [
-    ['🏃 Step in right now', { chance: { p: 0.7, win: { rep: 6, fans: 12, say: 'He ran off. She calls you her hero.' }, lose: { rep: 4, say: 'He shoved you and ran. She\'s safe.' } } }],
+    ['🏃 Step in right now', { chance: { p: 0.7, win: { rep: 6, fans: 12, next: ['grandma_gift', 6, 12, 0.5], say: 'He ran off. She calls you her hero.' }, lose: { rep: 4, say: 'He shoved you and ran. She\'s safe.' } } }],
     ['👮 Call the police', { rep: 4, say: 'The police arrived in time.' }],
     ['📹 Film it as proof', { chance: { p: 0.6, win: { rep: 3, say: 'The video helped catch him.' }, lose: { rep: -2, say: 'People asked why you just filmed.' } } }],
     ['🙈 Not your business', { rep: -3, say: 'She lost her savings. You think about it a lot.' }]
@@ -3498,7 +3643,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('famous_customer', 'customers', '🌟', 'A famous star just walked in', '{name}, the famous {celeb}, is in line. People are starting to notice.', [
     ['📸 Ask for a photo', { chance: { p: 0.6, win: { fans: 30, say: 'They said yes. The photo is everywhere.' }, lose: { rep: -1, say: '"No photos, please." Awkward.' } } }],
     ['🎁 Everything on the house', { cash: -0.05, chance: { p: 0.5, win: { fans: 40, rep: 3, say: 'They posted about you. Thank you!' }, lose: { fans: 5, say: 'They said thanks and left.' } } }],
-    ['🙂 Treat them like anyone else', { rep: 2, say: 'They left a huge tip and a thank-you note.' }],
+    ['🙂 Treat them like anyone else', { rep: 2, next: ['celeb_returns', 3, 6, 0.5], say: 'They left a huge tip and a thank-you note.' }],
     ['📢 Tell the whole town', { fans: 20, happy: -3, say: 'A crowd came. The star left through the back.' }]
   ], { w: 1.2, cd: 25, rarity: 'rare', init: function (g, c) { person(g, c); c.celeb = U.pick(['singer', 'actor', 'football player', 'chef', 'streamer']); } });
 
@@ -3545,14 +3690,14 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 20 });
 
   E('hungry_stranger', 'customers', '🥖', 'A hungry man asks for food', 'He has no money. He asks politely if you have anything left over.', [
-    ['🍽️ Give him a full meal', { cash: -0.01, rep: 3, say: 'He thanked you with tears in his eyes.' }],
+    ['🍽️ Give him a full meal', { cash: -0.01, rep: 3, next: ['stranger_returns', 10, 20, 0.5], say: 'He thanked you with tears in his eyes.' }],
     ['🧺 Leftovers every night', { cash: -0.05, rep: 5, say: 'Your "free leftovers" box became famous.' }],
     ['💼 Offer him work for food', { chance: { p: 0.6, win: { hireSpecial: { role: 'front', skill: 55, traits: ['hardworking', 'loyal'] }, rep: 3, say: 'He became one of your best workers.' }, lose: { rep: 1, say: 'He ate, said thanks, and never came back.' } } }],
     ['🙅 Say no', { rep: -2, say: 'A customer saw and posted about it.' }]
-  ], { w: 1.2, cd: 30, cond: FOOD });
+  ], { w: 1.2, cd: 30, cond: FOOD, init: H.man });
 
   E('customer_idea', 'customers', '💡', 'A regular has an idea for you', '"You should sell this. I\'d buy it every day." Their idea is not bad.', [
-    ['🚀 Try it for a month', { cash: -0.3, chance: { p: 0.55, win: { demand: [1.12, 6, 'Customer idea'], fans: 10, say: 'It\'s a hit. They tell everyone it was their idea.' }, lose: { say: 'Only they bought it.' } } }],
+    ['🚀 Try it for a month', { cash: -0.3, chance: { p: 0.55, win: { demand: [1.12, 6, 'Customer idea'], fans: 10, next: ['idea_royalty', 3, 6, 0.6], say: 'It\'s a hit. They tell everyone it was their idea.' }, lose: { say: 'Only they bought it.' } } }],
     ['🎁 Give them credit on the menu', { cash: -0.1, fans: 8, rep: 2, say: 'They show everyone their name on the menu.' }],
     ['📝 Write it down for later', { say: 'Maybe someday.' }],
     ['🙃 "We know what we\'re doing"', { happy: -3, say: 'They took their idea to {rival}.' }]
@@ -3629,7 +3774,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['📞 Find a new supplier today', { cash: -0.2, say: 'More expensive, but you have stock.' }],
     ['🏃 Buy from a store at full price', { cash: -0.3, say: 'Painful, but you stayed open.' }],
     ['🔒 Close until it arrives', { closed: [1, 'No stock'], say: 'A quiet, empty week.' }],
-    ['🤝 Borrow from {rival}', { chance: { p: 0.4, win: { rival: -0.03, say: '{rival} helped. You owe them one.' }, lose: { demand: [0.85, 1, 'Low stock'], say: 'They laughed and hung up.' } } }]
+    ['🤝 Borrow from {rival}', { chance: { p: 0.4, win: { rival: -0.03, next: ['rival_favor', 3, 6, 0.8], say: '{rival} helped. You owe them one.' }, lose: { demand: [0.85, 1, 'Low stock'], say: 'They laughed and hung up.' } } }]
   ], { w: 2, cd: 15, init: rival });
 
   E('supplier_price', 'business', '📈', 'Your supplier raised prices by 30%', '"Take it or leave it." Your costs just went up.', [
@@ -3698,9 +3843,9 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('break_in', 'business', '🚨', 'Someone broke in last night', 'The door is smashed. The register is empty.', [
     ['👮 Call the police', { cash: -0.3, say: 'They filed a report. Nothing else.' }],
     ['📹 Install cameras now', { cash: -0.7, say: 'Nobody will try that again.' }],
-    ['🕵️ Check the street cameras', { chance: { p: 0.4, win: { rep: 3, say: 'Caught on video. Arrested.' }, lose: { cash: -0.3, say: 'Nothing useful.' } } }],
+    ['🕵️ Check the street cameras', { chance: { p: 0.4, win: { then: 'burglar_known', say: 'You found him on the video.' }, lose: { cash: -0.3, say: 'Nothing useful.' } } }],
     ['🔒 Better locks', { cash: -0.4, say: 'Stronger doors.' }]
-  ], { w: 1, cd: 35, cond: noCams });
+  ], { w: 1, cd: 35, cond: noCams, init: H.man });
 
   E('ransomware', 'business', '💻', 'Your computers got hacked', 'A message on screen: "Pay or lose everything." Your files are locked.', [
     ['💸 Pay them', { cash: -1, chance: { p: 0.6, win: { say: 'They unlocked it. You feel sick.' }, lose: { cash: -0.5, say: 'They took the money and vanished.' } } }],
@@ -3812,8 +3957,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1, cd: 35, minWeek: 10 });
 
   E('investor_pitch', 'money', '🎤', 'You get 5 minutes with a rich investor', 'At a party, a famous investor asks: "What\'s your business?"', [
-    ['🎤 Give your best pitch', { chance: { p: 0.35, win: { cash: 3, fans: 20, say: 'She wrote you a check on the spot.' }, lose: { say: '"Interesting. Good luck."' } } }],
-    ['📱 Show her your numbers', { chance: { p: function (g) { return g.reputation > 60 ? 0.5 : 0.25; }, win: { cash: 2.5, say: 'The numbers spoke. She invested.' }, lose: { say: '"Come back when you\'re bigger."' } } }],
+    ['🎤 Give your best pitch', { chance: { p: 0.35, win: { cash: 3, fans: 20, next: ['investor_checkin', 8, 12], say: 'She wrote you a check on the spot.' }, lose: { say: '"Interesting. Good luck."' } } }],
+    ['📱 Show her your numbers', { chance: { p: function (g) { return g.reputation > 60 ? 0.5 : 0.25; }, win: { cash: 2.5, next: ['investor_checkin', 8, 12], say: 'The numbers spoke. She invested.' }, lose: { say: '"Come back when you\'re bigger."' } } }],
     ['🤝 Ask for advice, not money', { demand: [1.06, 6, 'Good advice'], say: 'Her advice was worth a lot.' }],
     ['😶 Freeze', { say: 'The moment passed.' }]
   ], { w: 0.8, cd: 50, minWeek: 12 });
@@ -3945,11 +4090,11 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   // More customers, money and social media.
   E('drunk_customer', 'customers', '🍺', 'A drunk customer won\'t leave', 'Shouting, knocking things over. Other customers are leaving.', [
-    ['🚕 Call him a taxi', { cash: -0.01, rep: 2, say: 'He went home safe.' }],
+    ['🚕 Call him a taxi', { cash: -0.01, rep: 2, next: ['drunk_apology', 1, 3, 0.5], say: 'He went home safe.' }],
     ['👮 Call the police', { rep: 1, say: 'They took him away.' }],
-    ['☕ Coffee and calm talk', { chance: { p: 0.6, win: { rep: 3, say: 'He calmed down and apologized.' }, lose: { cash: -0.1, say: 'He broke a table.' } } }],
+    ['☕ Coffee and calm talk', { chance: { p: 0.6, win: { rep: 3, next: ['drunk_apology', 1, 3, 0.7], say: 'He calmed down and went home.' }, lose: { cash: -0.1, say: 'He broke a table.' } } }],
     ['🦺 Security at night', { cash: -0.3, happy: 3, say: 'Nights are calm now.' }]
-  ], { w: 1.5, cd: 20 });
+  ], { w: 1.5, cd: 20, init: H.man });
 
   E('accused_theft', 'customers', '👛', 'A customer says {a} stole her wallet', 'She\'s shouting. {a} swears it isn\'t true.', [
     ['📹 Check the cameras', { chance: { p: 0.8, win: { a: 12, rep: 2, say: 'She left it in her car. {a} was innocent.' }, lose: { fire: 'a', say: 'It was {a}. Fired.' } } }],
@@ -3994,7 +4139,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1, cd: 40 });
 
   E('loan_shark', 'money', '🦈', 'A man offers fast cash', 'No bank, no questions. Very high interest.', [
-    ['💵 Take it', { cash: 1, supply: [0.08, 12, 'Loan shark'], say: 'Fast money. Painful payments.' }],
+    ['💵 Take it', { cash: 1, next: ['loan_shark_collects', 3, 6, 0.8], say: 'Fast money. He\'ll want it back.' }],
     ['🏦 Go to a bank instead', { cash: 0.6, supply: [0.02, 12, 'Bank loan'], say: 'Slower, fairer.' }],
     ['👮 Report him', { rep: 3, say: 'He was arrested.' }],
     ['🙅 No', { say: 'He left his card anyway.' }]
@@ -4055,6 +4200,112 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🎁 A "since day one" sale', { demand: [1.1, 2, 'Anniversary sale'], fans: 15, say: 'A busy week.' }],
     ['😊 Just smile', { fans: 10, say: 'A nice moment.' }]
   ], { w: 0.8, cd: 80, minWeek: 30 });
+
+  // More everyday moments (v6).
+  E('water_broke', 'customers', '👶', 'A customer is going into labor', 'Her water broke in the middle of your shop. The ambulance is 20 minutes away.', [
+    ['🚗 Drive her to the hospital', { rep: 5, capacity: [0.97, 1, 'Boss away'], say: 'You made it with minutes to spare. A baby girl.' }],
+    ['📞 Call and stay with her', { rep: 4, say: 'The ambulance came just in time.' }],
+    ['🧑‍⚕️ Ask for a doctor in the shop', { chance: { p: 0.6, win: { rep: 8, fans: 25, say: 'A nurse was buying coffee. The baby was born right there.' }, lose: { rep: 3, say: 'No doctor. But the ambulance came fast.' } } }],
+    ['🚪 Clear the shop for privacy', { rep: 4, capacity: [0.95, 1, 'Shop cleared'], say: 'Her family sent flowers the next week.' }]
+  ], { w: 0.6, cd: 80 });
+
+  E('first_job_teen', 'customers', '🧑‍🎓', 'A shy teenager wants their first job', 'Hands shaking, CV printed at the library. "I\'ll work hard. I promise."', [
+    ['✅ Hire them', { hireSpecial: { role: 'front', skill: 35, traits: ['hardworking', 'loyal'] }, rep: 2, say: 'They were early every single day.' }],
+    ['📝 A trial weekend', { chance: { p: 0.7, win: { hireSpecial: { role: 'front', skill: 40, traits: ['loyal'] }, say: 'They passed with flying colors.' }, lose: { say: 'Not ready yet. You gave them tips for next time.' } } }],
+    ['💬 Give them honest advice', { rep: 2, say: 'They thanked you for taking them seriously.' }],
+    ['🙅 "We\'re not hiring."', { say: 'They nodded and left.' }]
+  ], { w: 1, cd: 40 });
+
+  E('tour_bus', 'customers', '🚌', 'A tour bus just parked outside', 'Fifty tourists are walking in. All at once. Nobody warned you.', [
+    ['💪 Everyone on the floor', { extra: [0.15, 1, 'Tour bus'], team: -4, say: 'Chaos, but everyone got served.' }],
+    ['🎟️ A quick tourist deal', { extra: [0.12, 1, 'Tour bus'], fans: 10, say: 'They posted photos all over the world.' }],
+    ['🤝 Ask the guide to come back', { extra: [0.08, 12, 'Tour stop'], say: 'You\'re a regular stop on the tour now.' }],
+    ['🙅 "Sorry, too full."', { happy: -3, say: 'They went to {rival}.' }]
+  ], { w: 1, cd: 30, init: rival });
+
+  E('old_couple', 'customers', '💑', 'A couple had their first date here', 'Fifty years ago, when it was a different shop. They came back for their anniversary.', [
+    ['🎂 A surprise cake', { cash: -0.02, rep: 4, fans: 10, say: 'They cried. The whole shop clapped.' }],
+    ['📸 A photo for the wall', { rep: 3, say: 'Their photo hangs by the door now.' }],
+    ['🎁 On the house, forever', { rep: 5, say: 'They come every Sunday now.' }],
+    ['🙂 A warm welcome', { rep: 1, say: 'They held hands the whole time.' }]
+  ], { w: 0.8, cd: 60 });
+
+  E('couple_fight', 'customers', '💢', 'A couple is fighting at a table', 'Loud, angry, and it\'s getting worse. Other customers are uncomfortable.', [
+    ['🗣️ Ask them to calm down', { chance: { p: 0.6, win: { happy: 2, say: 'They lowered their voices. Awkward, but quiet.' }, lose: { happy: -3, say: 'They yelled at you too, then left.' } } }],
+    ['🍰 Bring a free dessert', { cash: -0.01, chance: { p: 0.5, win: { rep: 3, say: 'They laughed. The fight was over.' }, lose: { say: 'They didn\'t even look at it.' } } }],
+    ['🚪 Ask them to leave', { happy: 3, say: 'The room relaxed.' }],
+    ['🙈 Stay out of it', { happy: -4, say: 'Three tables left early.' }]
+  ], { w: 1, cd: 30 });
+
+  E('mystery_package', 'business', '📦', 'A package with no sender', 'It arrived this morning. No name. It\'s humming quietly.', [
+    ['👮 Call the police', { closed: [1, 'Police check'], then: 'package_opened', say: 'The bomb squad came. Everyone waited outside.' }],
+    ['📦 Open it carefully', { then: 'package_opened', say: 'You held your breath and opened the lid.' }],
+    ['🗑️ Throw it out', { say: 'You\'ll never know what it was.' }],
+    ['📞 Call the delivery company', { chance: { p: 0.5, win: { then: 'package_opened', say: 'They found the sender.' }, lose: { say: 'They have no idea.' } } }]
+  ], { w: 0.8, cd: 60 });
+
+  E('package_opened', 'lucky', '🎁', 'It\'s a gift from a fan', 'A handmade clock with your logo, and a note: "Your shop got me through a hard year."', [
+    ['🖼️ Hang it on the wall', { rep: 3, team: 4, say: 'Everyone stops to read the note.' }],
+    ['📱 Share the story', { fans: 25, say: 'The fan saw the post and cried.' }],
+    ['💌 Find and thank them', { rep: 4, fans: 10, say: 'An old lady who comes every Tuesday.' }],
+    ['🎁 Send a gift back', { cash: -0.02, rep: 5, say: 'Now you\'re pen pals.' }]
+  ], { chainOnly: true });
+
+  E('sign_fell', 'trouble', '🪧', 'Your big sign fell onto the sidewalk', 'It missed a man by a few inches. He\'s shaking. People are filming.', [
+    ['🙏 Check on him and apologize', { rep: 3, say: 'He accepted your apology. And a free lunch.' }],
+    ['🔧 Fix every sign, properly', { cash: -0.5, rep: 2, say: 'Everything is bolted down now.' }],
+    ['💸 Offer him money', { cash: -0.3, chance: { p: 0.7, win: { say: 'He took it. No lawsuit.' }, lose: { cash: -0.8, say: 'He sued anyway.' } } }],
+    ['🤷 "Nobody got hurt."', { rep: -6, say: 'The video made you look careless.' }]
+  ], { w: 0.8, cd: 60 });
+
+  E('bad_batch', 'business', '🤢', 'This morning\'s batch came out wrong', 'Something went wrong in production. It doesn\'t look or taste right.', [
+    ['🗑️ Throw it all out', { cash: -0.3, rep: 2, say: 'Painful. But nobody got a bad product.' }],
+    ['🏷️ Sell it cheap as "seconds"', { cash: -0.1, happy: -1, say: 'Some people love a bargain.' }],
+    ['🔍 Find what went wrong', { cash: -0.3, equip: 0.01, say: 'A broken sensor. Fixed.' }],
+    ['🤫 Sell it at full price', { chance: { p: 0.4, win: { say: 'Nobody noticed.' }, lose: { rep: -6, say: 'Complaints all afternoon.' } } }]
+  ], { w: 1.2, cd: 30 });
+
+  E('card_stolen', 'money', '💳', 'Your company card was used abroad', 'Someone spent a lot on your card in another country. You were here all week.', [
+    ['🏦 Call the bank', { chance: { p: 0.8, win: { say: 'The bank gave it all back.' }, lose: { cash: -0.3, say: 'The bank only returned half.' } } }],
+    ['🔒 New cards for everything', { cash: -0.05, say: 'Safe again.' }],
+    ['🕵️ Check who had the card', { team: -4, chance: { p: 0.4, win: { say: 'A worker\'s phone got hacked. Not their fault.' }, lose: { say: 'No answers.' } } }],
+    ['🤷 Write it off', { cash: -0.4, say: 'Expensive lesson.' }]
+  ], { w: 0.8, cd: 50 });
+
+  E('tip_jar', 'team', '🫙', 'Someone stole the tip jar', 'A whole week of tips, gone. The team is upset.', [
+    ['💵 Pay the tips yourself', { cash: -0.1, team: 10, say: 'The team won\'t forget that.' }],
+    ['📹 Check the cameras', { chance: { p: 0.5, win: { cash: 0.05, team: 6, say: 'Caught. The money is back.' }, lose: { team: -2, say: 'Nothing on camera.' } } }],
+    ['🔒 Bolt the jar to the counter', { team: 3, say: 'Nobody\'s taking it now.' }],
+    ['🤷 "It happens."', { team: -8, say: 'The team feels you don\'t care.' }]
+  ], { w: 1, cd: 40 });
+
+  E('fake_money', 'money', '💵', 'A customer paid with fake money', '{a} noticed the bill feels wrong. The customer is still at the counter.', [
+    ['👮 Call the police', { rep: 2, say: 'They found more fake bills in his pocket.' }],
+    ['🗣️ Ask for another bill', { chance: { p: 0.5, win: { say: 'He paid with a real one. Suspicious.' }, lose: { cash: -0.02, say: 'He ran.' } } }],
+    ['🖊️ Buy a money checker pen', { cash: -0.01, a: 5, say: 'No fake bills will get through now.' }],
+    ['🤷 Take it anyway', { cash: -0.02, say: 'The bank took it away later.' }]
+  ], { w: 1, cd: 40, who: { a: 'front' } });
+
+  E('rumor_sick', 'social', '📱', 'A lie about you is spreading', 'A post says your products made someone sick. It never happened.', [
+    ['🧾 Post your safety records', { chance: { p: 0.7, win: { rep: 3, say: 'People believed the facts.' }, lose: { rep: -2, say: 'Some people still believe it.' } } }],
+    ['🔍 Find who posted it', { chance: { p: 0.4, win: { rival: -0.08, rep: 3, say: 'It was a fake account linked to {rival}.' }, lose: { say: 'No luck.' } } }],
+    ['🎟️ Invite people to see', { fans: 15, rep: 2, say: 'People came, saw, and posted the truth.' }],
+    ['🤐 Ignore it', { demand: [0.93, 3, 'Rumor'], say: 'It faded, slowly.' }]
+  ], { w: 1, cd: 40, init: rival });
+
+  E('fan_art', 'social', '🎨', 'A fan drew your company as a cartoon', 'It\'s beautiful. Thousands of people liked it.', [
+    ['🛍️ Put it on T-shirts', { cash: -0.1, extra: [0.06, 6, 'Fan art shirts'], fans: 10, say: 'Sold out. The artist gets a share.' }],
+    ['🖼️ Frame it in the shop', { rep: 2, fans: 10, say: 'The artist visits every week.' }],
+    ['💼 Hire the artist', { cash: -0.2, fans: 20, rep: 2, say: 'Your whole brand looks better now.' }],
+    ['❤️ Just say thanks', { fans: 8, say: 'The artist was thrilled.' }]
+  ], { w: 1, cd: 40 });
+
+  E('danger_challenge', 'social', '⚠️', 'People are filming a risky stunt here', 'An online challenge: jump off your counter. Two kids already got hurt.', [
+    ['🚫 Ban filming', { happy: -2, rep: 3, say: 'Safer. Some teens grumbled.' }],
+    ['📢 Post a warning', { rep: 4, fans: 10, say: 'Parents thanked you.' }],
+    ['🦺 Put up barriers', { cash: -0.1, rep: 2, say: 'Nobody can jump now.' }],
+    ['📱 It\'s free publicity', { chance: { p: 0.4, win: { fans: 20, say: 'Lots of views.' }, lose: { rep: -8, cash: -0.5, say: 'A kid broke an arm. His parents sued.' } } }]
+  ], { w: 0.8, cd: 50 });
 })();
 </script>
 <script>
@@ -4100,7 +4351,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25, minWeek: 6, init: rival });
 
   E('rival_buyout', 'rivals', '💼', '{rival} wants to buy your company', 'Their boss sends an offer. A lot of money. But {company} would be gone.', [
-    ['🙅 "Not for sale."', { team: 6, say: 'Your team cheered.' }],
+    ['🙅 "Not for sale."', { team: 6, next: ['rival_hostile', 6, 12, 0.4], say: 'Your team cheered.' }],
     ['🔄 "I\'ll buy YOU instead."', { chance: { p: 0.3, win: { cash: -3, rival: -0.5, demand: [1.2, 16, 'Bought rival shops'], say: 'You bought half their shops.' }, lose: { rep: -2, say: 'They laughed at your offer.' } } }],
     ['🤝 Offer a partnership', { rival: -0.05, extra: [0.1, 8, 'Partner deal'], say: 'Money for both sides. For now.' }],
     ['📈 Ask for triple', { chance: { p: 0.2, win: { cash: 4, say: 'They sent more money just to talk. You still said no.' }, lose: { say: 'They walked away.' } } }]
@@ -4116,8 +4367,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('rival_sabotage', 'rivals', '🧨', 'Someone sabotaged your delivery', 'Your stock arrived ruined. The driver saw someone in a {rival} jacket.', [
     ['👮 Report it to the police', { chance: { p: 0.5, win: { rival: -0.12, rep: 3, say: 'They caught them. {rival} is in the news.' }, lose: { cash: -0.3, say: 'No proof. Stock still ruined.' } } }],
     ['📹 Put cameras on deliveries', { cash: -0.5, say: 'It won\'t happen again.' }],
-    ['🗣️ Confront {rival}', { chance: { p: 0.4, win: { cash: 0.3, rival: -0.05, say: 'They paid for the damage.' }, lose: { cash: -0.3, say: 'They laughed in your face.' } } }],
-    ['😈 Get revenge', { chance: { p: 0.4, win: { rival: -0.1, say: 'They had a bad week too.' }, lose: { rep: -10, cash: -0.5, say: 'You got caught. Now you\'re the villain.' } } }]
+    ['🗣️ Confront {rival}', { chance: { p: 0.4, win: { cash: 0.3, rival: -0.05, say: 'They paid for the damage.' }, lose: { cash: -0.3, next: ['rival_retaliates', 2, 4, 0.4], say: 'They laughed in your face.' } } }],
+    ['😈 Get revenge', { chance: { p: 0.4, win: { rival: -0.1, next: ['rival_retaliates', 2, 4, 0.7], say: 'They had a bad week too.' }, lose: { rep: -10, cash: -0.5, say: 'You got caught. Now you\'re the villain.' } } }]
   ], { w: 1, cd: 30, minWeek: 10, init: rival });
 
   E('rival_tv_debate', 'rivals', '📺', '{rival}\'s boss wants a TV debate', 'Live TV. Both bosses. The topic: who\'s the best {industry} in {city}.', [
@@ -4151,7 +4402,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('rival_spy', 'rivals', '🕵️', 'You caught a spy from {rival}', 'A "customer" was photographing your prices and your kitchen.', [
     ['🚪 Throw them out', { say: 'Gone. But they got photos.' }],
     ['📸 Take their phone', { chance: { p: 0.5, win: { rival: -0.05, say: 'You deleted everything.' }, lose: { rep: -3, cash: -0.2, say: 'They called the police on you.' } } }],
-    ['🎭 Show them fake plans', { rival: -0.08, say: '{rival} copied your fake plans. They flopped.' }],
+    ['🎭 Show them fake plans', { next: ['fake_plan_flop', 2, 4], say: 'They took photos of everything. Perfect.' }],
     ['📢 Post it online', { fans: 15, rival: -0.05, say: 'Everyone laughed at {rival}.' }]
   ], { w: 1.5, cd: 25, minWeek: 6, init: rival });
 
@@ -4722,6 +4973,56 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🙅 No space', { say: 'You passed.' }]
   ], { w: 0.8, cd: 50 });
 
+  // More rivals, world news and lucky moments (v6).
+  E('rival_boss_sick', 'rivals', '🏥', '{rival}\'s boss is in the hospital', 'Their shop is struggling without them. Their workers look lost.', [
+    ['💐 Visit with flowers', { rep: 5, say: 'Their boss called you a friend. Rivals can be kind.' }],
+    ['🤝 Lend them a worker', { capacity: [0.95, 2, 'Helping a rival'], rep: 6, rival: 0.03, say: 'They never forgot it.' }],
+    ['📢 Grab their customers', { demand: [1.1, 3, 'Rival struggling'], rep: -4, say: 'Smart, but cold. People noticed.' }],
+    ['🤐 Carry on', { say: 'You kept to your own business.' }]
+  ], { w: 0.8, cd: 60, minWeek: 10, init: rival });
+
+  E('rival_charity_game', 'rivals', '⚽', '{rival} wants a charity match', 'Your team against theirs. Money goes to a children\'s hospital. The whole town will watch.', [
+    ['⚽ Play to win', { team: 6, chance: { p: 0.5, win: { fans: 30, rep: 4, rival: -0.05, say: 'You won. The town cheered.' }, lose: { fans: 15, rep: 3, say: 'You lost, but the kids got the money.' } } }],
+    ['🎉 Play for fun', { team: 10, fans: 20, rep: 4, say: 'Nobody remembers the score. Everyone had fun.' }],
+    ['💰 Double the donation', { cash: -0.4, rep: 8, fans: 20, say: 'The biggest donation in the town\'s history.' }],
+    ['🙅 Too busy', { rep: -3, say: 'They played against the fire department instead.' }]
+  ], { w: 0.8, cd: 60, minWeek: 8, init: rival });
+
+  E('rival_price_list', 'rivals', '📄', '{rival}\'s secret price list', 'A supplier accidentally sent you {rival}\'s price list. You know exactly what they pay.', [
+    ['📞 Demand the same prices', { supply: [-0.03, 12, 'Better deal'], say: 'Your supplier gave you the same deal.' }],
+    ['🔙 Send it back unread', { rep: 4, say: 'The supplier respects you. So does {rival}.' }],
+    ['📊 Use it to undercut them', { demand: [1.08, 6, 'Undercut'], rival: -0.05, say: 'You knew exactly how low to go.' }],
+    ['🗑️ Delete it', { say: 'It never happened.' }]
+  ], { w: 0.8, cd: 60, minWeek: 8, init: rival });
+
+  E('national_holiday', 'world', '🎆', 'A big national holiday', 'Everyone has the day off. Parades, parties, and crowds everywhere.', [
+    ['🎉 Open with a holiday special', { extra: [0.15, 1, 'Holiday'], team: -3, say: 'Your busiest day in weeks.' }],
+    ['🏖️ Close for the day', { closed: [1, 'Holiday'], team: 12, say: 'A happy, rested team.' }],
+    ['💵 Open, with double pay', { extra: [0.12, 1, 'Holiday'], cash: -0.1, team: 4, say: 'Busy day. Happy team.' }],
+    ['🎪 Get a booth at the parade', { cash: -0.2, fans: 25, say: 'Thousands saw your logo.' }]
+  ], { w: 1, cd: 40 });
+
+  E('marathon_route', 'world', '🏃', 'The marathon runs past your door', 'Tomorrow. The road will be closed, but thousands of people will be watching.', [
+    ['🥤 Free water for runners', { cash: -0.1, fans: 30, rep: 4, say: 'The runners cheered your team.' }],
+    ['🛍️ Sell to the crowd', { extra: [0.12, 1, 'Marathon'], say: 'The crowd bought a lot.' }],
+    ['📣 Cheer every runner', { team: 8, fans: 15, say: 'Your team had the best day.' }],
+    ['🔒 Close for the day', { closed: [1, 'Road closed'], say: 'A quiet day off.' }]
+  ], { w: 0.8, cd: 50 });
+
+  E('late_night_law', 'world', '🌙', 'A new law bans late-night opening', 'Starting next month, no shop can stay open after 10 PM.', [
+    ['⏰ Open earlier instead', { team: -3, say: 'The morning crowd makes up for it.' }],
+    ['🛵 Late-night delivery', { cash: -0.3, demand: [1.03, 12, 'Night delivery'], say: 'Delivery isn\'t banned. Smart.' }],
+    ['📢 Fight the law', { chance: { p: 0.3, win: { fans: 20, say: 'The city changed its mind.' }, lose: { capacity: [0.94, 12, 'Shorter hours'], say: 'The law stayed.' } } }],
+    ['🤷 Accept it', { capacity: [0.94, 12, 'Shorter hours'], team: 5, say: 'Shorter hours. Happier team.' }]
+  ], { kind: 'news', w: 0.6, cd: 80, minWeek: 15 });
+
+  E('found_in_wall', 'lucky', '🧱', 'Your team found letters in the wall', 'Love letters from 1952, hidden behind a brick. They tell a whole love story.', [
+    ['🔍 Find the family', { rep: 6, fans: 20, say: 'The writer\'s grandson cried when he read them.' }],
+    ['🖼️ Display them in the shop', { fans: 15, rep: 2, say: 'People come just to read them.' }],
+    ['📰 Give them to the newspaper', { fans: 25, say: 'The story went all over the country.' }],
+    ['🧱 Put them back in the wall', { rep: 2, say: 'Some secrets belong to the building.' }]
+  ], { w: 0.6, cd: 80, rarity: 'rare' });
+
   // The name of an event in the Event Book.
   G.bookName = function (d) {
     var t = typeof d.title === 'string' ? d.title : (d.fx && d.fx.say) || (d.fx && d.fx.chance && d.fx.chance.win.say) || d.id;
@@ -4885,7 +5186,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   // =====================================================================
 
   E('shady_inspector', 'shady', '🕶️', 'The inspector hints at a bribe', 'He found problems. "Or... maybe I found nothing. For a price."', [
-    ['💵 Pay him', { cash: -0.3, next: ['bribe_exposed', 4, 12, 0.35], say: 'He found nothing. Of course.' }],
+    ['💵 Pay him', { cash: -0.3, next: [['bribe_exposed', 4, 12, 0.35], ['inspector_greedy', 4, 8, 0.5]], say: 'He found nothing. Of course.' }],
     ['🛠️ Fix the problems', { cash: -0.6, rep: 2, say: 'All fixed. Legally.' }],
     ['📹 Record him and report it', { chance: { p: 0.6, win: { rep: 8, fans: 15, say: 'He was fired. You\'re a local hero.' }, lose: { cash: -0.6, say: 'He found more problems. Big fine.' } } }],
     ['🙅 Take the fine', { cash: -0.5, say: 'Painful, but clean.' }]
@@ -4963,9 +5264,9 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('protection', 'shady', '🧥', 'Men in suits want "protection money"', '"Nice shop. Would be a shame if something happened to it."', [
     ['💵 Pay them', { cash: -0.4, next: ['protection_again', 4, 8, 0.7], say: 'They left. They\'ll be back.' }],
-    ['👮 Go to the police', { chance: { p: 0.6, win: { rep: 5, say: 'They were arrested.' }, lose: { cash: -0.8, say: 'Your window was smashed that night.' } } }],
+    ['👮 Go to the police', { chance: { p: 0.6, win: { rep: 5, say: 'They were arrested.' }, lose: { next: ['gang_revenge', 1, 2], say: 'The police did nothing. The men saw you go in.' } } }],
     ['🦺 Hire security', { cash: -0.6, say: 'They didn\'t come back.' }],
-    ['🗣️ Tell them to get lost', { chance: { p: 0.4, win: { team: 8, say: 'They left. Your team is impressed.' }, lose: { cash: -1, closed: [1, 'Vandalized'], say: 'They wrecked the shop that night.' } } }]
+    ['🗣️ Tell them to get lost', { chance: { p: 0.4, win: { team: 8, say: 'They left. Your team is impressed.' }, lose: { cash: -0.3, next: ['gang_revenge', 1, 2], say: 'They smiled. "See you soon."' } } }]
   ], { w: 0.8, cd: 50, minWeek: 12 });
 
   E('protection_again', 'shady', '🧥', 'The men in suits are back', '"The price went up." They want double.', [
@@ -5249,6 +5550,695 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['💰 Just donate', { cash: -0.3, rep: 4, say: 'Kind, and easy on the legs.' }],
     ['🙅 No time', { say: 'Maybe next year.' }]
   ], { w: 0.8, cd: 60 });
+
+  // More of your life and more trouble (v6).
+  E('graduation_speech', 'boss', '🎓', 'Your old school wants you to give a speech', 'At graduation. Hundreds of students and parents. You\'ve never spoken in public.', [
+    ['🎤 Say yes and prepare', { chance: { p: 0.7, win: { rep: 6, fans: 25, say: 'A standing ovation. It went viral.' }, lose: { rep: 2, say: 'You were nervous. They clapped anyway.' } } }],
+    ['😬 Say yes, improvise', { chance: { p: 0.4, win: { rep: 6, fans: 25, say: 'Your honest speech was the best one.' }, lose: { rep: -2, say: 'You forgot everything. Awkward.' } } }],
+    ['🎁 Offer a scholarship instead', { cash: -0.5, rep: 8, say: 'Your name is on a scholarship now.' }],
+    ['🙅 Politely say no', { say: 'Maybe next year.' }]
+  ], { w: 0.7, cd: 80, minWeek: 20 });
+
+  E('interview_mistake', 'boss', '🎙️', 'You said something wrong in an interview', 'You joked about your customers. The clip is everywhere, without the context.', [
+    ['🙏 Apologize right away', { rep: 1, say: 'People accepted it.' }],
+    ['🎥 Post the full interview', { chance: { p: 0.6, win: { rep: 2, say: 'With context, it was clearly a joke.' }, lose: { rep: -4, say: 'People didn\'t watch the full video.' } } }],
+    ['🎁 A thank-you week for customers', { cash: -0.3, happy: 6, say: 'Actions spoke louder than words.' }],
+    ['🤐 Say nothing', { rep: -5, say: 'It took weeks to go away.' }]
+  ], { w: 0.8, cd: 60, minWeek: 10 });
+
+  E('power_surge', 'trouble', '⚡', 'A power surge fried your machines', 'A lightning storm. Half your equipment won\'t turn on.', [
+    ['🔧 Repair what you can', { cash: -0.5, capacity: [0.85, 2, 'Broken machines'], say: 'Back to normal in two weeks.' }],
+    ['🆕 Replace everything', { cash: -1.2, equip: 0.03, say: 'New machines. Faster than before.' }],
+    ['📄 Call insurance', { chance: { p: function (g) { return g.flags.insured ? 0.9 : 0.3; }, win: { cash: -0.1, say: 'Insurance paid for it all.' }, lose: { cash: -0.9, say: 'Not covered.' } } }],
+    ['🛡️ Surge protectors for all', { cash: -0.8, say: 'Fixed, and it won\'t happen again.' }]
+  ], { w: 0.7, cd: 60 });
+
+  E('bees_in_sign', 'trouble', '🐝', 'Bees built a nest in your sign', 'Thousands of them. Customers are scared to walk in.', [
+    ['🐝 Call a beekeeper', { cash: -0.1, rep: 3, say: 'He moved them safely. And gave you a jar of honey.' }],
+    ['🧪 Call pest control', { cash: -0.1, rep: -2, say: 'Gone. Some people were sad about the bees.' }],
+    ['🍯 Keep them and sell honey', { happy: -3, fans: 20, extra: [0.04, 8, 'Shop honey'], say: '"Shop honey" sells out every week.' }],
+    ['🚪 Use the back door', { happy: -4, say: 'Confusing, but it works.' }]
+  ], { w: 0.6, cd: 80 });
+
+  E('shady_counterfeit', 'shady', '🏷️', 'A supplier offers fake brand-name stock', 'Looks exactly like the real thing. A quarter of the price.', [
+    ['🤫 Buy it', { supply: [-0.05, 8, 'Fake stock'], next: ['investigation', 4, 10, 0.5], say: 'Cheap stock. Big risk.' }],
+    ['🙅 No', { say: 'You sell the real thing.' }],
+    ['👮 Report him', { rep: 4, say: 'He was shut down.' }],
+    ['📸 Warn other shops', { rep: 3, say: 'Nobody bought from him.' }]
+  ], { w: 0.7, cd: 60, minWeek: 8 });
+})();
+</script>
+<script>
+// Story events: what happens next. Most of these only appear as a follow-up to another event, either right away
+// (fx.then) or a few weeks later (fx.next). Forgive someone, and they might come back with the same trick.
+// See the top of events.js for the event format and the style rules. Every question has exactly 4 responses.
+var CS = globalThis.CS = globalThis.CS || {};
+
+(function () {
+  var H = CS.EVH, E = CS.E, man = H.man;
+  var CH = { chainOnly: true };
+
+  // =====================================================================
+  // 🧾 THE REFUND SCAMMER  (starts with refund_scam)
+  // =====================================================================
+
+  E('scammer_caught', 'customers', '🕵️', '{name} is a scammer', 'The receipts are fake. He has been stealing from you for months. He\'s still standing at the counter.', [
+    ['🗣️ Confront him', { chance: { p: 0.5, win: { cash: 0.3, say: 'He paid it all back and left red-faced.' }, lose: { rep: -2, next: ['scammer_revenge', 1, 3, 0.7], say: 'He stormed out, shouting that you\'ll regret it.' } } }],
+    ['👮 Call the police', { rep: 3, cash: 0.2, say: 'He was arrested. He had scammed five other shops too.' }],
+    ['🤝 Forgive him', { rep: 1, next: ['scammer_returns', 1, 3, 0.85], say: 'He thanked you and walked out smiling.' }],
+    ['⚠️ "Last chance."', { next: ['scammer_returns', 2, 5, 0.5], say: 'He swore he would never do it again.' }]
+  ], CH);
+
+  E('scammer_returns', 'customers', '🧾', '{name} is back. Same trick.', 'Another fake receipt. Another sad story. He thinks you\'ll fall for it again.', [
+    ['👮 Call the police now', { rep: 4, cash: 0.2, say: 'Arrested this time. The whole street heard about it.' }],
+    ['🚫 Ban him for life', { rep: 2, say: 'His photo is behind the counter now.' }],
+    ['🤝 Forgive him again', { cash: -0.1, next: ['scammer_returns', 1, 3, 0.9], say: 'He smiled all the way out. He\'ll be back.' }],
+    ['📸 Post his photo online', { chance: { p: 0.6, win: { fans: 10, rep: 2, say: 'Other shops thanked you. He was banned everywhere.' }, lose: { rep: -4, say: 'People said you went too far.' } } }]
+  ], CH);
+
+  E('scammer_revenge', 'customers', '😈', '{name} wants revenge', 'Thirty fake 1-star reviews appeared overnight. All from new accounts. All about you.', [
+    ['🚩 Report every review', { chance: { p: 0.7, win: { say: 'All removed in a day.' }, lose: { rep: -3, say: 'Half of them stayed up.' } } }],
+    ['⚖️ Sue him', { cash: -0.3, chance: { p: 0.6, win: { cash: 0.8, rep: 3, say: 'The judge made him pay. He deleted everything.' }, lose: { say: 'Not enough proof. He got away with it.' } } }],
+    ['📢 Tell the true story', { chance: { p: 0.6, win: { fans: 20, rep: 3, say: 'People believed you. His plan backfired.' }, lose: { rep: -2, say: 'Some people believed him.' } } }],
+    ['🤐 Ignore it', { rep: -4, say: 'Your rating dropped for weeks.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🏃 THE SHOPLIFTER  (starts with shoplifter)
+  // =====================================================================
+
+  E('thief_caught', 'customers', '🧢', 'You caught the thief: {name}', 'A teenager, shaking. "Please don\'t call the police. My mom will kill me."', [
+    ['👮 Call the police', { rep: 2, say: 'The police drove him home. His mom was waiting.' }],
+    ['📞 Call his parents', { rep: 3, chance: { p: 0.7, win: { say: 'His mom came, furious. He said sorry to everyone.' }, lose: { next: ['thief_returns', 2, 4], say: 'His dad just shrugged. You have a bad feeling.' } } }],
+    ['🧹 Make him work it off', { next: ['thief_reformed', 3, 6, 0.6], say: 'He swept floors all week. He worked hard.' }],
+    ['🤝 Let him go', { next: ['thief_returns', 1, 3, 0.7], say: 'He ran off without a word.' }]
+  ], CH);
+
+  E('thief_returns', 'customers', '🏃', '{name} is stealing again', 'Same kid. Same jacket. This time he brought two friends.', [
+    ['👮 Police this time', { rep: 3, say: 'All three were caught outside.' }],
+    ['🗣️ Stop all three', { chance: { p: 0.5, win: { rep: 3, say: 'They dropped everything and ran.' }, lose: { cash: -0.3, say: 'They got away with a lot.' } } }],
+    ['💼 Offer him a job instead', { chance: { p: 0.5, win: { hireSpecial: { role: 'front', skill: 40, traits: ['loyal'] }, say: 'He took it. His friends left without him.' }, lose: { say: 'He laughed and ran.' } } }],
+    ['🔒 Lock up the good stuff', { cash: -0.1, happy: -2, say: 'Harder to steal. Harder to shop.' }]
+  ], CH);
+
+  E('thief_reformed', 'customers', '🌱', '{name} wants a real job', 'The kid who stole from you. He says working here changed him.', [
+    ['✅ Hire him', { hireSpecial: { role: 'front', skill: 50, traits: ['hardworking', 'loyal'] }, rep: 3, say: 'He became one of your hardest workers.' }],
+    ['📝 One trial week', { chance: { p: 0.7, win: { hireSpecial: { role: 'front', skill: 45, traits: ['loyal'] }, say: 'He passed. He was early every day.' }, lose: { say: 'It didn\'t work out. No hard feelings.' } } }],
+    ['📚 Help him finish school', { cash: -0.1, rep: 5, say: 'He graduated. He sent you a photo.' }],
+    ['🙅 "No thanks."', { say: 'He nodded and left quietly.' }]
+  ], CH);
+
+  // =====================================================================
+  // 💸 THE THIEF ON YOUR TEAM  (starts with theft)
+  // =====================================================================
+
+  E('theft_confession', 'team', '😢', '{a} admits stealing', '{a} breaks down crying. "My mom is sick. I needed money for her medicine."', [
+    ['👮 Call the police', { fire: 'a', rep: 1, team: -4, say: '{a} was arrested. The team is shaken.' }],
+    ['🚪 Fire {a} quietly', { fire: 'a', say: '{a} left without looking back.' }],
+    ['🤝 Forgive and help', { a: 25, loyal: { a: 30 }, cash: -0.2, next: ['theft_relapse', 4, 8, 0.25], say: 'You helped pay for the medicine. {a} cried.' }],
+    ['💸 "Pay it all back."', { a: -5, cash: 0.2, next: ['theft_relapse', 3, 6, 0.4], say: '{a} will pay it back, week by week.' }]
+  ], CH);
+
+  E('theft_relapse', 'team', '💸', 'Money is missing again', 'The register is short again. {a} was working. Again.', [
+    ['🚪 Fire {a}', { fire: 'a', say: 'This time there was no second chance.' }],
+    ['💬 Ask {a} first', { chance: { p: 0.5, win: { a: 10, say: 'It wasn\'t {a}. A customer grabbed it.' }, lose: { fire: 'a', say: '{a} confessed. You had no choice.' } } }],
+    ['👮 Call the police', { fire: 'a', rep: 1, say: '{a} was taken away.' }],
+    ['🤝 One more chance', { cash: -0.3, next: ['theft_relapse', 2, 5, 0.6], say: '{a} promised. Again.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🕵️ THE SPY  (starts with spy)
+  // =====================================================================
+
+  E('spy_caught', 'team', '🕵️', '{a} spies for {rival}', '"They pay me to send them your plans. I\'m sorry."', [
+    ['🚪 Fire {a}', { fire: 'a', rival: -0.03, say: 'Gone. {rival} lost their spy.' }],
+    ['🎭 Make {a} a double agent', { a: -5, next: ['double_agent', 2, 4], say: '{a} will feed them lies from now on.' }],
+    ['⚖️ Sue {rival}', { cash: -0.4, chance: { p: 0.5, win: { cash: 1.5, rival: -0.15, say: 'You won. {rival} paid a fortune.' }, lose: { say: '{rival}\'s lawyers were better.' } } }],
+    ['🤝 Forgive {a}', { loyal: { a: 10 }, next: ['spy_again', 3, 6, 0.6], say: '{a} promised to stop.' }]
+  ], CH);
+
+  E('double_agent', 'rivals', '🎭', '{a} stole {rival}\'s plans', '{a} fed them fake plans and came back with theirs. {rival} launches a big sale on Friday.', [
+    ['🏷️ Launch your sale first', { demand: [1.15, 3, 'Beat their sale'], rival: -0.1, say: 'Your sale started Thursday. Theirs flopped.' }],
+    ['📢 Leak their plan', { fans: 15, rival: -0.08, say: 'Everyone knew their surprise before they did.' }],
+    ['🎁 Reward {a}', { bonus: 'a', loyal: { a: 20 }, say: '{a} is loyal to you now.' }],
+    ['🤔 It could be a trap', { chance: { p: 0.5, win: { rep: 2, say: 'It was a trap. You didn\'t fall for it.' }, lose: { rival: 0.05, say: 'It was real. You missed your chance.' } } }]
+  ], CH);
+
+  E('spy_again', 'team', '🕵️', '{a} is spying again', '{rival} copied your new product in two days. Only {a} knew about it.', [
+    ['🚪 Fire {a}', { fire: 'a', rival: -0.03, say: 'Done. No more chances.' }],
+    ['⚖️ Sue {a} and {rival}', { cash: -0.4, chance: { p: 0.5, win: { cash: 1, rival: -0.1, say: 'You won.' }, lose: { say: 'You lost the case.' } } }],
+    ['💬 Confront {a}', { chance: { p: 0.4, win: { loyal: { a: 20 }, say: '{rival} was threatening {a}. You helped.' }, lose: { quit: 'a', say: '{a} quit and joined {rival}.' } } }],
+    ['🙈 Let it go', { rival: 0.08, say: '{rival} got stronger.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🗣️ THE CUSTOMER WHO ALWAYS COMPLAINS  (starts with karen_manager)
+  // =====================================================================
+
+  E('karen_returns', 'customers', '🗣️', '{name} is back, and louder', 'Last time you gave in. Now she wants a free meal for her whole family.', [
+    ['🙅 Firmly say no', { rep: 2, team: 5, say: 'She left. Your team clapped.' }],
+    ['🎁 Give it to her', { cash: -0.1, team: -4, next: ['karen_returns', 1, 3, 0.9], say: 'She left happy. She\'ll be back.' }],
+    ['🚪 Ban her', { rep: -1, team: 8, say: 'She posted about it. Nobody cared.' }],
+    ['📜 "No more discounts."', { happy: -1, team: 4, say: 'A sign on the door. For everyone.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🧥 THE PROTECTION GANG  (starts with protection)
+  // =====================================================================
+
+  E('gang_revenge', 'shady', '🪟', 'The men in suits came back at night', 'Your windows are smashed. A note on the door: "Last warning."', [
+    ['👮 Take the note to the police', { cash: -0.3, chance: { p: 0.6, win: { rep: 5, say: 'Arrested. The street is safe.' }, lose: { say: 'The police can\'t find them.' } } }],
+    ['🧑‍🤝‍🧑 Unite all the shops', { cash: -0.3, rep: 6, team: 5, say: 'Every shop stood together. They never came back.' }],
+    ['💵 Pay them', { cash: -0.8, next: ['protection_again', 3, 6], say: 'They took the money. They\'ll want more.' }],
+    ['📹 Cameras and a guard', { cash: -0.9, say: 'Your shop is a fortress now.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🥖 THE HUNGRY MAN  (starts with hungry_stranger)
+  // =====================================================================
+
+  E('stranger_returns', 'lucky', '🤵', 'The hungry man came back', '{name}, the man you fed, now owns three restaurants. He wants to thank you.', [
+    ['🎁 Accept his gift', { cash: 1.5, say: 'An envelope full of money. "You saved me."' }],
+    ['🤝 Work together', { extra: [0.08, 12, 'Old friend'], say: 'His restaurants buy from you now.' }],
+    ['❤️ Ask him to help others', { rep: 8, fans: 20, say: 'Together you feed fifty people every week.' }],
+    ['🙂 "Seeing you is enough."', { rep: 5, say: 'He hugged you and cried.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🍺 THE DRUNK CUSTOMER  (starts with drunk_customer)
+  // =====================================================================
+
+  E('drunk_apology', 'customers', '🙏', '{name} came back to apologize', 'Sober and embarrassed. He wants to pay for the damage.', [
+    ['🤝 Accept', { cash: 0.2, rep: 2, say: 'He paid, and shook everyone\'s hand.' }],
+    ['🎁 "It\'s on the house."', { rep: 4, say: 'He became one of your best regulars.' }],
+    ['💼 He offers a big order', { extra: [0.2, 1, 'His company order'], say: 'He runs a company. He ordered big.' }],
+    ['🙅 "Don\'t come back."', { say: 'He nodded and left.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🧒 THE LOST KID  (starts with lost_kid)
+  // =====================================================================
+
+  E('kid_parents', 'lucky', '👪', 'The lost kid\'s parents came back', 'They own a big company. "You took care of our son. How can we thank you?"', [
+    ['🤝 A business deal', { extra: [0.1, 10, 'Grateful parents'], say: 'Their company became your biggest client.' }],
+    ['🎁 "Nothing needed."', { rep: 5, fans: 15, say: 'They told everyone how kind you were.' }],
+    ['🏫 A donation to a school', { rep: 8, say: 'They paid for a new playground in {city}.' }],
+    ['💵 Accept a reward', { cash: 0.8, say: 'A generous reward.' }]
+  ], CH);
+
+  // =====================================================================
+  // 💍 THE PROPOSAL  (starts with proposal)
+  // =====================================================================
+
+  E('wedding_booking', 'customers', '💒', 'The couple wants their wedding here', 'The man who proposed in your shop is getting married. They want you to host.', [
+    ['💒 Host the wedding', { closed: [1, 'Wedding'], extra: [0.5, 1, 'Wedding'], fans: 20, say: 'The most beautiful day. Photos everywhere.' }],
+    ['🍰 Do the food only', { extra: [0.25, 1, 'Wedding food'], say: 'Every guest asked where the food was from.' }],
+    ['🎁 A wedding gift', { cash: -0.1, rep: 4, say: 'They cried when they opened it.' }],
+    ['🙅 Too busy', { say: 'They understood. They still sent a photo.' }]
+  ], CH);
+
+  // =====================================================================
+  // 👵 THE OLD LADY  (starts with elderly_scam)
+  // =====================================================================
+
+  E('grandma_gift', 'lucky', '👵', 'The old lady you saved sent a letter', '"You saved my savings. I\'m old, and I have no family. I want to leave something to you."', [
+    ['🙏 Accept kindly', { cash: 2, say: 'She passed away a year later. She remembered you.' }],
+    ['❤️ Give it to charity', { cash: 0.5, rep: 8, say: 'Her money helped a hundred families.' }],
+    ['☕ Visit her every week', { rep: 5, team: 4, say: 'She taught you how to bake her famous pie.' }],
+    ['🙅 "I can\'t accept that."', { rep: 3, say: 'She laughed. "Stubborn. Like me."' }]
+  ], CH);
+
+  // =====================================================================
+  // 😨 THE STALKER  (starts with stalker)
+  // =====================================================================
+
+  E('stalker_back', 'team', '😨', 'The man is back outside', 'He\'s waiting across the street again. {a} is terrified.', [
+    ['👮 Get a restraining order', { cash: -0.2, a: 15, say: 'He must stay away now. {a} can breathe.' }],
+    ['🚗 Drive {a} home every night', { a: 12, loyal: { a: 20 }, say: 'You never let {a} walk alone.' }],
+    ['🧑‍🤝‍🧑 The team walks together', { team: 6, a: 10, say: 'Nobody walks alone anymore.' }],
+    ['🗣️ Confront him yourself', { chance: { p: 0.5, win: { a: 12, say: 'He left and never came back.' }, lose: { a: -5, say: 'He laughed. It got worse.' } } }]
+  ], CH);
+
+  // =====================================================================
+  // 📸 THE INFLUENCER  (starts with influencer_blackmail)
+  // =====================================================================
+
+  E('influencer_more', 'customers', '📸', 'The influencer wants more', '"Free stuff for my friends too. Or I post the video."', [
+    ['🚫 Say no this time', { chance: { p: 0.5, win: { fans: 15, say: 'Nobody believed their video.' }, lose: { rep: -5, say: 'The video hurt.' } } }],
+    ['🎁 Give in again', { cash: -0.4, next: ['influencer_more', 2, 4, 0.8], say: 'They\'ll be back again.' }],
+    ['🎥 Expose them', { chance: { p: 0.6, win: { fans: 30, rep: 3, say: 'Everyone saw the blackmail. They apologized.' }, lose: { rep: -3, say: 'People said you were petty.' } } }],
+    ['⚖️ Call a lawyer', { cash: -0.2, rep: 2, say: 'One letter. They stopped.' }]
+  ], CH);
+
+  E('influencer_war', 'social', '📉', 'The influencer posted about you', 'A video called "Worst place in {city}". It has 100,000 views.', [
+    ['🎥 Post your side', { chance: { p: 0.6, win: { fans: 20, say: 'Your fans defended you.' }, lose: { rep: -3, say: 'Their fans attacked your page.' } } }],
+    ['🎁 Free week to win people back', { cash: -0.3, happy: 5, say: 'People came to see for themselves.' }],
+    ['⚖️ Sue for lies', { cash: -0.3, chance: { p: 0.5, win: { rep: 4, say: 'They deleted it and said sorry.' }, lose: { say: 'The video stayed up.' } } }],
+    ['🤐 Ignore it', { demand: [0.93, 3, 'Bad video'], say: 'It faded after a few weeks.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🦈 THE LOAN SHARK  (starts with loan_shark)
+  // =====================================================================
+
+  E('loan_shark_collects', 'shady', '🦈', 'The loan shark wants double', '"Interest went up." He wants twice what you borrowed. By Friday.', [
+    ['💸 Pay it', { cash: -1.5, say: 'Painful. But he\'s gone.' }],
+    ['👮 Go to the police', { chance: { p: 0.6, win: { rep: 4, say: 'He was arrested. You owe nothing.' }, lose: { cash: -0.8, say: 'His friends paid you a visit.' } } }],
+    ['🤝 Pay half, ask for time', { cash: -0.7, next: ['loan_shark_collects', 2, 4, 0.6], say: 'He took it. He\'ll be back for the rest.' }],
+    ['🏦 Get a bank loan to pay him', { cash: -1, supply: [0.02, 12, 'Bank loan'], say: 'You\'re free of him.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🕶️ THE GREEDY INSPECTOR  (starts with shady_inspector)
+  // =====================================================================
+
+  E('inspector_greedy', 'shady', '🕶️', 'The inspector is back for more', '"Same deal as last time? Price went up."', [
+    ['💵 Pay again', { cash: -0.5, next: [['inspector_greedy', 4, 8, 0.5], ['bribe_exposed', 4, 10, 0.4]], say: 'He smiled and left.' }],
+    ['📹 Record him this time', { chance: { p: 0.6, win: { rep: 8, fans: 15, say: 'He was arrested. You\'re a hero.' }, lose: { cash: -0.8, say: 'He found problems everywhere. Big fine.' } } }],
+    ['🛠️ Fix everything properly', { cash: -0.7, rep: 2, say: 'Nothing to find. He left angry.' }],
+    ['📞 Call his boss', { chance: { p: 0.5, win: { rep: 5, say: 'He was fired.' }, lose: { cash: -0.6, say: 'His boss is in on it.' } } }]
+  ], CH);
+
+  // =====================================================================
+  // 🍺 THE WORKER WHO DRINKS  (starts with worker_drunk)
+  // =====================================================================
+
+  E('worker_recovered', 'team', '🌅', '{a} is sober now', 'Three months without a drink. {a} wants to thank you for not giving up on them.', [
+    ['🎉 Celebrate with the team', { cash: -0.05, team: 8, a: 15, say: 'The whole team cheered.' }],
+    ['🪜 Give {a} a bigger job', { promote: 'a', a: 12, say: '{a} was ready for it.' }],
+    ['🤗 A quiet thank you', { a: 10, loyal: { a: 15 }, say: '{a} will never forget.' }],
+    ['📝 Help others the same way', { rep: 5, team: 5, say: 'You started a help program for workers.' }]
+  ], CH);
+
+  E('worker_drunk_again', 'team', '🍺', '{a} is drunk at work again', 'Worse than last time. {a} dropped a whole tray in front of customers.', [
+    ['🏥 Pay for treatment', { cash: -0.4, a: 10, capacity: [0.95, 4, '{a} in treatment'], next: ['worker_recovered', 8, 14, 0.6], say: '{a} agreed to get help.' }],
+    ['🚪 Fire {a}', { fire: 'a', team: -3, say: 'Hard, but you had to.' }],
+    ['⚠️ Final warning', { a: -10, next: ['worker_drunk_again', 2, 5, 0.5], say: '{a} promised. Again.' }],
+    ['🏠 Unpaid leave', { a: -5, capacity: [0.95, 2, '{a} away'], say: '{a} went home to think.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🗣️ THE BANNED CUSTOMER  (starts with customer_yell)
+  // =====================================================================
+
+  E('banned_lawyer', 'trouble', '⚖️', '{name} is suing you for the ban', 'The customer who screamed at you hired a lawyer. They say the ban was unfair.', [
+    ['⚖️ Fight it', { cash: -0.3, chance: { p: 0.7, win: { rep: 3, say: 'The judge laughed them out of court.' }, lose: { cash: -0.4, say: 'You lost. You had to lift the ban.' } } }],
+    ['📹 Show the video', { chance: { p: 0.8, win: { rep: 4, fans: 10, say: 'The video ended it in one minute.' }, lose: { cash: -0.2, say: 'The video had no sound.' } } }],
+    ['🤝 Settle quietly', { cash: -0.3, say: 'Done. Annoying, but done.' }],
+    ['🔓 Lift the ban', { team: -6, next: ['karen_returns', 1, 3, 0.7], say: 'Your team is not happy.' }]
+  ], CH);
+
+  // =====================================================================
+  // ✋ THE SLAP  (starts with slapped_you)
+  // =====================================================================
+
+  E('slap_court', 'trouble', '⚖️', 'The slap case is in court', 'The customer who slapped you says you started it. The judge wants to hear you.', [
+    ['🗣️ Tell the truth, calmly', { chance: { p: 0.75, win: { rep: 4, cash: 0.3, say: 'The judge believed you. They paid a fine to you.' }, lose: { say: 'The judge called it a draw.' } } }],
+    ['📹 Bring the camera video', { chance: { p: 0.9, win: { rep: 5, cash: 0.3, say: 'Case closed in five minutes.' }, lose: { say: 'The camera missed it.' } } }],
+    ['🧑‍⚖️ Hire a lawyer', { cash: -0.3, rep: 3, say: 'Your lawyer made it easy. You won.' }],
+    ['🤝 Drop the case', { rep: 1, say: 'You let it go. Life is short.' }]
+  ], CH);
+
+  E('slapper_apology', 'customers', '🙏', 'The slapper came back to apologize', '{name} is embarrassed. "I was having the worst day of my life. I\'m so sorry."', [
+    ['🤝 Accept the apology', { rep: 3, say: 'They shook your hand. They\'re a regular now.' }],
+    ['☕ Listen to their story', { rep: 4, team: 3, say: 'Their mom had just died. You understood.' }],
+    ['🚫 Still banned', { team: 3, say: 'Rules are rules.' }],
+    ['📱 Film it for your page', { fans: 15, rep: -2, say: 'Lots of views. Some called it cringe.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🚨 THE BREAK-IN  (starts with break_in)
+  // =====================================================================
+
+  E('burglar_known', 'trouble', '📹', 'The burglar is {name}', 'Your neighbor\'s son. Nineteen years old. His parents are begging you not to press charges.', [
+    ['⚖️ Press charges', { cash: 0.2, rep: 1, say: 'He went to court. The money came back.' }],
+    ['🤝 Let him pay it back', { cash: 0.3, rep: 3, say: 'He paid every cent, working weekends.' }],
+    ['💼 Offer him a job', { chance: { p: 0.5, win: { hireSpecial: { role: 'front', skill: 45, traits: ['loyal'] }, rep: 4, say: 'He never stole again. He works hard.' }, lose: { next: ['thief_returns', 3, 6], say: 'He took the job. Then he stopped showing up.' } } }],
+    ['🙈 Forget it', { next: ['burglar_again', 3, 8, 0.5], say: 'His parents cried with relief.' }]
+  ], CH);
+
+  E('burglar_again', 'trouble', '🚨', 'Another break-in. Same way in.', 'The same window. The same shoes on the camera. It\'s {name} again.', [
+    ['👮 Police, no discussion', { rep: 3, say: 'Arrested this time.' }],
+    ['🗣️ Talk to his parents', { chance: { p: 0.5, win: { cash: 0.3, say: 'They paid it back and sent him away to his uncle.' }, lose: { cash: -0.3, say: 'They didn\'t believe you.' } } }],
+    ['🔒 A proper alarm', { cash: -0.6, say: 'Nobody gets in now.' }],
+    ['🤝 Forgive him again', { cash: -0.4, next: ['burglar_again', 3, 8, 0.6], say: 'Some people never learn.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🦹 SABOTAGE AND REVENGE  (starts with rival_sabotage)
+  // =====================================================================
+
+  E('rival_retaliates', 'rivals', '💥', '{rival} hit back', 'Your delivery truck has four flat tires. A note says: "Now we\'re even."', [
+    ['🕊️ Call a truce', { chance: { p: 0.6, win: { say: 'Both bosses shook hands. It\'s over.' }, lose: { next: ['rival_retaliates', 2, 4, 0.5], say: 'They laughed at you.' } } }],
+    ['👮 Report them', { cash: -0.2, chance: { p: 0.5, win: { rival: -0.12, rep: 3, say: 'Caught on camera. They paid a big fine.' }, lose: { say: 'No proof.' } } }],
+    ['😈 Hit back harder', { chance: { p: 0.4, win: { rival: -0.12, next: ['rival_retaliates', 2, 4, 0.7], say: 'They had a terrible week.' }, lose: { rep: -10, cash: -0.5, say: 'You got caught. It\'s all over the news.' } } }],
+    ['🔧 Fix it and move on', { cash: -0.2, say: 'You rose above it.' }]
+  ], CH);
+
+  E('fake_plan_flop', 'rivals', '🎭', '{rival} fell for your fake plan', 'They launched the fake product their spy photographed. Nobody wants it.', [
+    ['📢 Laugh about it publicly', { fans: 25, rival: -0.05, say: 'The whole city is laughing at them.' }],
+    ['🚀 Launch your real plan now', { demand: [1.12, 4, 'Real plan'], rival: -0.05, say: 'Perfect timing.' }],
+    ['🤐 Stay quiet', { rep: 3, rival: -0.05, say: 'Classy. They know what you did.' }],
+    ['🎁 Send them a thank-you card', { fans: 15, rival: -0.08, say: 'They were furious. Everyone else loved it.' }]
+  ], CH);
+
+  // =====================================================================
+  // 💼 BIG CLIENTS AND INVESTORS
+  // =====================================================================
+
+  E('big_client_returns', 'business', '📦', 'The big client wants a yearly deal', 'They loved the last order. Now they want the same every month for a year.', [
+    ['✍️ Sign it', { extra: [0.08, 16, 'Yearly deal'], say: 'Steady money all year.' }],
+    ['📈 Raise the price', { chance: { p: 0.5, win: { extra: [0.11, 16, 'Yearly deal'], say: 'They agreed.' }, lose: { say: 'They went to {rival}.' } } }],
+    ['🧑‍💼 Hire for it, then sign', { hireSpecial: { role: 'front', skill: 55 }, extra: [0.08, 16, 'Yearly deal'], say: 'A new worker just for this client.' }],
+    ['🙅 Too much work', { say: 'You passed.' }]
+  ], CH);
+
+  E('investor_checkin', 'money', '📊', 'Your investor wants results', '"I gave you money. Show me it was worth it."', [
+    ['📊 Show your numbers', { chance: { p: function (g) { return g.reputation > 55 ? 0.7 : 0.4; }, win: { cash: 1, say: 'She was impressed. She invested more.' }, lose: { rep: -2, say: 'She wasn\'t happy. She\'s watching you.' } } }],
+    ['🎤 Share big plans', { chance: { p: 0.5, win: { cash: 1.2, say: 'She loved your plan.' }, lose: { say: '"Talk is cheap."' } } }],
+    ['🍽️ Dinner with the team', { cash: -0.05, team: 4, rep: 2, say: 'She loved meeting everyone.' }],
+    ['🙏 Ask for more time', { say: 'She gave you three more months.' }]
+  ], CH);
+
+  E('rival_favor', 'rivals', '🤝', '{rival} wants their favor back', 'They helped when your supplier failed. Now they need to borrow your best worker for a week.', [
+    ['🤝 Keep your word', { capacity: [0.93, 1, 'Worker lent'], rep: 4, say: 'A deal is a deal. {rival} respects you now.' }],
+    ['💵 Pay them instead', { cash: -0.3, say: 'Money settles it.' }],
+    ['🙅 Refuse', { rep: -3, rival: 0.05, say: 'They told everyone you break promises.' }],
+    ['📦 Lend them stock instead', { cash: -0.2, rep: 2, say: 'They accepted.' }]
+  ], CH);
+
+  // =====================================================================
+  // 💵 THE MYSTERY TIPPER (a whole story)
+  // =====================================================================
+
+  E('mystery_tipper', 'customers', '💌', 'Someone leaves a huge tip every Friday', 'An envelope under a cup, always the same handwriting. Always a lot of money.', [
+    ['🔍 Find out who it is', { then: 'tipper_revealed', say: 'You watched the cameras all night.' }],
+    ['💌 Leave a thank-you note', { cash: 0.2, next: ['tipper_revealed', 1, 3], say: 'The next week there was a reply: "You\'ll see."' }],
+    ['🎁 Share it with the team', { team: 8, cash: 0.1, say: 'Every Friday is payday now.' }],
+    ['🤷 Just enjoy it', { cash: 0.3, next: ['tipper_revealed', 3, 6, 0.6], say: 'Some mysteries are nice.' }]
+  ], { w: 0.8, cd: 80, minWeek: 10, init: man });
+
+  E('tipper_revealed', 'customers', '💌', 'The mystery tipper is {name}', 'An old man who worked here 40 years ago, when it was a different shop. "This place was my whole life."', [
+    ['🪑 A special seat for him', { rep: 5, say: 'He comes every day now. He tells the best stories.' }],
+    ['🖼️ His photo on the wall', { rep: 4, fans: 10, say: 'Customers love hearing his story.' }],
+    ['🤝 Hire him part-time', { hireSpecial: { role: 'front', skill: 60, traits: ['loyal', 'friendly'] }, say: 'He\'s the happiest worker you have.' }],
+    ['🙏 Ask him to stop tipping', { rep: 3, say: 'He laughed. "Never."' }]
+  ], CH);
+
+  // =====================================================================
+  // 🕶️ UNDERCOVER BOSS (a whole story)
+  // =====================================================================
+
+  E('undercover', 'boss', '🕶️', 'Go undercover in your own company?', 'A fake mustache, a new name, one week working with your team. Nobody would know.', [
+    ['🕶️ Do it', { then: 'undercover_week', say: 'Day one. Nobody recognized you.' }],
+    ['📋 Send a secret shopper', { cash: -0.1, then: 'undercover_week', say: 'Your secret shopper took notes all week.' }],
+    ['🙅 Trust your team', { team: 4, say: 'You trust them. They feel it.' }],
+    ['📢 Ask for honest feedback', { team: 2, rep: 1, say: 'Most people were too polite to be honest.' }]
+  ], { w: 0.6, cd: 80, minWeek: 12, need: 3, who: { a: 'any', b: 'any' } });
+
+  E('undercover_week', 'boss', '🕵️', 'What you saw undercover', '{a} was rude to customers all week. {b} secretly covered for everyone.', [
+    ['🏅 Reward {b}', { bonus: 'b', b: 15, loyal: { b: 20 }, say: '{b} had no idea you were watching.' }],
+    ['⚠️ Talk to {a}', { chance: { p: 0.6, win: { a: 5, skill: { a: 4 }, say: '{a} changed.' }, lose: { a: -10, say: '{a} blamed everyone else.' } } }],
+    ['🪜 Promote {b}', { promote: 'b', b: 18, team: 3, say: 'The team agrees. {b} earned it.' }],
+    ['🚪 Fire {a}', { fire: 'a', team: 4, say: 'Customers noticed the difference.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🐕 THE STRAY DOG (a whole story)
+  // =====================================================================
+
+  E('stray_dog', 'customers', '🐕', 'A stray dog sleeps by your door', 'Skinny, shy and very sweet. Customers stop to pet it.', [
+    ['🍖 Feed it', { happy: 2, next: ['stray_dog_back', 1, 2], say: 'It ate everything and wagged its tail.' }],
+    ['🏠 Adopt it', { pet: '🐕', team: 8, fans: 10, say: 'The shop has a dog now.' }],
+    ['📞 Call the shelter', { rep: 2, say: 'They picked it up. You hope it finds a home.' }],
+    ['🚪 Shoo it away', { happy: -2, say: 'A customer frowned at you.' }]
+  ], { w: 0.8, cd: 60, cond: function (g) { return !g.pet; } });
+
+  E('stray_dog_back', 'customers', '🐕', 'The stray dog is back', 'It waits for you every morning now. It even walks customers to the door.', [
+    ['🏠 Adopt it', { pet: '🐕', team: 8, fans: 15, say: 'Everyone cheered. It has a name now.' }],
+    ['🗳️ Let customers name it', { pet: '🐕', fans: 25, say: 'A thousand votes. The winner was "Boss".' }],
+    ['🏥 Vet, then shelter', { cash: -0.05, rep: 3, say: 'A family adopted it a week later.' }],
+    ['🍖 Keep feeding it', { happy: 2, say: 'It\'s part of the street now.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🤲 THE FAKE CHARITY (a whole story)
+  // =====================================================================
+
+  E('charity_collector', 'customers', '🤲', 'A charity collector asks for money', 'For sick children. She has a badge, a box and a sad story.', [
+    ['💵 Donate a lot', { cash: -0.2, next: ['fake_charity', 1, 3, 0.5], say: 'She thanked you warmly.' }],
+    ['🪙 A small donation', { cash: -0.05, say: 'She smiled and moved on.' }],
+    ['🔍 Check the charity first', { chance: { p: 0.5, win: { rep: 4, say: 'Fake. You called the police. She ran.' }, lose: { cash: -0.1, rep: 2, say: 'It\'s real. You donated.' } } }],
+    ['🙅 No thanks', { say: 'She left.' }]
+  ], { w: 0.8, cd: 50 });
+
+  E('fake_charity', 'customers', '📰', 'The charity was fake', 'The news says a woman is collecting money for a charity that doesn\'t exist. You gave her a lot.', [
+    ['👮 Tell the police', { rep: 3, say: 'Your description helped catch her.' }],
+    ['❤️ Give to a real charity', { cash: -0.2, rep: 5, say: 'The real kids got help anyway.' }],
+    ['📢 Warn other shops', { rep: 4, fans: 10, say: 'Nobody else fell for it.' }],
+    ['😤 Be more careful', { say: 'Lesson learned.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🛍️ THE WORKER'S SIDE BUSINESS (a whole story)
+  // =====================================================================
+
+  E('worker_side_hustle', 'team', '🛍️', '{a} is selling to your customers', '{a} gives customers a card for their own business. Cheaper than you.', [
+    ['🗣️ Confront {a}', { then: 'side_hustle_talk', say: 'You called {a} into the office.' }],
+    ['🚪 Fire {a}', { fire: 'a', say: 'No second chances.' }],
+    ['🤝 Offer to partner', { chance: { p: 0.5, win: { extra: [0.05, 12, 'Side business'], a: 15, say: 'You own half of it now.' }, lose: { a: -5, say: '{a} said no.' } } }],
+    ['🙈 Ignore it', { demand: [0.95, 6, 'Side business'], next: ['side_hustle_grows', 4, 8, 0.6], say: 'Some customers went to {a}.' }]
+  ], { w: 0.8, cd: 60, minWeek: 10, who: { a: 'ambitious' } });
+
+  E('side_hustle_talk', 'team', '💬', '{a} explains', '"I just want to build something of my own one day. Like you did."', [
+    ['🤝 Help {a} do it right', { a: 20, loyal: { a: 20 }, rep: 3, say: '{a} will build it on weekends. Not with your customers.' }],
+    ['⚠️ "Not with our customers."', { a: -5, say: '{a} agreed. Quietly.' }],
+    ['🪜 A bigger role for {a}', { promote: 'a', a: 15, say: '{a} wants to build something here now.' }],
+    ['🚪 "Then go build it."', { leave: 'a', say: '{a} left to start their business.' }]
+  ], CH);
+
+  E('side_hustle_grows', 'team', '📈', '{a}\'s side business is growing', 'It has a shop now. Two streets away. {a} still works for you.', [
+    ['🤝 Invest in it', { cash: -0.5, extra: [0.06, 16, 'Invested shop'], say: 'You own a piece of the future.' }],
+    ['🚪 Let {a} go', { leave: 'a', say: '{a} left to run it full time.' }],
+    ['💰 Offer {a} a huge raise', { raise: ['a', 0.25], loyal: { a: 20 }, say: '{a} sold the shop and stayed.' }],
+    ['👏 Wish {a} luck', { a: 10, rep: 2, say: '{a} will never forget your support.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🔥 THE ANGRY NEIGHBOR (a whole story)
+  // =====================================================================
+
+  E('angry_neighbor', 'trouble', '🏠', 'Your neighbor hates your business', '{name} says your customers block the street. He\'s collecting signatures to close you.', [
+    ['☕ Invite him for coffee', { chance: { p: 0.6, win: { rep: 3, say: 'He\'s a lonely old man. You\'re friends now.' }, lose: { next: ['neighbor_petition', 2, 4], say: 'He threw the coffee away.' } } }],
+    ['🅿️ Fix the parking problem', { cash: -0.3, rep: 2, say: 'No more blocked street. He calmed down.' }],
+    ['📝 Collect your own signatures', { fans: 15, next: ['neighbor_petition', 2, 4, 0.5], say: 'Three hundred customers signed for you.' }],
+    ['🤷 Ignore him', { next: ['neighbor_petition', 2, 4], say: 'He\'s knocking on every door.' }]
+  ], { w: 0.8, cd: 60, init: man });
+
+  E('neighbor_petition', 'trouble', '📜', '{name} took you to the city council', 'He has a petition and a speech ready. The council will vote tonight.', [
+    ['🎤 Speak at the meeting', { chance: { p: 0.6, win: { rep: 5, fans: 15, say: 'The council voted for you. The room clapped.' }, lose: { capacity: [0.9, 6, 'New rules'], say: 'They gave you new rules and shorter hours.' } } }],
+    ['🧑‍🤝‍🧑 Bring your customers', { chance: { p: 0.75, win: { rep: 6, say: 'Fifty customers showed up. You won easily.' }, lose: { capacity: [0.9, 6, 'New rules'], say: 'It didn\'t help.' } } }],
+    ['🤝 Offer him a deal', { cash: -0.2, rep: 2, say: 'Free parking for his family. He dropped it.' }],
+    ['🙈 Don\'t go', { capacity: [0.85, 8, 'Shorter hours'], say: 'You lost. Shorter hours now.' }]
+  ], CH);
+  // =====================================================================
+  // 🔁 MORE THINGS THAT COME BACK
+  // =====================================================================
+
+  E('hush_money', 'shady', '🤫', '{a} wants more hush money', '"The city would love to hear about your safety problems. Unless..."', [
+    ['💵 Pay again', { cash: -0.5, next: ['hush_money', 3, 6, 0.7], say: '{a} smiled. This won\'t stop.' }],
+    ['🛠️ Fix the problems for real', { cash: -0.7, rep: 2, say: 'Nothing left to report. {a} has nothing on you.' }],
+    ['🚪 Fire {a}', { fire: 'a', rep: -6, cash: -0.8, say: '{a} reported you anyway. Big fine.' }],
+    ['📞 Report yourself first', { cash: -0.5, rep: 4, say: 'A small fine. People respected the honesty.' }]
+  ], CH);
+
+  E('bully_again', 'team', '😠', '{a} is bullying {b} again', 'The warning didn\'t work. {b} came to you in tears.', [
+    ['🚪 Fire {a}', { fire: 'a', b: 15, team: 8, say: 'The whole team feels safer.' }],
+    ['⬇️ Cut {a}\'s pay', { raise: ['a', -0.1], a: -15, b: 5, say: '{a} got the message.' }],
+    ['🔀 Separate them for good', { capacity: [0.97, 8, 'Separate shifts'], b: 8, say: 'They never work together now.' }],
+    ['🙈 Stay out of it', { b: -20, next: ['resign', 1, 3, 0.8], say: '{b} is writing a resignation letter.' }]
+  ], CH);
+
+  E('fake_cv_exposed', 'team', '📄', 'Customers found out about {a}\'s lie', 'A customer who worked at that famous place says {a} was never there.', [
+    ['🙏 Apologize for {a}', { rep: -2, say: 'People accepted it.' }],
+    ['🎓 Make {a} earn it for real', { cash: -0.2, skill: { a: 8 }, say: '{a} took real classes. Now it\'s true.' }],
+    ['🚪 Fire {a}', { fire: 'a', rep: 2, say: 'Clean slate.' }],
+    ['🛡️ Defend {a}', { rep: -5, a: 10, say: 'People think you lie too.' }]
+  ], CH);
+
+  E('rival_hostile', 'rivals', '🦈', '{rival} is buying your suppliers', 'You said no to their offer. Now they\'re buying the companies you depend on.', [
+    ['🤝 Lock in long contracts', { cash: -0.5, supply: [-0.01, 20, 'Long contracts'], say: 'Your suppliers are safe.' }],
+    ['🏭 Make things yourself', { cash: -1.2, supply: [-0.03, 30, 'Own supplies'], say: 'Nobody can cut you off.' }],
+    ['⚖️ Report them for unfair play', { chance: { p: 0.5, win: { rival: -0.15, say: 'The city stopped them.' }, lose: { supply: [0.05, 8, 'Rival owns suppliers'], say: 'It was legal. Your costs went up.' } } }],
+    ['😬 Pay their new prices', { supply: [0.06, 10, 'Rival owns suppliers'], say: 'They win this round.' }]
+  ], CH);
+
+  E('idea_royalty', 'customers', '💡', 'The customer wants a cut of your hit', 'Their idea became your best seller. Now they want 10% of the money.', [
+    ['🤝 Give them 5%', { supply: [0.02, 16, 'Idea royalty'], rep: 3, say: 'Fair. They tell everyone you\'re honest.' }],
+    ['🎁 A big thank-you gift', { cash: -0.3, rep: 2, say: 'They were happy with the gift.' }],
+    ['🙅 "Ideas are free."', { chance: { p: 0.5, win: { say: 'They grumbled and left.' }, lose: { rep: -5, say: 'Their post about you went round town.' } } }],
+    ['💼 Hire them as an ideas person', { hireSpecial: { role: 'front', skill: 55, traits: ['creative'] }, say: 'More ideas where that came from.' }]
+  ], CH);
+
+  E('celeb_returns', 'customers', '🌟', '{name} came back', 'The star you treated like anyone else loved it. They want to film their next music video here.', [
+    ['🎬 Yes!', { closed: [1, 'Filming'], fans: 60, rep: 5, say: 'The video has millions of views. Your shop is in it.' }],
+    ['💰 Yes, for a fee', { cash: 0.8, fans: 40, closed: [1, 'Filming'], say: 'Paid and famous.' }],
+    ['🤫 Only after closing', { fans: 40, team: -3, say: 'Night shoots. Worth it.' }],
+    ['🙅 Keep it quiet', { rep: 3, say: 'They respected that. They still come every week.' }]
+  ], CH);
+  // =====================================================================
+  // 🦈 THE INVESTOR WHO WANTS CONTROL (a whole story)
+  // =====================================================================
+
+  E('shark_investor', 'money', '🦈', 'An investor offers a fortune', '{name} wants to put in a lot of money. In return, he wants a seat on your board.', [
+    ['🤝 Take the money', { cash: 3, next: ['investor_demands', 4, 8], say: 'Rich. And now you have a partner.' }],
+    ['📜 Money, but no board seat', { chance: { p: 0.4, win: { cash: 2, say: 'He agreed. Smart deal.' }, lose: { say: 'He walked away.' } } }],
+    ['🔍 Look into his past first', { then: 'investor_past', say: 'You called a few people who know him.' }],
+    ['🙅 Stay independent', { team: 4, say: 'Your company. Your rules.' }]
+  ], { w: 0.7, cd: 80, minWeek: 15, init: man });
+
+  E('investor_past', 'money', '🔍', 'The truth about {name}', 'He bought three companies last year. He fired every founder within a year.', [
+    ['🙅 Say no', { rep: 2, say: 'You dodged a bullet.' }],
+    ['📜 Take it with a strong contract', { cash: 2.5, supply: [0.02, 12, 'Lawyer fees'], say: 'Your lawyer made sure he can never fire you.' }],
+    ['🤝 Take it anyway', { cash: 3, next: ['investor_demands', 3, 6], say: 'You think you can handle him.' }],
+    ['📢 Warn other founders', { rep: 5, fans: 10, say: 'Other founders thanked you.' }]
+  ], CH);
+
+  E('investor_demands', 'money', '📊', '{name} wants to change everything', '"Cut the team by a third. Raise prices. Now." He\'s your biggest investor.', [
+    ['✅ Do what he says', { team: -15, price: 1, cash: 1, say: 'Profits up. Your team is scared.' }],
+    ['🤝 Meet him halfway', { team: -5, price: 1, say: 'He\'s not happy. But he\'s quiet. For now.', next: ['boardroom_coup', 6, 10, 0.4] }],
+    ['🙅 Say no', { team: 8, next: ['boardroom_coup', 3, 6, 0.8], say: 'Your team cheered. {name} did not.' }],
+    ['💰 Buy his share back', { cash: -4, team: 10, say: 'Expensive. But you\'re free.' }]
+  ], CH);
+
+  E('boardroom_coup', 'money', '🗡️', '{name} is trying to take over', 'He\'s asking the other investors to vote you out as boss of your own company.', [
+    ['🧑‍🤝‍🧑 Rally your team', { chance: { p: 0.6, win: { team: 15, say: 'Your whole team threatened to quit. The vote failed.' }, lose: { cash: -2, say: 'You kept your job, but it cost you a lot.' } } }],
+    ['⚖️ Fight him in court', { cash: -1, chance: { p: 0.6, win: { rep: 5, say: 'The judge sided with you. He\'s out.' }, lose: { cash: -2, say: 'You won, barely. The lawyers won more.' } } }],
+    ['💰 Buy him out at any price', { cash: -5, team: 10, say: 'He left rich. You kept your company.' }],
+    ['📢 Tell the whole story', { fans: 30, chance: { p: 0.5, win: { rep: 8, say: 'The public took your side. He backed off.' }, lose: { rep: -3, say: 'It got messy in the news.' } } }]
+  ], CH);
+
+  // =====================================================================
+  // 🗡️ THE WORKER WHO WANTS TO TAKE YOUR TEAM (a whole story)
+  // =====================================================================
+
+  E('team_poach_plot', 'team', '🗡️', 'Rumor: {a} is starting a company', 'And they\'re asking your best people to come with them.', [
+    ['🗣️ Confront {a}', { then: 'poach_confront', say: 'You called {a} into your office.' }],
+    ['💵 Raises for everyone first', { teamRaise: 0.05, team: 10, next: ['poach_leaves', 3, 6, 0.6], say: 'Your team feels valued.' }],
+    ['🕵️ Find out who\'s going', { chance: { p: 0.6, win: { then: 'poach_confront', say: 'Three people are going. {b} is one of them.' }, lose: { team: -5, say: 'People noticed you snooping.' } } }],
+    ['🤷 Let them go', { next: ['poach_leaves', 2, 4], say: 'You\'ll deal with it when it happens.' }]
+  ], { w: 0.7, cd: 80, minWeek: 20, need: 5, who: { a: 'ambitious', b: 'any' } });
+
+  E('poach_confront', 'team', '💬', '{a} doesn\'t deny it', '"I want to build my own thing. And yes, I asked {b} to come."', [
+    ['🤝 Offer to invest in it', { chance: { p: 0.6, win: { extra: [0.06, 16, 'Ex-worker\'s company'], leave: 'a', say: '{a} left with your blessing. You own part of it.' }, lose: { leave: 'a', say: '{a} said no to your money and left.' } } }],
+    ['🪜 Make {a} a partner', { chance: { p: 0.5, win: { promote: 'a', a: 25, loyal: { a: 30 }, say: '{a} stayed. As a partner.' }, lose: { leave: 'a', say: '{a} wanted their own thing.' } } }],
+    ['🚪 Fire {a} today', { fire: 'a', team: -5, say: 'Gone. But {b} is still thinking.' }],
+    ['💵 Keep {b} with a raise', { raise: ['b', 0.15], b: 15, loyal: { b: 20 }, next: ['poach_leaves', 2, 4, 0.5], say: '{b} is staying.' }]
+  ], CH);
+
+  E('poach_leaves', 'team', '🚪', '{a} left and took people with them', '{a} opened a company across town. Two of your workers went with them.', [
+    ['🧑‍💼 Hire fast', { hireSpecial: { role: 'front', skill: 55 }, capacity: [0.9, 3, 'Short-staffed'], say: 'You filled the gap.' }],
+    ['🤝 Wish them well', { rep: 4, capacity: [0.9, 3, 'Short-staffed'], say: 'Classy. People noticed.' }],
+    ['⚖️ Check their contracts', { cash: -0.3, chance: { p: 0.5, win: { cash: 1, say: 'They broke their contracts. They paid.' }, lose: { say: 'Everything was legal.' } } }],
+    ['💪 The rest of the team steps up', { team: 6, capacity: [0.93, 3, 'Short-staffed'], say: 'The ones who stayed are closer than ever.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🫀 THE HEALTH SCARE (a whole story)
+  // =====================================================================
+
+  E('chest_pain', 'boss', '🫀', 'You feel a sharp pain in your chest', 'In the middle of a busy day. It goes away after a minute.', [
+    ['🏥 Go to the doctor now', { closed: [1, 'Boss at doctor'], then: 'doctor_news', say: 'The doctor ran some tests.' }],
+    ['📅 Book a check-up next week', { next: ['doctor_news', 1, 2], say: 'You\'ll get checked. Soon.' }],
+    ['☕ Coffee and keep going', { next: ['boss_collapse', 3, 8, 0.5], say: 'It\'s probably nothing. Probably.' }],
+    ['🧘 Take the afternoon off', { team: 2, next: ['doctor_news', 1, 3, 0.5], say: 'You went home and slept.' }]
+  ], { w: 0.6, cd: 80, minWeek: 20 });
+
+  E('doctor_news', 'boss', '🩺', 'The doctor has your results', '"Your heart is okay. But the stress is not. You have to slow down."', [
+    ['👔 Hire a manager', { hireSpecial: { role: 'mgr', skill: 65 }, say: 'Someone to share the weight.' }],
+    ['🏃 Exercise every morning', { cash: -0.1, team: 3, say: 'You feel ten years younger.' }],
+    ['🏖️ A real vacation', { closed: [1, 'Boss on vacation'], team: 5, say: 'You came back a new person.' }],
+    ['🙉 Ignore the doctor', { next: ['boss_collapse', 4, 10, 0.6], say: 'You went back to work the same day.' }]
+  ], CH);
+
+  E('boss_collapse', 'boss', '🚑', 'You collapsed at work', '{company} kept running while you were in the hospital. You\'re okay. This time.', [
+    ['👔 Let others run things', { capacity: [0.95, 4, 'Boss resting'], team: 8, say: 'Your team proved they can do it.' }],
+    ['❤️ Change your whole life', { closed: [1, 'Boss recovering'], team: 10, rep: 3, say: 'Healthier habits. A happier boss.' }],
+    ['💪 Back to work tomorrow', { team: -6, say: 'Your team is worried about you.' }],
+    ['🎁 Thank the team', { teamBonus: true, team: 12, say: 'They kept it all going for you.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🪞 THE COPYCAT SHOP (a whole story)
+  // =====================================================================
+
+  E('copycat_shop', 'rivals', '🪞', 'A copycat shop opened', 'Same colors, almost the same name, same products. Customers keep walking into the wrong shop.', [
+    ['⚖️ Send a lawyer\'s letter', { cash: -0.2, next: ['copycat_reply', 1, 3], say: 'Your lawyer sent a strong letter.' }],
+    ['🎨 Make your brand stand out', { cash: -0.4, fans: 15, rep: 2, say: 'New signs. Nobody confuses you now.' }],
+    ['🗣️ Visit the owner', { then: 'copycat_owner', say: 'You walked over and asked for the owner.' }],
+    ['🤷 Ignore it', { demand: [0.92, 6, 'Copycat'], say: 'You lost some customers to them.' }]
+  ], { w: 0.8, cd: 60, minWeek: 8 });
+
+  E('copycat_owner', 'rivals', '🧑', 'The copycat owner is a young man', '"I love your shop. I wanted to be just like you. I didn\'t think it was wrong."', [
+    ['🤝 Help him find his own style', { rep: 5, fans: 10, say: 'He changed everything. You\'re friends now.' }],
+    ['💼 Offer him a job instead', { hireSpecial: { role: 'front', skill: 60, traits: ['ambitious'] }, say: 'He closed his shop and joined you.' }],
+    ['⚖️ "Change it, or I sue."', { chance: { p: 0.7, win: { say: 'He changed his name and colors.' }, lose: { next: ['copycat_reply', 1, 3], say: 'He refused.' } } }],
+    ['🛒 Buy his shop', { cash: -1.5, capacity: [1.1, 16, 'Second shop'], say: 'Now it really is your shop.' }]
+  ], CH);
+
+  E('copycat_reply', 'rivals', '📨', 'The copycat is fighting back', 'His lawyer says the name is "totally different". Customers are still confused.', [
+    ['⚖️ Go to court', { cash: -0.6, chance: { p: 0.65, win: { rep: 3, say: 'You won. He has to change everything.' }, lose: { demand: [0.94, 6, 'Copycat'], say: 'The judge said it\'s different enough.' } } }],
+    ['🤝 Settle: he changes his colors', { cash: -0.1, say: 'A fair deal. Problem solved.' }],
+    ['📢 Tell your customers', { fans: 20, rep: 2, say: '"The original." Your customers know now.' }],
+    ['🤷 Let it go', { demand: [0.95, 6, 'Copycat'], say: 'It\'s not worth the fight.' }]
+  ], CH);
+
+  // =====================================================================
+  // 🎤 THE TALENT SHOW (a whole story)
+  // =====================================================================
+
+  E('talent_show', 'team', '🎤', '{a} wants to enter the city talent show', '{a} sings amazingly. The show is on TV, and it\'s in a week.', [
+    ['🎉 Support {a}', { a: 12, next: ['talent_final', 1, 2], say: '{a} practiced every night.' }],
+    ['🏷️ Sponsor {a}', { cash: -0.2, a: 15, fans: 10, next: ['talent_final', 1, 2], say: '{a} will sing with your logo on their shirt.' }],
+    ['🗓️ Only if it\'s after work', { a: 5, next: ['talent_final', 1, 2, 0.7], say: '{a} will make it work.' }],
+    ['🙅 "Focus on work."', { a: -12, say: '{a} was crushed.' }]
+  ], { w: 0.7, cd: 60, who: { a: 'any' } });
+
+  E('talent_final', 'team', '🌟', '{a} made it to the talent show final', 'The whole city is watching. Your team wants to go and cheer.', [
+    ['📺 Close early and go', { closed: [1, 'Talent show'], team: 10, chance: { p: 0.5, win: { fans: 60, a: 20, say: '{a} WON. The whole city knows your shop now.' }, lose: { fans: 25, a: 8, say: '{a} came second. Everyone cried anyway.' } } }],
+    ['🍿 Watch it at the shop', { happy: 5, team: 6, chance: { p: 0.45, win: { fans: 50, a: 20, say: '{a} WON. Customers celebrated with you.' }, lose: { fans: 15, a: 5, say: 'Second place. Still amazing.' } } }],
+    ['🎁 Buy {a} a great outfit', { cash: -0.1, a: 10, chance: { p: 0.55, win: { fans: 50, say: '{a} WON, and thanked you on stage.' }, lose: { fans: 15, say: 'Second place.' } } }],
+    ['💼 Business as usual', { a: -5, chance: { p: 0.4, win: { fans: 30, say: '{a} won. You weren\'t there.' }, lose: { say: '{a} didn\'t win.' } } }]
+  ], CH);
+
+  // =====================================================================
+  // 🧒 THE KID ENTREPRENEUR (a whole story)
+  // =====================================================================
+
+  E('kid_stand', 'customers', '🧒', 'A kid is selling outside your shop', '{name}, about 12, set up a table by your door. Cheaper than you. He\'s selling a lot.', [
+    ['🤝 Offer to team up', { next: ['kid_grows', 8, 16, 0.6], fans: 10, say: 'He sells your stuff now. He gets a cut.' }],
+    ['🚫 Ask him to move', { rep: -2, say: 'He packed up. People thought you were mean.' }],
+    ['🎓 Teach him business', { rep: 4, next: ['kid_grows', 8, 16, 0.8], say: 'He asked a hundred questions. He\'s smart.' }],
+    ['🤷 Let him be', { demand: [0.97, 3, 'Kid next door'], say: 'He\'s taking a few of your customers.' }]
+  ], { w: 0.7, cd: 60, init: H.boy });
+
+  E('kid_grows', 'lucky', '📈', '{name} is all grown up', 'The kid who sold outside your shop now runs his own company. He never forgot you.', [
+    ['🤝 A partnership', { extra: [0.08, 16, 'Old friend'], say: 'His company buys from you now.' }],
+    ['💰 Invest in him', { cash: -1, chance: { p: 0.7, win: { cash: 3, say: 'His company took off. So did your money.' }, lose: { say: 'It didn\'t work out. He paid you back later.' } } }],
+    ['📸 Tell his story', { fans: 30, rep: 5, say: 'The story went round town. Both of you got famous.' }],
+    ['😊 Just have lunch', { rep: 2, say: 'He picked up the bill.' }]
+  ], CH);
+
+  // =====================================================================
+  // 📺 THE WORKER WHO WENT VIRAL GETS AN OFFER
+  // =====================================================================
+
+  E('viral_offer', 'team', '📺', 'A TV channel wants {a}', 'Since {a}\'s video went viral, a TV show wants {a} as a host.', [
+    ['👏 Let {a} go with a party', { leave: 'a', fans: 20, rep: 4, say: '{a} left for TV. They mention you on air.' }],
+    ['💰 Double {a}\'s pay', { raise: ['a', 0.5], loyal: { a: 25 }, say: '{a} stayed. Expensive.' }],
+    ['🤝 Do both, part-time', { capacity: [0.97, 12, '{a} part-time'], fans: 30, a: 15, say: '{a} works mornings and does TV at night.' }],
+    ['🎥 Film a show at your shop', { fans: 40, a: 20, say: 'The show is filmed at your place now.' }]
+  ], CH);
 })();
 </script>
 <script>
@@ -7840,94 +8830,360 @@ var CS = globalThis.CS = globalThis.CS || {};
 })();
 </script>
 <script>
-// Background music: a cheerful chiptune loop made live with Web Audio, so there are no song files
-// and no copyright problems. Melody, bass and drums are scheduled a little ahead of time.
+// Background music: 5 original songs played live with Web Audio, so there are no song files and no copyright issues.
+// Every song has chords (electric piano and a soft pad), a bass line, a melody and drums, mixed with a little echo.
+// The menu, the game and wars each have their own music, and the game moves between 3 songs.
 var CS = globalThis.CS = globalThis.CS || {};
 
 CS.Music = (function () {
-  var ctx = null, master = null, noise = null, timer = null, playing = false;
-  var step = 0, nextTime = 0;
-  var BPM = 118, STEP = 60 / BPM / 4; // sixteenth notes
-
-  // 8 bars x 16 steps. Numbers are MIDI notes, 0 = rest.
-  var MELODY = [
-    [72, 0, 76, 0, 79, 0, 76, 0, 77, 0, 76, 0, 74, 0, 0, 0],
-    [72, 0, 69, 0, 72, 0, 76, 0, 74, 0, 72, 0, 69, 0, 0, 0],
-    [69, 0, 72, 0, 77, 0, 76, 0, 74, 0, 72, 0, 74, 0, 76, 0],
-    [74, 0, 0, 0, 71, 0, 74, 0, 79, 0, 0, 0, 77, 76, 74, 0],
-    [77, 0, 76, 0, 74, 0, 72, 0, 74, 0, 76, 0, 77, 0, 79, 0],
-    [79, 0, 77, 0, 76, 0, 74, 0, 71, 0, 74, 0, 79, 0, 0, 0],
-    [76, 0, 79, 0, 84, 0, 79, 0, 76, 0, 74, 0, 71, 0, 0, 0],
-    [72, 0, 74, 0, 76, 0, 74, 0, 72, 0, 0, 0, 79, 77, 76, 74]
-  ];
-  var ROOTS = [48, 45, 41, 43, 41, 43, 40, 45]; // C Am F G F G Em Am
-
+  var NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function pc(name) { return NOTE[name[0]] + (name[1] === '#' ? 1 : name[1] === 'b' ? -1 : 0); }
+  function midi(n) { var m = /^([A-G][#b]?)(\d)$/.exec(n); return pc(m[1]) + (+m[2] + 1) * 12; }
   function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+  // ---------- songs ----------
+  // chords: one per bar (the list repeats). mel: one string per bar, "step note length" separated by |, '' = rest.
+  // bass/comp: [step, semitones above the root, length] and [step, length, loudness]. Drums: one letter per 16th note.
+  var SONGS = {
+    morning: {
+      mood: 'menu', bpm: 84, swing: 0, kit: 'soft', lead: 'bell', pad: 1, arp: true, bassType: 'round',
+      chords: ['Cmaj7', 'Em7', 'Fmaj7', 'G6', 'Am7', 'Em7', 'Fmaj7', 'Gsus4'],
+      bass: [[0, 0, 8], [8, 7, 6], [14, 12, 2]],
+      comp: [[0, 14, 0.7]],
+      drums: { k: 'x.......x.......', r: '............x...', sh: '..x...x...x...x.' },
+      mel: ['0 G5 6|6 E5 2|8 C5 8', '0 B4 6|6 D5 2|8 E5 8', '0 A5 6|6 G5 2|8 F5 4|12 E5 4', '0 D5 12',
+        '0 C5 6|6 E5 2|8 A5 8', '0 G5 6|6 B5 2|8 G5 4|12 E5 4', '0 F5 4|4 A5 4|8 C6 4|12 A5 4', '0 G5 12',
+        '', '', '', '', '0 E5 4|4 G5 4|8 C6 8', '0 B5 8|8 G5 8', '0 A5 4|4 F5 4|8 C5 8', '0 D5 8|8 G4 8']
+    },
+    sunny: {
+      mood: 'game', bpm: 100, swing: 0.14, kit: 'lofi', lead: 'flute', pad: 0.8, bassType: 'round',
+      chords: ['Fmaj7', 'Am7', 'Dm7', 'C', 'Bbmaj7', 'Am7', 'Gm7', 'C9'],
+      bass: [[0, 0, 5], [6, 0, 2], [8, 7, 3], [12, 12, 2], [14, 7, 2]],
+      comp: [[0, 7, 1], [10, 5, 0.6]],
+      drums: { k: 'x......x..x.....', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', o: '..............x.' },
+      mel: ['0 A4 3|4 C5 2|6 E5 4|12 D5 2|14 C5 2', '0 C5 6|8 A4 2|10 G4 2|12 A4 4', '0 D5 3|4 F5 2|6 E5 2|8 D5 2|10 C5 2|12 A4 4', '0 G4 8|14 C5 2',
+        '0 D5 4|4 F5 4|8 E5 2|10 D5 2|12 C5 2|14 D5 2', '0 E5 6|8 C5 2|10 A4 2|12 C5 4', '0 Bb4 3|4 D5 2|6 F5 4|12 E5 2|14 D5 2', '0 E5 4|4 C5 4|8 G4 4',
+        '0 C5 2|2 F5 2|4 A5 4|8 G5 2|10 F5 2|12 E5 4', '0 E5 2|2 G5 2|4 E5 2|6 C5 2|8 A4 8', '0 A4 2|2 C5 2|4 D5 2|6 F5 2|8 A5 4|12 G5 2|14 F5 2', '0 E5 6|6 D5 2|8 C5 4',
+        '0 F5 2|2 D5 2|4 F5 2|6 A5 4|10 G5 2|12 F5 4', '0 E5 2|2 C5 2|4 E5 2|6 G5 6|12 E5 4', '0 D5 2|2 F5 2|4 Bb5 4|8 A5 2|10 G5 2|12 F5 2|14 E5 2', '0 G5 4|4 E5 4|8 C5 8']
+    },
+    bigdeal: {
+      mood: 'game', bpm: 110, swing: 0.06, kit: 'pop', lead: 'pluck', pad: 0.6, bassType: 'funk',
+      chords: ['Dmaj7', 'Bm7', 'Em7', 'A7', 'Dmaj7', 'F#m7', 'Gmaj7', 'A7'],
+      bass: [[0, 0, 2], [3, 0, 1], [6, 12, 1], [8, 0, 2], [11, 7, 1], [14, 12, 1], [15, 7, 1]],
+      comp: [[2, 2, 0.8], [6, 2, 0.6], [10, 3, 0.8]],
+      drums: { k: 'x.....x.x.......', c: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', sh: '.x.x.x.x.x.x.x.x', o: '......x.......x.' },
+      mel: ['0 F#5 2|3 A5 2|6 F#5 2|8 E5 2|10 D5 2|12 E5 3', '0 F#5 3|4 D5 2|6 B4 2|8 D5 4|14 A4 2', '0 B4 2|2 D5 2|4 E5 2|6 G5 3|10 F#5 2|12 E5 4', '0 C#5 4|4 E5 2|6 A5 4|12 G5 2|14 E5 2',
+        '0 F#5 2|3 A5 2|6 D6 3|10 C#6 2|12 A5 4', '0 C#6 3|4 A5 2|6 F#5 2|8 E5 4|12 C#5 4', '0 D5 2|2 G5 2|4 B5 4|8 A5 2|10 G5 2|12 F#5 2|14 E5 2', '0 E5 4|4 C#5 4|8 A4 4|12 E5 2|14 F#5 2',
+        '0 A5 6|8 F#5 2|10 A5 2|12 B5 4', '0 A5 6|8 F#5 4|12 D5 4', '0 G5 6|8 E5 2|10 G5 2|12 B5 4', '0 A5 8|8 C#6 4|12 E6 4',
+        '0 D6 6|8 C#6 2|10 A5 2|12 F#5 4', '0 E5 6|8 C#5 2|10 E5 2|12 A5 4', '0 B5 4|4 A5 2|6 G5 2|8 F#5 2|10 G5 2|12 A5 4', '0 A5 4|4 G5 4|8 E5 4|12 C#5 4']
+    },
+    city: {
+      mood: 'game', bpm: 92, swing: 0.16, kit: 'lofi', lead: 'bell', pad: 0.9, arp: true, bassType: 'round',
+      chords: ['Ebmaj7', 'Dm7', 'Cm7', 'F7', 'Bbmaj7', 'Gm7', 'Cm7', 'F7'],
+      bass: [[0, 0, 6], [7, 0, 1], [8, 7, 4], [14, 10, 2]],
+      comp: [[0, 6, 0.9], [7, 3, 0.5], [12, 4, 0.6]],
+      drums: { k: 'x.........x.....', s: '....x.......x...', h: 'x.xxx.x.x.xxx.x.' },
+      mel: ['0 G5 3|4 Bb5 3|8 D6 4|12 C6 2|14 Bb5 2', '0 A5 6|6 F5 2|8 D5 4|12 F5 4', '0 Eb5 3|4 G5 3|8 Bb5 2|10 C6 2|12 Bb5 4', '0 A5 8|8 C6 2|10 A5 2|12 F5 4',
+        '0 D5 3|4 F5 3|8 A5 6|14 Bb5 2', '0 G5 6|6 F5 2|8 D5 8', '0 C5 3|4 Eb5 3|8 G5 3|12 Bb5 4', '0 A5 4|4 G5 2|6 F5 2|8 Eb5 4|12 C5 4',
+        '0 D6 8|8 C6 2|10 Bb5 2|12 G5 4', '0 F5 8|8 A5 4|12 C6 4', '0 Bb5 6|6 G5 2|8 Eb5 8', '0 F5 4|4 A5 4|8 C6 8',
+        '0 D6 4|4 C6 2|6 Bb5 2|8 A5 4|12 F5 4', '0 G5 8|8 Bb5 4|12 D6 4', '0 Eb6 4|4 D6 2|6 C6 2|8 Bb5 4|12 G5 4', '0 A5 8|8 F5 8']
+    },
+    battle: {
+      mood: 'war', bpm: 138, swing: 0, kit: 'war', lead: 'saw', pad: 0.7, stabs: true, bassType: 'drive',
+      chords: ['Am', 'F', 'C', 'G', 'Am', 'F', 'G', 'E'],
+      bass: [[0, 0, 1], [2, 0, 1], [4, 12, 1], [6, 0, 1], [8, 0, 1], [10, 0, 1], [12, 12, 1], [14, 7, 1]],
+      comp: [[0, 2, 1], [6, 1, 0.7], [10, 2, 0.9]],
+      drums: { k: 'x...x...x...x...', s: '....x.......x...', c: '....x.......x...', h: '..x...x...x...x.' },
+      mel: ['0 A4 2|2 C5 2|4 E5 4|8 D5 2|10 C5 2|12 B4 2|14 C5 2', '0 A4 6|6 F4 2|8 A4 2|10 C5 2|12 F5 4', '0 E5 2|2 G5 2|4 E5 2|6 C5 2|8 G5 4|12 E5 4', '0 D5 6|6 B4 2|8 D5 2|10 G5 2|12 B5 4',
+        '0 A5 4|4 E5 2|6 A5 2|8 C6 4|12 B5 2|14 A5 2', '0 C6 4|4 A5 2|6 F5 2|8 A5 4|12 C6 4', '0 B5 4|4 G5 2|6 D5 2|8 G5 4|12 B5 2|14 D6 2', '0 E6 6|6 D6 2|8 B5 2|10 G#5 2|12 E5 4',
+        '', '', '', '0 D5 4|4 E5 4|8 G5 4|12 B5 4',
+        '0 A5 4|4 E5 2|6 A5 2|8 C6 4|12 B5 2|14 A5 2', '0 C6 4|4 A5 2|6 F5 2|8 A5 4|12 C6 4', '0 B5 4|4 G5 2|6 D5 2|8 G5 4|12 B5 2|14 D6 2', '0 E6 6|6 D6 2|8 B5 2|10 G#5 2|12 E5 4']
+    }
+  };
+  var MOODS = { menu: ['morning'], game: ['sunny', 'bigdeal', 'city'], war: ['battle'] };
+  var LOOPS = 2; // loops of a game song before the next one
+
+  var QUAL = { '': [0, 4, 7], m: [0, 3, 7], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], '7': [0, 4, 7, 10], '9': [0, 4, 10, 14], '6': [0, 4, 7, 9], sus4: [0, 5, 7, 10] };
+  function chord(sym) {
+    var m = /^([A-G][#b]?)(.*)$/.exec(sym);
+    return { root: pc(m[1]), pcs: QUAL[m[2]].map(function (i) { return (pc(m[1]) + i) % 12; }) };
+  }
+  // Voice leading: of all the ways to stack the chord around middle C, pick the one closest to the last chord.
+  function voice(pcs, prev) {
+    var best = null, bestScore = 1e9;
+    for (var base = 52; base <= 63; base++) {
+      var v = pcs.map(function (p) { var n = base + ((p - base) % 12 + 12) % 12; return n; }).sort(function (a, b) { return a - b; });
+      if (v[v.length - 1] - v[0] > 14) continue;
+      var score = prev ? v.reduce(function (s, n, i) { return s + Math.abs(n - (prev[i] != null ? prev[i] : prev[prev.length - 1])); }, 0) : Math.abs(v[0] - 55);
+      if (score < bestScore) { bestScore = score; best = v; }
+    }
+    return best;
+  }
+  function prepare(s) {
+    if (s.ready) return s;
+    var prev = null;
+    s.voiced = s.chords.map(function (sym) { var c = chord(sym); prev = voice(c.pcs, prev); return { notes: prev, bass: 40 + ((c.root - 4) % 12 + 12) % 12, pcs: c.pcs }; });
+    s.bars = s.mel.map(function (bar) {
+      return bar ? bar.split('|').map(function (t) { var p = t.trim().split(/\s+/); return [+p[0], midi(p[1]), +p[2]]; }) : [];
+    });
+    s.ready = true;
+    return s;
+  }
+
+  // ---------- sound ----------
+  var ctx = null, out, comp, bus, mix, duck, verbIn, noise = null;
+  function impulse(c, secs) {
+    var len = Math.floor(c.sampleRate * secs), buf = c.createBuffer(2, len, c.sampleRate);
+    for (var ch = 0; ch < 2; ch++) {
+      var d = buf.getChannelData(ch);
+      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
+    }
+    return buf;
+  }
+  function graph(c, dest) {
+    var o = {};
+    o.out = c.createGain(); o.out.gain.value = 0.62;
+    o.comp = c.createDynamicsCompressor();
+    o.comp.threshold.value = -16; o.comp.ratio.value = 3; o.comp.attack.value = 0.01; o.comp.release.value = 0.2;
+    o.bus = c.createGain(); o.bus.gain.value = 1;
+    o.mix = c.createGain();
+    o.duck = c.createGain(); o.duck.connect(o.mix);
+    o.verbIn = c.createGain(); o.verbIn.gain.value = 1;
+    var verb = c.createConvolver(); verb.buffer = impulse(c, 2.4);
+    var verbOut = c.createGain(); verbOut.gain.value = 0.55;
+    var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 9000;
+    o.verbIn.connect(verb); verb.connect(verbOut); verbOut.connect(o.bus);
+    o.mix.connect(o.bus); o.bus.connect(lp); lp.connect(o.comp); o.comp.connect(o.out); o.out.connect(dest);
+    o.noise = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    var d = o.noise.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return o;
+  }
+  function use(o, c) { ctx = c; out = o.out; comp = o.comp; bus = o.bus; mix = o.mix; duck = o.duck; verbIn = o.verbIn; noise = o.noise; }
+
+  // An output with an echo send: sound -> gain -> (target) and a bit to the reverb.
+  function voiceOut(t, target, send) {
+    var g = ctx.createGain();
+    g.connect(target || mix);
+    if (send) { var s = ctx.createGain(); s.gain.value = send; g.connect(s); s.connect(verbIn); }
+    return g;
+  }
+  function osc(type, f, t, end, dest, detune) {
+    var o = ctx.createOscillator();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (detune) o.detune.setValueAtTime(detune, t);
+    o.connect(dest); o.start(t); o.stop(end);
+    return o;
+  }
+  function adsr(g, t, a, peak, d, sus, dur, rel) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + a);
+    g.gain.setTargetAtTime(peak * sus, t + a, d);
+    g.gain.setTargetAtTime(0.0001, t + Math.max(a, dur), rel);
+    return t + Math.max(a, dur) + rel * 5;
+  }
+
+  // Melody instruments.
+  function lead(kind, m, t, dur, vel) {
+    var f = hz(m), g, end, lp;
+    if (kind === 'flute') {
+      g = voiceOut(t, mix, 0.35); lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; lp.connect(g);
+      end = adsr(g, t, 0.05, 0.1 * vel, 0.3, 0.75, dur, 0.09);
+      var soft = ctx.createGain(); soft.gain.value = 0.25; soft.connect(lp);
+      var o1 = osc('sine', f, t, end, lp), o2 = osc('triangle', f, t, end, soft);
+      // A gentle vibrato that starts after the note begins, like a real flute.
+      var lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5.2;
+      lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.006, t + 0.25);
+      lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency); lfo.start(t); lfo.stop(end);
+    } else if (kind === 'bell') {
+      g = voiceOut(t, mix, 0.45);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.1 * vel, t + 0.005); g.gain.setTargetAtTime(0.0001, t + 0.01, 0.35 + dur * 0.05);
+      end = t + 2.2;
+      var car = osc('sine', f, t, end, g), mod = ctx.createOscillator(), mg = ctx.createGain();
+      mod.frequency.value = f * 4; mg.gain.setValueAtTime(f * 1.6, t); mg.gain.setTargetAtTime(0, t, 0.25);
+      mod.connect(mg); mg.connect(car.frequency); mod.start(t); mod.stop(end);
+    } else if (kind === 'pluck') {
+      g = voiceOut(t, mix, 0.3); lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3;
+      lp.frequency.setValueAtTime(4200, t); lp.frequency.setTargetAtTime(900, t, 0.12); lp.connect(g);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.08 * vel, t + 0.004); g.gain.setTargetAtTime(0.0001, t + 0.02, 0.12 + dur * 0.03);
+      end = t + 1.2;
+      osc('sawtooth', f, t, end, lp, -5); osc('square', f, t, end, lp, 5);
+    } else { // saw lead for wars
+      g = voiceOut(t, mix, 0.3); lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2;
+      lp.frequency.setValueAtTime(3200, t); lp.frequency.setTargetAtTime(1500, t, 0.1); lp.connect(g);
+      end = adsr(g, t, 0.01, 0.06 * vel, 0.15, 0.7, dur, 0.06);
+      osc('sawtooth', f, t, end, lp, -7); osc('sawtooth', f, t, end, lp, 7); osc('square', f / 2, t, end, lp);
+    }
+  }
+  // Electric piano chords (FM), a warm pad, and short brass-like stabs for wars.
+  function keys(notes, t, dur, vel) {
+    notes.forEach(function (m) {
+      var f = hz(m), g = voiceOut(t, duck, 0.3);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.045 * vel, t + 0.006); g.gain.setTargetAtTime(0.016 * vel, t + 0.01, 0.35);
+      g.gain.setTargetAtTime(0.0001, t + dur, 0.12);
+      var end = t + dur + 0.8, car = osc('sine', f, t, end, g), mod = ctx.createOscillator(), mg = ctx.createGain();
+      mod.frequency.value = f; mg.gain.setValueAtTime(f * 1.3, t); mg.gain.setTargetAtTime(f * 0.15, t, 0.25);
+      mod.connect(mg); mg.connect(car.frequency); mod.start(t); mod.stop(end);
+    });
+  }
+  function pad(notes, t, dur, amt) {
+    notes.forEach(function (m) {
+      var g = voiceOut(t, duck, 0.6), lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 850; lp.connect(g);
+      var end = adsr(g, t, 0.5, 0.014 * amt, 1, 1, dur, 0.5);
+      osc('sawtooth', hz(m), t, end, lp, -9); osc('sawtooth', hz(m), t, end, lp, 9);
+    });
+  }
+  function stab(notes, t, dur, vel) {
+    notes.forEach(function (m) {
+      var g = voiceOut(t, duck, 0.35), lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.setValueAtTime(2600, t); lp.frequency.setTargetAtTime(700, t, 0.08); lp.connect(g);
+      var end = adsr(g, t, 0.008, 0.028 * vel, 0.1, 0.5, dur, 0.05);
+      osc('sawtooth', hz(m), t, end, lp, -6); osc('sawtooth', hz(m), t, end, lp, 6);
+    });
+  }
+  function bassNote(type, m, t, dur) {
+    var f = hz(m), g = voiceOut(t, mix, 0), lp = ctx.createBiquadFilter(), end;
+    lp.type = 'lowpass'; lp.connect(g);
+    if (type === 'funk') { lp.Q.value = 6; lp.frequency.setValueAtTime(1400, t); lp.frequency.setTargetAtTime(380, t, 0.06); }
+    else if (type === 'drive') { lp.Q.value = 3; lp.frequency.setValueAtTime(1100, t); lp.frequency.setTargetAtTime(500, t, 0.05); }
+    else { lp.frequency.value = 700; }
+    end = adsr(g, t, 0.006, 0.11, 0.2, 0.75, dur * 0.95, 0.05);
+    var sub = ctx.createGain(); sub.gain.value = 0.35; sub.connect(g);
+    osc('sawtooth', f, t, end, lp); osc('sine', f, t, end, sub);
+  }
+  function arpNote(m, t) {
+    var g = voiceOut(t, duck, 0.5);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.028, t + 0.004); g.gain.setTargetAtTime(0.0001, t + 0.01, 0.22);
+    var end = t + 1.2, car = osc('sine', hz(m), t, end, g), mod = ctx.createOscillator(), mg = ctx.createGain();
+    mod.frequency.value = hz(m) * 3; mg.gain.setValueAtTime(hz(m) * 0.8, t); mg.gain.setTargetAtTime(0, t, 0.15);
+    mod.connect(mg); mg.connect(car.frequency); mod.start(t); mod.stop(end);
+  }
+
+  // Drums.
+  function noiseHit(t, vol, type, freq, q, decay, send) {
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = voiceOut(t, mix, send || 0);
+    s.buffer = noise; f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+    g.gain.setValueAtTime(vol, t); g.gain.setTargetAtTime(0.0001, t + 0.003, decay);
+    s.connect(f); f.connect(g); s.start(t, Math.random() * 0.5); s.stop(t + decay * 6 + 0.05);
+  }
+  function kick(t, vol, soft) {
+    var g = voiceOut(t, mix, 0), o = ctx.createOscillator();
+    o.frequency.setValueAtTime(soft ? 120 : 170, t); o.frequency.exponentialRampToValueAtTime(soft ? 60 : 52, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol * 0.6, t + 0.004); g.gain.setTargetAtTime(0.0001, t + 0.01, soft ? 0.06 : 0.08);
+    o.connect(g); o.start(t); o.stop(t + 0.7);
+    if (!soft) noiseHit(t, vol * 0.12, 'highpass', 2500, 0, 0.006);
+    // Everything else ducks a little under the kick, so the beat breathes.
+    duck.gain.setValueAtTime(1, t); duck.gain.linearRampToValueAtTime(0.62, t + 0.02); duck.gain.setTargetAtTime(1, t + 0.03, 0.09);
+  }
+  function snare(t, vol, kit) {
+    noiseHit(t, vol, 'bandpass', kit === 'lofi' ? 1500 : 2000, 0.8, kit === 'lofi' ? 0.07 : 0.06, 0.25);
+    var g = voiceOut(t, mix, 0), o = ctx.createOscillator();
+    o.type = 'triangle'; o.frequency.setValueAtTime(210, t); o.frequency.exponentialRampToValueAtTime(150, t + 0.08);
+    g.gain.setValueAtTime(vol * 0.7, t); g.gain.setTargetAtTime(0.0001, t + 0.003, 0.04);
+    o.connect(g); o.start(t); o.stop(t + 0.3);
+  }
+  function clap(t, vol) { for (var i = 0; i < 3; i++) noiseHit(t + i * 0.011, vol, 'bandpass', 1300, 1.2, i === 2 ? 0.06 : 0.012, 0.3); }
+  function tom(t, m) {
+    var g = voiceOut(t, mix, 0.2), o = ctx.createOscillator();
+    o.frequency.setValueAtTime(hz(m), t); o.frequency.exponentialRampToValueAtTime(hz(m) * 0.7, t + 0.2);
+    g.gain.setValueAtTime(0.3, t); g.gain.setTargetAtTime(0.0001, t + 0.005, 0.09);
+    o.connect(g); o.start(t); o.stop(t + 0.6);
+  }
+  function rim(t) {
+    var g = voiceOut(t, mix, 0.3), o = ctx.createOscillator();
+    o.type = 'triangle'; o.frequency.value = 1700;
+    g.gain.setValueAtTime(0.05, t); g.gain.setTargetAtTime(0.0001, t + 0.002, 0.015);
+    o.connect(g); o.start(t); o.stop(t + 0.1);
+  }
+
+  // ---------- playing ----------
+  var song = null, songId = null, step = 0, nextTime = 0, loops = 0, timer = null, playing = false, mood = 'menu', switchAt = 0, nextSong = null;
+  function stepLen(s) { return 60 / s.bpm / 4; }
+  function playStep(s, stp, t) {
+    var barLen = 16, bar = Math.floor(stp / barLen), st = stp % barLen, nb = s.bars.length, bi = bar % nb, ch = s.voiced[bar % s.voiced.length];
+    var loop = Math.floor(bar / nb), intro = bar < 2, sl = stepLen(s), kit = s.kit;
+    // chords
+    if (st === 0 && s.pad) pad(ch.notes, t, sl * 16, s.pad);
+    s.comp.forEach(function (c) { if (c[0] === st) (s.stabs ? stab : keys)(ch.notes, t, sl * c[1], c[2]); });
+    if (s.arp && !intro && st % 2 === 0) {
+      var up = ch.notes.concat(ch.notes.map(function (n) { return n + 12; })), order = [0, 1, 2, 3, 4, 3, 2, 1];
+      arpNote(up[order[(st / 2) % 8] % up.length] + 12, t);
+    }
+    // bass
+    if (!intro || s.mood === 'war') s.bass.forEach(function (b) { if (b[0] === st) bassNote(s.bassType, ch.bass + b[1], t, sl * b[2]); });
+    // melody (a second loop sometimes plays an octave up for variety)
+    s.bars[bi].forEach(function (n) { if (n[0] === st) lead(s.lead, n[1] + (loop % 2 === 1 && s.lead === 'bell' ? 12 : 0), t, sl * n[2], 1); });
+    // drums
+    if (intro && s.mood !== 'war') return;
+    var d = s.drums, fill = (bi === 7 || bi === nb - 1) && st >= 12;
+    if (d.k && d.k[st] === 'x') kick(t, kit === 'soft' ? 0.35 : kit === 'lofi' ? 0.7 : 0.85, kit === 'soft');
+    if (!fill) {
+      if (d.s && d.s[st] === 'x') snare(t, kit === 'lofi' ? 0.22 : 0.3, kit);
+      if (d.c && d.c[st] === 'x') clap(t, 0.25);
+    } else if (kit === 'war') tom(t, [57, 53, 50, 45][st - 12]);
+    else if (kit !== 'soft') snare(t, 0.1 + (st - 12) * 0.05, kit);
+    if (d.h && d.h[st] === 'x') noiseHit(t, (st % 4 === 2 ? 0.075 : 0.05) * (kit === 'war' ? 1.3 : 1), 'highpass', 7500, 0, 0.018);
+    if (d.o && d.o[st] === 'x') noiseHit(t, 0.035, 'highpass', 7000, 0, 0.09);
+    if (d.sh && d.sh[st] === 'x') noiseHit(t, 0.03, 'bandpass', 6000, 1, 0.03);
+    if (d.r && d.r[st] === 'x') rim(t);
+    if (kit === 'war' && st === 0 && bi % 8 === 0) noiseHit(t, 0.07, 'highpass', 5000, 0, 0.45, 0.3);
+  }
+  function pick(m) {
+    var list = MOODS[m] || MOODS.game;
+    if (list.length === 1) return list[0];
+    var i = list.indexOf(songId);
+    return list[(i + 1) % list.length];
+  }
+  function begin(id, t) {
+    songId = id; song = prepare(SONGS[id]); step = 0; loops = 0; nextTime = t;
+    bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(0.0001, t); bus.gain.linearRampToValueAtTime(1, t + 0.8);
+  }
+  function schedule() {
+    var ahead = ctx.currentTime + 0.18;
+    while (nextTime < ahead) {
+      if (switchAt && nextTime >= switchAt) { begin(nextSong, switchAt); switchAt = 0; }
+      var sl = stepLen(song), swing = (step % 2 === 1) ? song.swing * sl : 0;
+      playStep(song, step, nextTime + swing);
+      nextTime += sl; step++;
+      var barsDone = step / 16;
+      if (step % 16 === 0 && barsDone % song.bars.length === 0) {
+        loops++;
+        if (song.mood === 'game' && loops >= LOOPS && !switchAt) fadeTo(pick('game'));
+      }
+    }
+  }
+  function fadeTo(id) {
+    var t = Math.max(ctx.currentTime, nextTime);
+    bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(bus.gain.value || 1, t); bus.gain.linearRampToValueAtTime(0.0001, t + 0.7);
+    nextSong = id; switchAt = t + 0.75;
+  }
 
   function setup() {
     if (ctx) return true;
-    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return false; }
-    master = ctx.createGain();
-    master.gain.value = 0.55;
-    master.connect(ctx.destination);
-    noise = ctx.createBuffer(1, ctx.sampleRate * 0.2, ctx.sampleRate);
-    var d = noise.getChannelData(0);
-    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    var c;
+    try { c = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return false; }
+    use(graph(c, c.destination), c);
     return true;
   }
-
-  function tone(freq, t, dur, type, vol) {
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, t);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(master);
-    o.start(t); o.stop(t + dur + 0.02);
-  }
-  function hit(t, vol, hp, dur) {
-    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    s.buffer = noise; f.type = 'highpass'; f.frequency.value = hp;
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(master);
-    s.start(t); s.stop(t + dur + 0.02);
-  }
-  function kick(t) {
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-    g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.2);
-  }
-
-  function schedule() {
-    while (nextTime < ctx.currentTime + 0.12) {
-      var bar = Math.floor(step / 16) % 8, s = step % 16, n = MELODY[bar][s];
-      if (n) {
-        var len = 1; while (s + len < 16 && !MELODY[bar][s + len] && len < 4) len++;
-        tone(hz(n), nextTime, STEP * len * 0.9, 'square', 0.028);
-        tone(hz(n + 12), nextTime, STEP * 0.6, 'triangle', 0.012);
-      }
-      var root = ROOTS[bar];
-      if (s % 4 === 0) tone(hz(s % 8 === 0 ? root : root + 7), nextTime, STEP * 3, 'triangle', 0.07);
-      if (s === 0 || s === 8) kick(nextTime);
-      if (s === 4 || s === 12) hit(nextTime, 0.05, 1500, 0.12);
-      if (s % 2 === 0) hit(nextTime, 0.015, 7000, 0.04);
-      nextTime += STEP;
-      step++;
-    }
-  }
-
   function start() {
     if (playing || !setup()) return;
     if (ctx.state === 'suspended') ctx.resume();
     playing = true;
-    nextTime = ctx.currentTime + 0.05;
-    timer = setInterval(schedule, 30);
+    begin(songId && SONGS[songId].mood === mood ? songId : pick(mood), ctx.currentTime + 0.08);
+    timer = setInterval(schedule, 25);
   }
   function stop() {
     playing = false;
     if (timer) clearInterval(timer);
-    timer = null;
+    timer = null; switchAt = 0;
+    if (bus) { bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.08); }
+  }
+  // 'menu', 'game' or 'war'. The music fades into the right song.
+  function setMood(m) {
+    if (!MOODS[m] || m === mood) return;
+    mood = m;
+    if (playing && song && song.mood !== m) fadeTo(pick(m));
   }
 
   // Pause when the app goes to the background.
@@ -7939,7 +9195,17 @@ CS.Music = (function () {
     });
   }
 
-  return { start: start, stop: stop, playing: function () { return playing; } };
+  // For tests: renders a song into an OfflineAudioContext.
+  function render(c, id, bars) {
+    var saved = { ctx: ctx, out: out, comp: comp, bus: bus, mix: mix, duck: duck, verbIn: verbIn, noise: noise };
+    use(graph(c, c.destination), c);
+    var s = prepare(SONGS[id]), t = 0.05;
+    for (var i = 0; i < bars * 16; i++) { playStep(s, i, t + (i % 2 ? s.swing * stepLen(s) : 0)); t += stepLen(s); }
+    ctx = saved.ctx; out = saved.out; comp = saved.comp; bus = saved.bus; mix = saved.mix; duck = saved.duck; verbIn = saved.verbIn; noise = saved.noise;
+    return c.startRendering();
+  }
+
+  return { start: start, stop: stop, setMood: setMood, playing: function () { return playing; }, song: function () { return songId; }, songs: SONGS, _render: render };
 })();
 </script>
 <script>
@@ -9100,9 +10366,10 @@ var CS = globalThis.CS = globalThis.CS || {};
     var h = '<button class="btn small back-btn" data-a="tab" data-v="home">⬅ Back</button>';
     h += '<div class="section card war-hero in"><div class="wh-top"><span class="e">' + rk.emoji + '</span><div class="grow"><b>' + rk.name + '</b><small>🏆 ' + w.trophies + ' trophies' + (nx ? ' · ' + (nx.min - w.trophies) + ' more for ' + nx.emoji + ' ' + nx.name : ' · Top rank!') + '</small>' + (nx ? bar((w.trophies - rk.min) / (nx.min - rk.min) * 100) : '') + '</div></div>' +
       '<div class="wh-stats"><span>📱 <b>' + U.num(g.followers) + '</b> fans</span><span>⚡ <b>' + w.energy + '/' + G.warMaxEnergy() + '</b> energy</span><span>✅ ' + w.wins + ' · ❌ ' + w.losses + '</span></div>' +
-      '<small class="muted">5 rounds, 5 different games. Win more rounds than them to win the war. <b>The winner takes 10% of the loser\'s fans!</b></small>' +
-      '<div class="wh-games">' + CS.WAR_GAMES.map(function (x) { return '<span>' + x.emoji + ' ' + x.name + '</span>'; }).join('') + '</div></div>';
+      '<small class="muted">Every war is 5 rounds, picked from ' + CS.WAR_GAMES.length + ' mini-games. Win more rounds to win the war. <b>The winner takes 10% of the loser\'s fans!</b></small>' +
+      '<div class="wh-games">' + CS.WAR_GAMES.map(function (x) { var best = (w.best || {})[x.id]; return '<span>' + x.emoji + ' ' + x.name + (best ? ' <b>🏅' + best + '</b>' : '') + '</span>'; }).join('') + '</div></div>';
 
+    if (w.battle && !w.battle.done) h += '<button class="card war-banner section" data-a="warback"><span class="e">⚔️</span><span class="grow"><b>You\'re in the middle of a war!</b><small>Tap to go back to it.</small></span><span class="chip red">Go</span></button>';
     h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1 · +1 every week</span></div><div class="war-list">';
     (g.rivalCos || []).forEach(function (rv, i) {
       var fans = G.rivalFans(g, rv);
@@ -9114,7 +10381,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     h += '<div class="section"><div class="section-head"><h3>🤝 Friend Wars</h3><span class="label">' + friendTriesTxt() + '</span></div><div class="card friend-war">' +
       '<b class="fw-h">1. Challenge a friend</b><p class="small">Play the 5 games, then send your scores to a friend in any chat app. They have to beat you!</p>' +
       '<button class="btn pink block" data-a="warchallenge">🎮 Play &amp; send a challenge</button>' +
-      '<b class="fw-h" style="margin-top:16px">2. Got a code from a friend?</b><textarea id="warcode" rows="3" placeholder="Paste the war code here (it starts with CSW2.)"></textarea>' +
+      '<b class="fw-h" style="margin-top:16px">2. Got a code from a friend?</b><p class="small">Type it in, or paste their whole message.</p>' +
+      '<div class="code-row"><input id="warcode" class="code-input" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="400" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" value="' + esc(S.warDraft || '') + '">' +
+      '<button class="btn small" data-a="warclip" aria-label="Paste">📋 Paste</button></div>' +
       '<button class="btn red big block" data-a="warpaste">⚔️ BATTLE THEM!</button>' +
       (G.friendWarsLeft() === Infinity ? '' : '<p class="small muted" style="margin:10px 0 0">You get ' + G.FRIEND_WARS_PER_DAY + ' friend wars a day. 👑 VIP gets unlimited!</p>') + '</div></div>';
     return h;
@@ -9129,7 +10398,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     var me = { name: g.company.name, logo: g.company.logo, color: g.company.color, fans: g.followers };
     var foe = b.foe || { name: 'Your friend', logo: '❓', color: '#ADB5BD' };
     var head = b.kind === 'friend' ? '🤜 Friend War' : b.kind === 'challenge' ? '🎮 Challenge run' : '⚔️ WAR!';
-    var h = '<div class="war-sheet"><h2>' + head + '</h2><div class="war-vs">' + warSide(me, 'me') + '<span class="vs">VS</span>' + warSide(foe, 'them') + '</div>' +
+    var won = b.rounds.filter(function (r) { return r.win > 0; }).length, lost = b.rounds.filter(function (r) { return r.win < 0; }).length;
+    var h = '<div class="war-sheet">' + (b.done ? '' : '<button class="war-quit" data-a="warquit">🏳️ Quit</button>') + '<h2>' + head + '</h2><div class="war-vs">' + warSide(me, 'me') +
+      (b.foe ? '<span class="vs">' + (b.rounds.length ? '<span class="tally">' + won + '<i>–</i>' + lost + '</span>' : 'VS') + '</span>' : '<span class="vs">VS</span>') + warSide(foe, 'them') + '</div>' +
       '<div class="war-dots">' + b.games.map(function (id, i) {
         var r = b.rounds[i], cls = r ? (r.win > 0 ? 'w' : r.win < 0 ? 'l' : r.win === 0 ? 't' : 'd') : i === b.mine.length ? 'now' : '';
         return '<i class="' + cls + '">' + G.warGame(id).emoji + '</i>';
@@ -9137,27 +10408,31 @@ var CS = globalThis.CS = globalThis.CS || {};
     var i = b.mine.length, stage = sh.stage || 'intro';
     if (stage === 'intro' && !b.done) {
       var gm = G.warGame(b.games[i]);
-      h += '<div class="war-intro in"><small>ROUND ' + (i + 1) + ' OF 5</small><div class="wi-e">' + gm.emoji + '</div><h3>' + gm.name + '</h3><p>' + gm.desc + '</p>' +
-        (b.foe ? '<div class="wi-them">' + esc(foe.name) + '\'s score: <b>❓</b></div>' : '') + '</div>' +
+      var myBest = (g.war.best || {})[gm.id];
+      h += '<div class="war-intro in"><small>ROUND ' + (i + 1) + ' OF ' + b.games.length + '</small><div class="wi-e">' + gm.emoji + '</div><h3>' + gm.name + '</h3><p>' + gm.desc + '</p>' +
+        '<div class="wi-row">' + (b.foe ? '<span>' + esc(foe.name) + ': <b>❓</b></span>' : '') + (myBest ? '<span>🏅 Your best: <b>' + myBest + '</b></span>' : '') + '</div></div>' +
         '<button class="btn green big block" data-a="wargo">▶ GO!</button>' +
-        (b.kind !== 'challenge' ? '<button class="btn small block" style="margin-top:10px" data-a="confirm" data-v="wargiveup">🏳️ Give up</button>' : '');
+        (i === 0 && !b.started ? '<p class="small muted" style="margin:8px 0 0">Quit now and you get your ' + (b.kind === 'friend' ? 'friend war' : b.kind === 'rival' ? '⚡ energy' : 'turn') + ' back.</p>' : '');
     } else if (stage === 'play' && !b.done) {
       h += '<div class="war-arena" id="warArena"><div class="ws-hud"><span class="ws-score">⭐ 0</span><span class="ws-time"></span></div><div class="ws-field"></div><div class="ws-count">3</div></div>';
     } else if (stage === 'reveal') {
       var r = b.rounds[b.rounds.length - 1], gm2 = G.warGame(r.game);
       h += '<div class="war-reveal in"><div class="wr-game">' + gm2.emoji + ' ' + gm2.name + '</div><div class="wr-scores"><div class="' + (r.win > 0 ? 'win' : '') + '"><small>You</small><b>' + r.mine + '</b></div>' +
         (b.foe ? '<span>vs</span><div class="' + (r.win < 0 ? 'win' : '') + '"><small>' + esc(foe.name) + '</small><b>' + r.theirs + '</b></div>' : '') + '</div>' +
+        (r.best ? '<div class="new-best">🏅 New personal best!</div>' : '') +
         (b.foe ? '<h3 class="' + (r.win > 0 ? 'good' : r.win < 0 ? 'bad' : '') + '">' + (r.win > 0 ? 'You win the round!' : r.win < 0 ? 'They win the round!' : 'It\'s a tie!') + '</h3>' : '<h3>Score saved!</h3>') + '</div>' +
         '<button class="btn green big block" data-a="warnext">' + (b.done ? 'See the result 🏆' : 'Next round ▶') + '</button>';
     } else {
       var res = b.result;
       if (res.won == null) {
-        h += '<div class="war-end"><div class="face-big">🎮</div><h2>Challenge ready!</h2><p>Your scores: <b>' + b.mine.join(' · ') + '</b></p><p class="small">' + esc(res.text) + '</p>' +
-          '<button class="btn pink big block" data-a="warsendscores">📤 Send the challenge</button><div class="row2" style="margin-top:10px"><button class="btn" data-a="warrematch">🔁 Play again</button><button class="btn green" data-a="warclose">Done</button></div></div>';
+        var code = G.warCode(g, b); G.save(g);
+        h += '<div class="war-end"><div class="face-big">🎮</div><h2>Challenge ready!</h2>' + roundTable(b) + '<p class="small">Send this code to a friend. They play the same 5 games and try to beat you!</p>' +
+          '<div class="code-box" id="mycode">' + code + '</div><div class="row2" style="margin-bottom:10px"><button class="btn" data-a="warcopy">📋 Copy code</button><button class="btn pink" data-a="warsendscores">📤 Send</button></div>' +
+          '<div class="row2"><button class="btn" data-a="warrematch">🔁 Play again</button><button class="btn green" data-a="warclose">Done</button></div></div>';
       } else {
         var left = b.kind === 'friend' ? G.friendWarsLeft() : g.war.energy;
         var canRe = left > 0;
-        h += '<div class="war-end ' + (res.won ? 'won' : 'lost') + '"><div class="face-big">' + (res.won ? '🏆' : '😤') + '</div><h2>' + (res.won ? 'VICTORY!' : 'DEFEAT') + '</h2><div class="war-score">' + res.score[0] + ' – ' + res.score[1] + '</div><p>' + esc(res.text) + '</p>' +
+        h += '<div class="war-end ' + (res.won ? 'won' : 'lost') + '"><div class="face-big">' + (res.won ? '🏆' : b.forfeit ? '🏳️' : '😤') + '</div><h2>' + (res.won ? 'VICTORY!' : 'DEFEAT') + '</h2><div class="war-score">' + res.score[0] + ' – ' + res.score[1] + '</div><p>' + esc(res.text) + '</p>' + roundTable(b) +
           (res.chips.length ? '<div class="chips">' + res.chips.map(function (c, k) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + k * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
           '<button class="btn ' + (canRe ? 'red' : '') + ' big block" data-a="warrematch" ' + (canRe ? '' : 'disabled') + '>🔁 Quick rematch' + (b.kind === 'friend' ? ' (' + (left === Infinity ? '∞' : left) + ' left)' : ' (⚡' + left + ')') + '</button>' +
           '<div class="row2" style="margin-top:10px">' + (b.kind === 'friend' ? '<button class="btn pink" data-a="warsendscores">📤 Send my scores</button>' : '<button class="btn pink" data-a="warshare">📣 Share</button>') + '<button class="btn green" data-a="warclose">Done</button></div></div>';
@@ -9166,7 +10441,14 @@ var CS = globalThis.CS = globalThis.CS || {};
     return h + '</div>';
   }
 
-  // The 5 war games. Each builds itself inside #warArena and calls done(score) when it ends.
+  function roundTable(b) {
+    return '<div class="round-table">' + b.rounds.map(function (r) {
+      var gm = G.warGame(r.game);
+      return '<div class="' + (r.win > 0 ? 'w' : r.win < 0 ? 'l' : '') + '"><span>' + gm.emoji + ' ' + gm.name + (r.best ? ' 🏅' : '') + '</span><b>' + r.mine + '</b>' + (b.foe ? '<i>' + r.theirs + '</i>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // The war games. Each builds itself inside #warArena and calls done(score) when it ends.
   var warGame = null;
   function startWarPlay() {
     var g = S.g, b = g.war && g.war.battle;
@@ -9184,9 +10466,11 @@ var CS = globalThis.CS = globalThis.CS || {};
   function runWarGame(id, data, b, done) {
     var box = document.getElementById('warArena');
     var field = box.querySelector('.ws-field'), scoreEl = box.querySelector('.ws-score'), timeEl = box.querySelector('.ws-time'), cd = box.querySelector('.ws-count');
-    var score = 0, over = false, timers = [], raf = 0;
+    var score = 0, over = false, timers = [], raf = 0, craf = 0;
     if (warGame) warGame.stop();
-    warGame = { stop: function () { over = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf); } };
+    // stop: throw the round away. end: finish it now with the score so far (used by the Quit button).
+    warGame = { stop: function () { over = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf); cancelAnimationFrame(craf); },
+      end: function () { if (over) return; warGame.stop(); warGame = null; done(score); } };
     function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
     function show() { scoreEl.textContent = '⭐ ' + score; }
     function pop(txt, x, y, good) {
@@ -9209,7 +10493,7 @@ var CS = globalThis.CS = globalThis.CS || {};
         var left = Math.max(0, secs - (performance.now() - t0) / 1000);
         timeEl.textContent = '⏱️ ' + left.toFixed(1);
         if (left <= 0) return finish();
-        raf = requestAnimationFrame(tick);
+        craf = requestAnimationFrame(tick);
       })();
     }
     show();
@@ -9319,6 +10603,130 @@ var CS = globalThis.CS = globalThis.CS || {};
           qi++; later(ask, ok ? 150 : 450);
         });
         ask(); clock(data.secs);
+      } else if (id === 'numbers') {
+        field.innerHTML = '<div class="ws-grid num"></div><div class="ws-tip">Tap 1 first!</div>';
+        var ngrid = field.querySelector('.ws-grid'), ntip = field.querySelector('.ws-tip'), board = 0, want = 1;
+        var deal = function () {
+          want = 1;
+          ngrid.innerHTML = data.boards[board % data.boards.length].map(function (n) { return '<button class="num-t" data-n="' + n + '">' + n + '</button>'; }).join('');
+        };
+        ngrid.addEventListener('pointerdown', function (e) {
+          var t = e.target.closest('.num-t');
+          if (!t || over || t.classList.contains('ok')) return;
+          e.preventDefault();
+          if (+t.dataset.n === want) {
+            t.classList.add('ok'); add(1, t.offsetLeft + t.offsetWidth / 2 - 10, t.offsetTop); want++;
+            if (want > 12) { board++; ntip.textContent = 'Board cleared! Next one...'; SFX.play('coin'); later(deal, 250); } else ntip.textContent = 'Next: ' + want;
+          } else { t.classList.add('bad'); setTimeout(function () { t.classList.remove('bad'); }, 250); add(-1, t.offsetLeft + t.offsetWidth / 2 - 10, t.offsetTop); }
+        });
+        deal(); clock(data.secs);
+      } else if (id === 'colors') {
+        var COLS = [['RED', '#FF4D5E'], ['BLUE', '#2EA8FF'], ['GREEN', '#1FB36A'], ['YELLOW', '#F2A900']];
+        field.innerHTML = '<div class="ws-word"></div><div class="ws-tip">Tap the color of the paint, not the word!</div><div class="ws-swatches">' +
+          COLS.map(function (c, i) { return '<button class="sw" data-i="' + i + '" style="background:' + c[1] + '">' + c[0] + '</button>'; }).join('') + '</div>';
+        var word = field.querySelector('.ws-word'), sws = field.querySelector('.ws-swatches'), ci = 0, cbusy = false;
+        var show2 = function () { var q = data.items[ci % data.items.length]; word.textContent = COLS[q.word][0]; word.style.color = COLS[q.ink][1]; word.classList.remove('flash'); void word.offsetWidth; word.classList.add('flash'); cbusy = false; };
+        sws.addEventListener('pointerdown', function (e) {
+          var btn = e.target.closest('.sw');
+          if (!btn || over || cbusy) return;
+          e.preventDefault(); cbusy = true;
+          var ok = +btn.dataset.i === data.items[ci % data.items.length].ink;
+          add(ok ? 1 : -1, btn.offsetLeft + btn.offsetWidth / 2 - 10, btn.offsetTop - 10);
+          ci++; later(show2, ok ? 120 : 420);
+        });
+        show2(); clock(data.secs);
+      } else if (id === 'stack') {
+        field.innerHTML = '<div class="stk"></div><div class="ws-tip">Tap anywhere to drop the block!</div>';
+        var stk = field.querySelector('.stk'), bh = 24, col = S.g.company.color || '#7C4DFF', level = 0, lastX = W * 0.2, lastW = W * 0.6, cur = null, cx = 0, dir = 1, lastT = 0;
+        var block = function (x, w, y, moving) {
+          var el = document.createElement('div');
+          el.className = 'stk-b' + (moving ? ' moving' : ''); el.style.cssText = 'left:' + x + 'px;width:' + w + 'px;bottom:' + y + 'px;background:' + col;
+          stk.appendChild(el); return el;
+        };
+        block(lastX, lastW, 0);
+        var spawn = function () {
+          if (level >= data.blocks.length) return finish();
+          var bl = data.blocks[level];
+          dir = bl.left ? 1 : -1; cx = bl.left ? 0 : W - lastW;
+          cur = block(cx, lastW, (level + 1) * bh, true); lastT = performance.now();
+          (function move(now) {
+            if (over || !cur) return;
+            cx += dir * bl.speed * W * Math.min(0.05, (now - lastT) / 1000); lastT = now;
+            if (cx < 0) { cx = 0; dir = 1; } if (cx > W - lastW) { cx = W - lastW; dir = -1; }
+            cur.style.left = cx + 'px';
+            raf = requestAnimationFrame(move);
+          })(lastT);
+        };
+        field.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          if (over || !cur) return;
+          cancelAnimationFrame(raf);
+          var tipS = field.querySelector('.ws-tip'); if (tipS) tipS.remove();
+          var el = cur; cur = null;
+          var left = Math.max(cx, lastX), right = Math.min(cx + lastW, lastX + lastW), ov = right - left;
+          if (ov < 6) { el.classList.add('fall'); SFX.play('bad'); buzz(60); later(finish, 500); return; }
+          el.classList.remove('moving'); el.style.left = left + 'px'; el.style.width = ov + 'px';
+          var perfect = Math.abs(cx - lastX) < 4;
+          if (perfect) { ov = lastW; el.style.left = lastX + 'px'; el.style.width = lastW + 'px'; left = lastX; }
+          lastX = left; lastW = ov; level++;
+          add(1, left + ov / 2 - 10, Hh - (level + 1) * bh - 30 + Math.max(0, (level - 7) * bh));
+          if (perfect) { pop('PERFECT!', left, Hh - (level + 1) * bh - 50 + Math.max(0, (level - 7) * bh), true); SFX.play('coin'); }
+          if (level > 7) stk.style.transform = 'translateY(' + ((level - 7) * bh) + 'px)';
+          later(spawn, 120);
+        });
+        spawn(); clock(data.secs);
+      } else if (id === 'reaction') {
+        field.innerHTML = '<div class="rx wait"><b>Wait for green...</b><small></small></div>';
+        var rx = field.querySelector('.rx'), rb = rx.querySelector('b'), rs = rx.querySelector('small'), rk = 0, armed = 0, token = 0;
+        var nextTry = function () {
+          if (rk >= data.waits.length) return finish();
+          var my = ++token;
+          armed = 0; rx.className = 'rx wait'; rb.textContent = 'Wait for green...'; rs.textContent = ''; timeEl.textContent = 'Try ' + (rk + 1) + '/' + data.waits.length;
+          later(function () {
+            if (my !== token || over) return;
+            armed = performance.now(); rx.className = 'rx go'; rb.textContent = 'TAP!'; SFX.play('pop');
+            later(function () { if (my === token && armed) { armed = 0; token++; rb.textContent = 'Too slow! +0'; rx.className = 'rx miss'; rk++; later(nextTry, 900); } }, 1500);
+          }, data.waits[rk]);
+        };
+        field.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          if (over || rx.classList.contains('miss') || rx.classList.contains('hit')) return;
+          token++;
+          if (!armed) { rx.className = 'rx miss'; rb.textContent = 'Too early! +0'; SFX.play('bad'); buzz(50); rk++; later(nextTry, 900); return; }
+          var ms = Math.round(performance.now() - armed), pts = Math.max(0, Math.min(100, Math.round(100 - (ms - 180) / 4)));
+          armed = 0; rx.className = 'rx hit'; rb.textContent = ms + ' ms'; rs.textContent = '+' + pts;
+          score += pts; show(); SFX.play(pts >= 70 ? 'coin' : 'tap');
+          rk++; later(nextTry, 900);
+        });
+        nextTry();
+      } else if (id === 'catch') {
+        field.innerHTML = '<div class="basket">🧺</div><div class="ws-tip">Drag to move the basket</div>';
+        var basket = field.querySelector('.basket'), bx = W / 2, drops = [], t0c = performance.now(), di = 0, lastC = t0c;
+        var moveTo = function (e) { var r = field.getBoundingClientRect(); bx = Math.max(28, Math.min(W - 28, e.clientX - r.left)); basket.style.left = (bx - 28) + 'px'; };
+        field.addEventListener('pointerdown', function (e) { e.preventDefault(); moveTo(e); });
+        field.addEventListener('pointermove', function (e) { if (!over) moveTo(e); });
+        basket.style.left = (bx - 28) + 'px';
+        (function loop(now) {
+          if (over) return;
+          var el = now - t0c, dt = Math.min(0.05, (now - lastC) / 1000); lastC = now;
+          while (di < data.drops.length && data.drops[di].t <= el) {
+            var dd = data.drops[di++], de = document.createElement('div');
+            de.className = 'drop ' + dd.kind; de.textContent = dd.kind === 'bomb' ? '💣' : dd.kind === 'gold' ? '💰' : '💵';
+            field.appendChild(de); drops.push({ d: dd, el: de, x: 18 + dd.x * (W - 56), y: -40 });
+          }
+          drops = drops.filter(function (o) {
+            o.y += o.d.spd * Hh * dt; o.el.style.transform = 'translate(' + o.x + 'px,' + o.y + 'px)';
+            if (o.y > Hh - 78 && o.y < Hh - 30 && Math.abs(o.x + 18 - bx) < 42) {
+              o.el.remove(); add(o.d.kind === 'bomb' ? -3 : o.d.kind === 'gold' ? 3 : 1, o.x, Hh - 110);
+              if (o.d.kind !== 'bomb') { basket.classList.remove('bump'); void basket.offsetWidth; basket.classList.add('bump'); }
+              return false;
+            }
+            if (o.y > Hh) { o.el.remove(); return false; }
+            return true;
+          });
+          raf = requestAnimationFrame(loop);
+        })(t0c);
+        clock(data.secs);
       } else {
         field.innerHTML = '<div class="ws-grid mem">' + [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function () { return '<button class="tile"></button>'; }).join('') + '</div><div class="ws-tip"></div>';
         var tiles = field.querySelectorAll('.tile'), tip = field.querySelector('.ws-tip'), lv = 0, need = [], found = 0, input = false;
@@ -9378,7 +10786,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   function evHead(def, x) {
     var cat = catOf(def);
-    return '<div class="ev-head" style="--c:' + cat.color + '"><div class="meta"><span>' + cat.emoji + ' ' + cat.label + (x.chain ? ' · follow-up' : '') + '</span>' + rarityTag(def) + '<span>Week ' + S.g.week + '</span></div><div class="ev-icon">' + def.icon + '</div></div>';
+    return '<div class="ev-head" style="--c:' + cat.color + '"><div class="meta"><span>' + cat.emoji + ' ' + cat.label + (x.chain ? ' · 🔗 Story' : '') + '</span>' + rarityTag(def) + '<span>Week ' + S.g.week + '</span></div><div class="ev-icon">' + def.icon + '</div></div>';
   }
   function tagsFor(g, x, fx) {
     var cost = G.fxCost(g, fx), risk = G.fxRisk(g, fx, x.ctx), t = '';
@@ -9531,7 +10939,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     var big = res.won === true || good > bad ? U.pick(['🎉', '😄', '🥳', '🤩']) : bad > good ? U.pick(['😬', '😖', '🙈']) : '🙂';
     return '<div class="result"><div class="face-big">' + big + '</div><h2>' + F(def.title || 'What happened', sh.x) + '</h2><p>' + esc(res.text || 'Done!') + '</p>' +
       (res.chips.length ? '<div class="chips">' + res.chips.map(function (c, i) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + i * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
-      '<button class="btn green big block" data-a="cont">' + (S.g.queue.length ? 'Next (' + S.g.queue.length + ' more) ▶' : 'Continue ▶') + '</button></div>';
+      (res.later ? '<div class="story-hint later">⏳ This isn\'t over yet...</div>' : '') +
+      (res.then ? '<div class="story-hint now">🔗 The story continues...</div><button class="btn pink big block" data-a="cont">➡️ What happens next?</button></div>'
+        : '<button class="btn green big block" data-a="cont">' + (S.g.queue.length ? 'Next (' + S.g.queue.length + ' more) ▶' : 'Continue ▶') + '</button></div>');
   }
 
   function weekSheet(r) {
@@ -9656,7 +11066,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   function confirmSheet() {
     var w = S.sheet.what;
     var t = w === 'newgame' ? ['🔄', 'Start over?', 'This company is saved in your history, and you start a new one. You get a small bonus for your experience!']
-      : w === 'wargiveup' ? ['🏳️', 'Give up this war?', 'The rounds you haven\'t played count as 0, so you will probably lose fans.']
+      : w === 'wargiveup' ? ['🏳️', 'Quit this war?', 'The games you haven\'t played count as 0, so you will probably lose and give up 10% of your fans.']
         : ['📉', 'Give up?', 'Your company closes for good. Your next company gets an experience bonus.'];
     return '<div class="result"><div class="face-big">' + t[0] + '</div><h2>' + t[1] + '</h2><p style="font-size:16px">' + t[2] + '</p><div class="row2"><button class="btn" data-a="' + (w === 'wargiveup' ? 'warback' : 'close') + '">Cancel</button><button class="btn red" data-a="doconfirm">Yes</button></div></div>';
   }
@@ -9691,6 +11101,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (tv && view !== S.viewKey) tv.classList.add('enter');
     S.viewKey = view;
     renderSheet();
+    // Menu, game and war each have their own music.
+    if (CS.Music) CS.Music.setMood(S.sheet && S.sheet.type === 'war' ? 'war' : S.screen === 'game' ? 'game' : 'menu');
     if (S.screen === 'game' && S.tab === 'home') CS.Scene.start();
     if (g && S.screen === 'game') S.prev = G.snap(g);
   }
@@ -9972,6 +11384,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     },
     warpaste: function () {
       var ta = document.getElementById('warcode'), foe = G.readWarCode(S.g, ta && ta.value);
+      if (!foe.error) S.warDraft = '';
       if (foe.error) { toast(foe.error); SFX.play('bad'); return false; }
       if (G.friendWarsLeft() < 1) { toast('No friend wars left today. Come back tomorrow, or get 👑 VIP for unlimited!'); S.sheet = { type: 'vip' }; return; }
       if (!G.warStartFriend(S.g, foe)) return false;
@@ -9981,6 +11394,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     },
     wargo: function () {
       if (!S.sheet || S.sheet.type !== 'war') return false;
+      var bt = S.g.war && S.g.war.battle;
+      if (bt && !bt.started) { bt.started = true; G.save(S.g); }
       S.sheet.stage = 'play';
       setTimeout(startWarPlay, 40);
     },
@@ -10003,7 +11418,35 @@ var CS = globalThis.CS = globalThis.CS || {};
       S.sheet = { type: 'war', k: 'war', stage: 'intro', n: Math.random() };
       SFX.play('power');
     },
-    warback: function () { S.sheet = { type: 'war', k: 'war', stage: 'intro' }; },
+    warback: function () { var bt = S.g.war && S.g.war.battle; S.sheet = { type: 'war', k: 'war', stage: bt && bt.done ? 'end' : 'intro' }; },
+    // Quit a war: free before the first game, otherwise the games you haven't played count as 0.
+    warquit: function () {
+      var g = S.g, bt = g.war && g.war.battle;
+      if (!bt || bt.done) return A.warclose();
+      if (!bt.started || bt.kind === 'challenge') {
+        if (warGame) warGame.stop();
+        var r = G.warQuit(g);
+        S.sheet = null; showOverlay();
+        toast(r.kind === 'rival' && !bt.started ? '🏳️ War called off. Your ⚡ energy is back.' : r.kind === 'friend' ? '🏳️ War called off. You got your friend war back.' : '🏳️ You left the challenge.');
+        return;
+      }
+      if (S.sheet && S.sheet.stage === 'play' && warGame) warGame.end(); // this round counts with the score you have
+      S.sheet = { type: 'confirm', what: 'wargiveup' };
+    },
+    warclip: function () {
+      var inp = document.getElementById('warcode');
+      var put = function (t) { if (!inp) return; inp.value = t; S.warDraft = t; inp.focus(); };
+      if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(put, function () { toast('Press and hold the box, then tap Paste. 📋'); if (inp) inp.focus(); });
+      else { toast('Press and hold the box, then tap Paste. 📋'); if (inp) inp.focus(); }
+      return false;
+    },
+    warcopy: function () {
+      var b = S.g.war && S.g.war.battle, code = b ? G.warCode(S.g, b) : '';
+      var ok = function () { toast('📋 Code copied! Send it to a friend.'); SFX.play('coin'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(ok, function () { toast('Your code: ' + code); });
+      else toast('Your code: ' + code);
+      return false;
+    },
     warclose: function () { if (warGame) warGame.stop(); G.warClose(S.g); G.save(S.g); S.sheet = null; showOverlay(); },
     warshare: function () { shareText(G.warShareText(S.g), 'Share your war'); return false; },
     warsendscores: function () { var b = S.g.war && S.g.war.battle; if (b) shareText(G.warCodeText(S.g, b), 'Send your scores'); return false; },
@@ -10041,6 +11484,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     closeov: function () { $over.innerHTML = ''; setTimeout(showOverlay, 250); return false; },
     scrim: function () {
       var t = S.sheet && S.sheet.type;
+      if (t === 'confirm' && S.sheet.what === 'wargiveup') return A.warback();
       if (['emp', 'cand', 'confirm', 'stat', 'share', 'vip', 'power', 'offline'].indexOf(t) >= 0 || (t === 'post' && !S.sheet.res) || (t === 'gift' && !S.sheet.amount) || (t === 'adtry' && S.sheet.phase === 'done')) { S.sheet = null; showOverlay(); } else return false;
     },
     loan: function (v) { var o = G.loanOffers(S.g)[+v]; if (!o || !o.ok) return; G.addLoan(S.g, o.amount, o.apr, o.weeks); afterAction(); toast('🏦 Got ' + M(o.amount) + '!'); SFX.play('coin'); coinBurst(10); },
@@ -10102,10 +11546,11 @@ var CS = globalThis.CS = globalThis.CS || {};
         if (g.mode === 'main') { G.recordLegacy(g, 'Started over'); G.clearSave('main'); } else G.clearSave('daily');
         S.g = null; S.screen = 'create'; S.create.step = 0; S.create.name = '';
       } else if (w === 'wargiveup') {
-        var bt = g.war && g.war.battle;
         if (warGame) warGame.stop();
-        while (bt && !bt.done) G.warSubmit(g, 0);
+        G.warQuit(g);
         S.sheet = { type: 'war', k: 'war', stage: 'end' };
+        var br = g.war.battle && g.war.battle.result;
+        if (br) { SFX.play(br.won ? 'level' : 'bad'); queueCelebrations(br, true); }
       } else { g.over = { reason: g.mode === 'daily' ? 'daily' : 'gaveup', week: g.week }; G.checkAchievements(g); endCompany(); }
     },
     restart: function () { S.g = null; S.screen = 'create'; S.create.step = 0; S.create.name = ''; window.scrollTo(0, 0); }
@@ -10121,6 +11566,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     render();
   }
   function onInput(ev) {
+    if (ev.target.id === 'warcode') S.warDraft = ev.target.value;
     if (ev.target.id === 'cname') {
       S.create.name = ev.target.value;
       var p = document.getElementById('cprev'); if (p) p.textContent = ev.target.value || 'Your Company';
@@ -10130,6 +11576,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   // Android back button: close things first, then go back, then leave the app.
   CS.onBack = function () {
     if ($over.innerHTML) { $over.innerHTML = ''; return true; }
+    if (S.sheet && S.sheet.type === 'war') { if (A.warquit() !== false) render(); return true; }
     if (S.sheet) { if (A.scrim() !== false) { render(); return true; } return true; }
     if (S.screen === 'game' && S.tab !== 'home') { A.tab('home'); render(); return true; }
     if (S.screen === 'create') { A.cback(); render(); return true; }

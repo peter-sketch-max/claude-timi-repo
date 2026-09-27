@@ -506,9 +506,10 @@ var CS = globalThis.CS = globalThis.CS || {};
     var h = '<button class="btn small back-btn" data-a="tab" data-v="home">⬅ Back</button>';
     h += '<div class="section card war-hero in"><div class="wh-top"><span class="e">' + rk.emoji + '</span><div class="grow"><b>' + rk.name + '</b><small>🏆 ' + w.trophies + ' trophies' + (nx ? ' · ' + (nx.min - w.trophies) + ' more for ' + nx.emoji + ' ' + nx.name : ' · Top rank!') + '</small>' + (nx ? bar((w.trophies - rk.min) / (nx.min - rk.min) * 100) : '') + '</div></div>' +
       '<div class="wh-stats"><span>📱 <b>' + U.num(g.followers) + '</b> fans</span><span>⚡ <b>' + w.energy + '/' + G.warMaxEnergy() + '</b> energy</span><span>✅ ' + w.wins + ' · ❌ ' + w.losses + '</span></div>' +
-      '<small class="muted">5 rounds, 5 different games. Win more rounds than them to win the war. <b>The winner takes 10% of the loser\'s fans!</b></small>' +
-      '<div class="wh-games">' + CS.WAR_GAMES.map(function (x) { return '<span>' + x.emoji + ' ' + x.name + '</span>'; }).join('') + '</div></div>';
+      '<small class="muted">Every war is 5 rounds, picked from ' + CS.WAR_GAMES.length + ' mini-games. Win more rounds to win the war. <b>The winner takes 10% of the loser\'s fans!</b></small>' +
+      '<div class="wh-games">' + CS.WAR_GAMES.map(function (x) { var best = (w.best || {})[x.id]; return '<span>' + x.emoji + ' ' + x.name + (best ? ' <b>🏅' + best + '</b>' : '') + '</span>'; }).join('') + '</div></div>';
 
+    if (w.battle && !w.battle.done) h += '<button class="card war-banner section" data-a="warback"><span class="e">⚔️</span><span class="grow"><b>You\'re in the middle of a war!</b><small>Tap to go back to it.</small></span><span class="chip red">Go</span></button>';
     h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1 · +1 every week</span></div><div class="war-list">';
     (g.rivalCos || []).forEach(function (rv, i) {
       var fans = G.rivalFans(g, rv);
@@ -520,7 +521,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     h += '<div class="section"><div class="section-head"><h3>🤝 Friend Wars</h3><span class="label">' + friendTriesTxt() + '</span></div><div class="card friend-war">' +
       '<b class="fw-h">1. Challenge a friend</b><p class="small">Play the 5 games, then send your scores to a friend in any chat app. They have to beat you!</p>' +
       '<button class="btn pink block" data-a="warchallenge">🎮 Play &amp; send a challenge</button>' +
-      '<b class="fw-h" style="margin-top:16px">2. Got a code from a friend?</b><textarea id="warcode" rows="3" placeholder="Paste the war code here (it starts with CSW2.)"></textarea>' +
+      '<b class="fw-h" style="margin-top:16px">2. Got a code from a friend?</b><p class="small">Type it in, or paste their whole message.</p>' +
+      '<div class="code-row"><input id="warcode" class="code-input" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="400" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" value="' + esc(S.warDraft || '') + '">' +
+      '<button class="btn small" data-a="warclip" aria-label="Paste">📋 Paste</button></div>' +
       '<button class="btn red big block" data-a="warpaste">⚔️ BATTLE THEM!</button>' +
       (G.friendWarsLeft() === Infinity ? '' : '<p class="small muted" style="margin:10px 0 0">You get ' + G.FRIEND_WARS_PER_DAY + ' friend wars a day. 👑 VIP gets unlimited!</p>') + '</div></div>';
     return h;
@@ -535,7 +538,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     var me = { name: g.company.name, logo: g.company.logo, color: g.company.color, fans: g.followers };
     var foe = b.foe || { name: 'Your friend', logo: '❓', color: '#ADB5BD' };
     var head = b.kind === 'friend' ? '🤜 Friend War' : b.kind === 'challenge' ? '🎮 Challenge run' : '⚔️ WAR!';
-    var h = '<div class="war-sheet"><h2>' + head + '</h2><div class="war-vs">' + warSide(me, 'me') + '<span class="vs">VS</span>' + warSide(foe, 'them') + '</div>' +
+    var won = b.rounds.filter(function (r) { return r.win > 0; }).length, lost = b.rounds.filter(function (r) { return r.win < 0; }).length;
+    var h = '<div class="war-sheet">' + (b.done ? '' : '<button class="war-quit" data-a="warquit">🏳️ Quit</button>') + '<h2>' + head + '</h2><div class="war-vs">' + warSide(me, 'me') +
+      (b.foe ? '<span class="vs">' + (b.rounds.length ? '<span class="tally">' + won + '<i>–</i>' + lost + '</span>' : 'VS') + '</span>' : '<span class="vs">VS</span>') + warSide(foe, 'them') + '</div>' +
       '<div class="war-dots">' + b.games.map(function (id, i) {
         var r = b.rounds[i], cls = r ? (r.win > 0 ? 'w' : r.win < 0 ? 'l' : r.win === 0 ? 't' : 'd') : i === b.mine.length ? 'now' : '';
         return '<i class="' + cls + '">' + G.warGame(id).emoji + '</i>';
@@ -543,27 +548,31 @@ var CS = globalThis.CS = globalThis.CS || {};
     var i = b.mine.length, stage = sh.stage || 'intro';
     if (stage === 'intro' && !b.done) {
       var gm = G.warGame(b.games[i]);
-      h += '<div class="war-intro in"><small>ROUND ' + (i + 1) + ' OF 5</small><div class="wi-e">' + gm.emoji + '</div><h3>' + gm.name + '</h3><p>' + gm.desc + '</p>' +
-        (b.foe ? '<div class="wi-them">' + esc(foe.name) + '\'s score: <b>❓</b></div>' : '') + '</div>' +
+      var myBest = (g.war.best || {})[gm.id];
+      h += '<div class="war-intro in"><small>ROUND ' + (i + 1) + ' OF ' + b.games.length + '</small><div class="wi-e">' + gm.emoji + '</div><h3>' + gm.name + '</h3><p>' + gm.desc + '</p>' +
+        '<div class="wi-row">' + (b.foe ? '<span>' + esc(foe.name) + ': <b>❓</b></span>' : '') + (myBest ? '<span>🏅 Your best: <b>' + myBest + '</b></span>' : '') + '</div></div>' +
         '<button class="btn green big block" data-a="wargo">▶ GO!</button>' +
-        (b.kind !== 'challenge' ? '<button class="btn small block" style="margin-top:10px" data-a="confirm" data-v="wargiveup">🏳️ Give up</button>' : '');
+        (i === 0 && !b.started ? '<p class="small muted" style="margin:8px 0 0">Quit now and you get your ' + (b.kind === 'friend' ? 'friend war' : b.kind === 'rival' ? '⚡ energy' : 'turn') + ' back.</p>' : '');
     } else if (stage === 'play' && !b.done) {
       h += '<div class="war-arena" id="warArena"><div class="ws-hud"><span class="ws-score">⭐ 0</span><span class="ws-time"></span></div><div class="ws-field"></div><div class="ws-count">3</div></div>';
     } else if (stage === 'reveal') {
       var r = b.rounds[b.rounds.length - 1], gm2 = G.warGame(r.game);
       h += '<div class="war-reveal in"><div class="wr-game">' + gm2.emoji + ' ' + gm2.name + '</div><div class="wr-scores"><div class="' + (r.win > 0 ? 'win' : '') + '"><small>You</small><b>' + r.mine + '</b></div>' +
         (b.foe ? '<span>vs</span><div class="' + (r.win < 0 ? 'win' : '') + '"><small>' + esc(foe.name) + '</small><b>' + r.theirs + '</b></div>' : '') + '</div>' +
+        (r.best ? '<div class="new-best">🏅 New personal best!</div>' : '') +
         (b.foe ? '<h3 class="' + (r.win > 0 ? 'good' : r.win < 0 ? 'bad' : '') + '">' + (r.win > 0 ? 'You win the round!' : r.win < 0 ? 'They win the round!' : 'It\'s a tie!') + '</h3>' : '<h3>Score saved!</h3>') + '</div>' +
         '<button class="btn green big block" data-a="warnext">' + (b.done ? 'See the result 🏆' : 'Next round ▶') + '</button>';
     } else {
       var res = b.result;
       if (res.won == null) {
-        h += '<div class="war-end"><div class="face-big">🎮</div><h2>Challenge ready!</h2><p>Your scores: <b>' + b.mine.join(' · ') + '</b></p><p class="small">' + esc(res.text) + '</p>' +
-          '<button class="btn pink big block" data-a="warsendscores">📤 Send the challenge</button><div class="row2" style="margin-top:10px"><button class="btn" data-a="warrematch">🔁 Play again</button><button class="btn green" data-a="warclose">Done</button></div></div>';
+        var code = G.warCode(g, b); G.save(g);
+        h += '<div class="war-end"><div class="face-big">🎮</div><h2>Challenge ready!</h2>' + roundTable(b) + '<p class="small">Send this code to a friend. They play the same 5 games and try to beat you!</p>' +
+          '<div class="code-box" id="mycode">' + code + '</div><div class="row2" style="margin-bottom:10px"><button class="btn" data-a="warcopy">📋 Copy code</button><button class="btn pink" data-a="warsendscores">📤 Send</button></div>' +
+          '<div class="row2"><button class="btn" data-a="warrematch">🔁 Play again</button><button class="btn green" data-a="warclose">Done</button></div></div>';
       } else {
         var left = b.kind === 'friend' ? G.friendWarsLeft() : g.war.energy;
         var canRe = left > 0;
-        h += '<div class="war-end ' + (res.won ? 'won' : 'lost') + '"><div class="face-big">' + (res.won ? '🏆' : '😤') + '</div><h2>' + (res.won ? 'VICTORY!' : 'DEFEAT') + '</h2><div class="war-score">' + res.score[0] + ' – ' + res.score[1] + '</div><p>' + esc(res.text) + '</p>' +
+        h += '<div class="war-end ' + (res.won ? 'won' : 'lost') + '"><div class="face-big">' + (res.won ? '🏆' : b.forfeit ? '🏳️' : '😤') + '</div><h2>' + (res.won ? 'VICTORY!' : 'DEFEAT') + '</h2><div class="war-score">' + res.score[0] + ' – ' + res.score[1] + '</div><p>' + esc(res.text) + '</p>' + roundTable(b) +
           (res.chips.length ? '<div class="chips">' + res.chips.map(function (c, k) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + k * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
           '<button class="btn ' + (canRe ? 'red' : '') + ' big block" data-a="warrematch" ' + (canRe ? '' : 'disabled') + '>🔁 Quick rematch' + (b.kind === 'friend' ? ' (' + (left === Infinity ? '∞' : left) + ' left)' : ' (⚡' + left + ')') + '</button>' +
           '<div class="row2" style="margin-top:10px">' + (b.kind === 'friend' ? '<button class="btn pink" data-a="warsendscores">📤 Send my scores</button>' : '<button class="btn pink" data-a="warshare">📣 Share</button>') + '<button class="btn green" data-a="warclose">Done</button></div></div>';
@@ -572,7 +581,14 @@ var CS = globalThis.CS = globalThis.CS || {};
     return h + '</div>';
   }
 
-  // The 5 war games. Each builds itself inside #warArena and calls done(score) when it ends.
+  function roundTable(b) {
+    return '<div class="round-table">' + b.rounds.map(function (r) {
+      var gm = G.warGame(r.game);
+      return '<div class="' + (r.win > 0 ? 'w' : r.win < 0 ? 'l' : '') + '"><span>' + gm.emoji + ' ' + gm.name + (r.best ? ' 🏅' : '') + '</span><b>' + r.mine + '</b>' + (b.foe ? '<i>' + r.theirs + '</i>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // The war games. Each builds itself inside #warArena and calls done(score) when it ends.
   var warGame = null;
   function startWarPlay() {
     var g = S.g, b = g.war && g.war.battle;
@@ -590,9 +606,11 @@ var CS = globalThis.CS = globalThis.CS || {};
   function runWarGame(id, data, b, done) {
     var box = document.getElementById('warArena');
     var field = box.querySelector('.ws-field'), scoreEl = box.querySelector('.ws-score'), timeEl = box.querySelector('.ws-time'), cd = box.querySelector('.ws-count');
-    var score = 0, over = false, timers = [], raf = 0;
+    var score = 0, over = false, timers = [], raf = 0, craf = 0;
     if (warGame) warGame.stop();
-    warGame = { stop: function () { over = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf); } };
+    // stop: throw the round away. end: finish it now with the score so far (used by the Quit button).
+    warGame = { stop: function () { over = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf); cancelAnimationFrame(craf); },
+      end: function () { if (over) return; warGame.stop(); warGame = null; done(score); } };
     function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
     function show() { scoreEl.textContent = '⭐ ' + score; }
     function pop(txt, x, y, good) {
@@ -615,7 +633,7 @@ var CS = globalThis.CS = globalThis.CS || {};
         var left = Math.max(0, secs - (performance.now() - t0) / 1000);
         timeEl.textContent = '⏱️ ' + left.toFixed(1);
         if (left <= 0) return finish();
-        raf = requestAnimationFrame(tick);
+        craf = requestAnimationFrame(tick);
       })();
     }
     show();
@@ -725,6 +743,130 @@ var CS = globalThis.CS = globalThis.CS || {};
           qi++; later(ask, ok ? 150 : 450);
         });
         ask(); clock(data.secs);
+      } else if (id === 'numbers') {
+        field.innerHTML = '<div class="ws-grid num"></div><div class="ws-tip">Tap 1 first!</div>';
+        var ngrid = field.querySelector('.ws-grid'), ntip = field.querySelector('.ws-tip'), board = 0, want = 1;
+        var deal = function () {
+          want = 1;
+          ngrid.innerHTML = data.boards[board % data.boards.length].map(function (n) { return '<button class="num-t" data-n="' + n + '">' + n + '</button>'; }).join('');
+        };
+        ngrid.addEventListener('pointerdown', function (e) {
+          var t = e.target.closest('.num-t');
+          if (!t || over || t.classList.contains('ok')) return;
+          e.preventDefault();
+          if (+t.dataset.n === want) {
+            t.classList.add('ok'); add(1, t.offsetLeft + t.offsetWidth / 2 - 10, t.offsetTop); want++;
+            if (want > 12) { board++; ntip.textContent = 'Board cleared! Next one...'; SFX.play('coin'); later(deal, 250); } else ntip.textContent = 'Next: ' + want;
+          } else { t.classList.add('bad'); setTimeout(function () { t.classList.remove('bad'); }, 250); add(-1, t.offsetLeft + t.offsetWidth / 2 - 10, t.offsetTop); }
+        });
+        deal(); clock(data.secs);
+      } else if (id === 'colors') {
+        var COLS = [['RED', '#FF4D5E'], ['BLUE', '#2EA8FF'], ['GREEN', '#1FB36A'], ['YELLOW', '#F2A900']];
+        field.innerHTML = '<div class="ws-word"></div><div class="ws-tip">Tap the color of the paint, not the word!</div><div class="ws-swatches">' +
+          COLS.map(function (c, i) { return '<button class="sw" data-i="' + i + '" style="background:' + c[1] + '">' + c[0] + '</button>'; }).join('') + '</div>';
+        var word = field.querySelector('.ws-word'), sws = field.querySelector('.ws-swatches'), ci = 0, cbusy = false;
+        var show2 = function () { var q = data.items[ci % data.items.length]; word.textContent = COLS[q.word][0]; word.style.color = COLS[q.ink][1]; word.classList.remove('flash'); void word.offsetWidth; word.classList.add('flash'); cbusy = false; };
+        sws.addEventListener('pointerdown', function (e) {
+          var btn = e.target.closest('.sw');
+          if (!btn || over || cbusy) return;
+          e.preventDefault(); cbusy = true;
+          var ok = +btn.dataset.i === data.items[ci % data.items.length].ink;
+          add(ok ? 1 : -1, btn.offsetLeft + btn.offsetWidth / 2 - 10, btn.offsetTop - 10);
+          ci++; later(show2, ok ? 120 : 420);
+        });
+        show2(); clock(data.secs);
+      } else if (id === 'stack') {
+        field.innerHTML = '<div class="stk"></div><div class="ws-tip">Tap anywhere to drop the block!</div>';
+        var stk = field.querySelector('.stk'), bh = 24, col = S.g.company.color || '#7C4DFF', level = 0, lastX = W * 0.2, lastW = W * 0.6, cur = null, cx = 0, dir = 1, lastT = 0;
+        var block = function (x, w, y, moving) {
+          var el = document.createElement('div');
+          el.className = 'stk-b' + (moving ? ' moving' : ''); el.style.cssText = 'left:' + x + 'px;width:' + w + 'px;bottom:' + y + 'px;background:' + col;
+          stk.appendChild(el); return el;
+        };
+        block(lastX, lastW, 0);
+        var spawn = function () {
+          if (level >= data.blocks.length) return finish();
+          var bl = data.blocks[level];
+          dir = bl.left ? 1 : -1; cx = bl.left ? 0 : W - lastW;
+          cur = block(cx, lastW, (level + 1) * bh, true); lastT = performance.now();
+          (function move(now) {
+            if (over || !cur) return;
+            cx += dir * bl.speed * W * Math.min(0.05, (now - lastT) / 1000); lastT = now;
+            if (cx < 0) { cx = 0; dir = 1; } if (cx > W - lastW) { cx = W - lastW; dir = -1; }
+            cur.style.left = cx + 'px';
+            raf = requestAnimationFrame(move);
+          })(lastT);
+        };
+        field.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          if (over || !cur) return;
+          cancelAnimationFrame(raf);
+          var tipS = field.querySelector('.ws-tip'); if (tipS) tipS.remove();
+          var el = cur; cur = null;
+          var left = Math.max(cx, lastX), right = Math.min(cx + lastW, lastX + lastW), ov = right - left;
+          if (ov < 6) { el.classList.add('fall'); SFX.play('bad'); buzz(60); later(finish, 500); return; }
+          el.classList.remove('moving'); el.style.left = left + 'px'; el.style.width = ov + 'px';
+          var perfect = Math.abs(cx - lastX) < 4;
+          if (perfect) { ov = lastW; el.style.left = lastX + 'px'; el.style.width = lastW + 'px'; left = lastX; }
+          lastX = left; lastW = ov; level++;
+          add(1, left + ov / 2 - 10, Hh - (level + 1) * bh - 30 + Math.max(0, (level - 7) * bh));
+          if (perfect) { pop('PERFECT!', left, Hh - (level + 1) * bh - 50 + Math.max(0, (level - 7) * bh), true); SFX.play('coin'); }
+          if (level > 7) stk.style.transform = 'translateY(' + ((level - 7) * bh) + 'px)';
+          later(spawn, 120);
+        });
+        spawn(); clock(data.secs);
+      } else if (id === 'reaction') {
+        field.innerHTML = '<div class="rx wait"><b>Wait for green...</b><small></small></div>';
+        var rx = field.querySelector('.rx'), rb = rx.querySelector('b'), rs = rx.querySelector('small'), rk = 0, armed = 0, token = 0;
+        var nextTry = function () {
+          if (rk >= data.waits.length) return finish();
+          var my = ++token;
+          armed = 0; rx.className = 'rx wait'; rb.textContent = 'Wait for green...'; rs.textContent = ''; timeEl.textContent = 'Try ' + (rk + 1) + '/' + data.waits.length;
+          later(function () {
+            if (my !== token || over) return;
+            armed = performance.now(); rx.className = 'rx go'; rb.textContent = 'TAP!'; SFX.play('pop');
+            later(function () { if (my === token && armed) { armed = 0; token++; rb.textContent = 'Too slow! +0'; rx.className = 'rx miss'; rk++; later(nextTry, 900); } }, 1500);
+          }, data.waits[rk]);
+        };
+        field.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          if (over || rx.classList.contains('miss') || rx.classList.contains('hit')) return;
+          token++;
+          if (!armed) { rx.className = 'rx miss'; rb.textContent = 'Too early! +0'; SFX.play('bad'); buzz(50); rk++; later(nextTry, 900); return; }
+          var ms = Math.round(performance.now() - armed), pts = Math.max(0, Math.min(100, Math.round(100 - (ms - 180) / 4)));
+          armed = 0; rx.className = 'rx hit'; rb.textContent = ms + ' ms'; rs.textContent = '+' + pts;
+          score += pts; show(); SFX.play(pts >= 70 ? 'coin' : 'tap');
+          rk++; later(nextTry, 900);
+        });
+        nextTry();
+      } else if (id === 'catch') {
+        field.innerHTML = '<div class="basket">🧺</div><div class="ws-tip">Drag to move the basket</div>';
+        var basket = field.querySelector('.basket'), bx = W / 2, drops = [], t0c = performance.now(), di = 0, lastC = t0c;
+        var moveTo = function (e) { var r = field.getBoundingClientRect(); bx = Math.max(28, Math.min(W - 28, e.clientX - r.left)); basket.style.left = (bx - 28) + 'px'; };
+        field.addEventListener('pointerdown', function (e) { e.preventDefault(); moveTo(e); });
+        field.addEventListener('pointermove', function (e) { if (!over) moveTo(e); });
+        basket.style.left = (bx - 28) + 'px';
+        (function loop(now) {
+          if (over) return;
+          var el = now - t0c, dt = Math.min(0.05, (now - lastC) / 1000); lastC = now;
+          while (di < data.drops.length && data.drops[di].t <= el) {
+            var dd = data.drops[di++], de = document.createElement('div');
+            de.className = 'drop ' + dd.kind; de.textContent = dd.kind === 'bomb' ? '💣' : dd.kind === 'gold' ? '💰' : '💵';
+            field.appendChild(de); drops.push({ d: dd, el: de, x: 18 + dd.x * (W - 56), y: -40 });
+          }
+          drops = drops.filter(function (o) {
+            o.y += o.d.spd * Hh * dt; o.el.style.transform = 'translate(' + o.x + 'px,' + o.y + 'px)';
+            if (o.y > Hh - 78 && o.y < Hh - 30 && Math.abs(o.x + 18 - bx) < 42) {
+              o.el.remove(); add(o.d.kind === 'bomb' ? -3 : o.d.kind === 'gold' ? 3 : 1, o.x, Hh - 110);
+              if (o.d.kind !== 'bomb') { basket.classList.remove('bump'); void basket.offsetWidth; basket.classList.add('bump'); }
+              return false;
+            }
+            if (o.y > Hh) { o.el.remove(); return false; }
+            return true;
+          });
+          raf = requestAnimationFrame(loop);
+        })(t0c);
+        clock(data.secs);
       } else {
         field.innerHTML = '<div class="ws-grid mem">' + [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function () { return '<button class="tile"></button>'; }).join('') + '</div><div class="ws-tip"></div>';
         var tiles = field.querySelectorAll('.tile'), tip = field.querySelector('.ws-tip'), lv = 0, need = [], found = 0, input = false;
@@ -784,7 +926,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   function evHead(def, x) {
     var cat = catOf(def);
-    return '<div class="ev-head" style="--c:' + cat.color + '"><div class="meta"><span>' + cat.emoji + ' ' + cat.label + (x.chain ? ' · follow-up' : '') + '</span>' + rarityTag(def) + '<span>Week ' + S.g.week + '</span></div><div class="ev-icon">' + def.icon + '</div></div>';
+    return '<div class="ev-head" style="--c:' + cat.color + '"><div class="meta"><span>' + cat.emoji + ' ' + cat.label + (x.chain ? ' · 🔗 Story' : '') + '</span>' + rarityTag(def) + '<span>Week ' + S.g.week + '</span></div><div class="ev-icon">' + def.icon + '</div></div>';
   }
   function tagsFor(g, x, fx) {
     var cost = G.fxCost(g, fx), risk = G.fxRisk(g, fx, x.ctx), t = '';
@@ -937,7 +1079,9 @@ var CS = globalThis.CS = globalThis.CS || {};
     var big = res.won === true || good > bad ? U.pick(['🎉', '😄', '🥳', '🤩']) : bad > good ? U.pick(['😬', '😖', '🙈']) : '🙂';
     return '<div class="result"><div class="face-big">' + big + '</div><h2>' + F(def.title || 'What happened', sh.x) + '</h2><p>' + esc(res.text || 'Done!') + '</p>' +
       (res.chips.length ? '<div class="chips">' + res.chips.map(function (c, i) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + i * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
-      '<button class="btn green big block" data-a="cont">' + (S.g.queue.length ? 'Next (' + S.g.queue.length + ' more) ▶' : 'Continue ▶') + '</button></div>';
+      (res.later ? '<div class="story-hint later">⏳ This isn\'t over yet...</div>' : '') +
+      (res.then ? '<div class="story-hint now">🔗 The story continues...</div><button class="btn pink big block" data-a="cont">➡️ What happens next?</button></div>'
+        : '<button class="btn green big block" data-a="cont">' + (S.g.queue.length ? 'Next (' + S.g.queue.length + ' more) ▶' : 'Continue ▶') + '</button></div>');
   }
 
   function weekSheet(r) {
@@ -1062,7 +1206,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   function confirmSheet() {
     var w = S.sheet.what;
     var t = w === 'newgame' ? ['🔄', 'Start over?', 'This company is saved in your history, and you start a new one. You get a small bonus for your experience!']
-      : w === 'wargiveup' ? ['🏳️', 'Give up this war?', 'The rounds you haven\'t played count as 0, so you will probably lose fans.']
+      : w === 'wargiveup' ? ['🏳️', 'Quit this war?', 'The games you haven\'t played count as 0, so you will probably lose and give up 10% of your fans.']
         : ['📉', 'Give up?', 'Your company closes for good. Your next company gets an experience bonus.'];
     return '<div class="result"><div class="face-big">' + t[0] + '</div><h2>' + t[1] + '</h2><p style="font-size:16px">' + t[2] + '</p><div class="row2"><button class="btn" data-a="' + (w === 'wargiveup' ? 'warback' : 'close') + '">Cancel</button><button class="btn red" data-a="doconfirm">Yes</button></div></div>';
   }
@@ -1097,6 +1241,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (tv && view !== S.viewKey) tv.classList.add('enter');
     S.viewKey = view;
     renderSheet();
+    // Menu, game and war each have their own music.
+    if (CS.Music) CS.Music.setMood(S.sheet && S.sheet.type === 'war' ? 'war' : S.screen === 'game' ? 'game' : 'menu');
     if (S.screen === 'game' && S.tab === 'home') CS.Scene.start();
     if (g && S.screen === 'game') S.prev = G.snap(g);
   }
@@ -1378,6 +1524,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     },
     warpaste: function () {
       var ta = document.getElementById('warcode'), foe = G.readWarCode(S.g, ta && ta.value);
+      if (!foe.error) S.warDraft = '';
       if (foe.error) { toast(foe.error); SFX.play('bad'); return false; }
       if (G.friendWarsLeft() < 1) { toast('No friend wars left today. Come back tomorrow, or get 👑 VIP for unlimited!'); S.sheet = { type: 'vip' }; return; }
       if (!G.warStartFriend(S.g, foe)) return false;
@@ -1387,6 +1534,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     },
     wargo: function () {
       if (!S.sheet || S.sheet.type !== 'war') return false;
+      var bt = S.g.war && S.g.war.battle;
+      if (bt && !bt.started) { bt.started = true; G.save(S.g); }
       S.sheet.stage = 'play';
       setTimeout(startWarPlay, 40);
     },
@@ -1409,7 +1558,35 @@ var CS = globalThis.CS = globalThis.CS || {};
       S.sheet = { type: 'war', k: 'war', stage: 'intro', n: Math.random() };
       SFX.play('power');
     },
-    warback: function () { S.sheet = { type: 'war', k: 'war', stage: 'intro' }; },
+    warback: function () { var bt = S.g.war && S.g.war.battle; S.sheet = { type: 'war', k: 'war', stage: bt && bt.done ? 'end' : 'intro' }; },
+    // Quit a war: free before the first game, otherwise the games you haven't played count as 0.
+    warquit: function () {
+      var g = S.g, bt = g.war && g.war.battle;
+      if (!bt || bt.done) return A.warclose();
+      if (!bt.started || bt.kind === 'challenge') {
+        if (warGame) warGame.stop();
+        var r = G.warQuit(g);
+        S.sheet = null; showOverlay();
+        toast(r.kind === 'rival' && !bt.started ? '🏳️ War called off. Your ⚡ energy is back.' : r.kind === 'friend' ? '🏳️ War called off. You got your friend war back.' : '🏳️ You left the challenge.');
+        return;
+      }
+      if (S.sheet && S.sheet.stage === 'play' && warGame) warGame.end(); // this round counts with the score you have
+      S.sheet = { type: 'confirm', what: 'wargiveup' };
+    },
+    warclip: function () {
+      var inp = document.getElementById('warcode');
+      var put = function (t) { if (!inp) return; inp.value = t; S.warDraft = t; inp.focus(); };
+      if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(put, function () { toast('Press and hold the box, then tap Paste. 📋'); if (inp) inp.focus(); });
+      else { toast('Press and hold the box, then tap Paste. 📋'); if (inp) inp.focus(); }
+      return false;
+    },
+    warcopy: function () {
+      var b = S.g.war && S.g.war.battle, code = b ? G.warCode(S.g, b) : '';
+      var ok = function () { toast('📋 Code copied! Send it to a friend.'); SFX.play('coin'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(ok, function () { toast('Your code: ' + code); });
+      else toast('Your code: ' + code);
+      return false;
+    },
     warclose: function () { if (warGame) warGame.stop(); G.warClose(S.g); G.save(S.g); S.sheet = null; showOverlay(); },
     warshare: function () { shareText(G.warShareText(S.g), 'Share your war'); return false; },
     warsendscores: function () { var b = S.g.war && S.g.war.battle; if (b) shareText(G.warCodeText(S.g, b), 'Send your scores'); return false; },
@@ -1447,6 +1624,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     closeov: function () { $over.innerHTML = ''; setTimeout(showOverlay, 250); return false; },
     scrim: function () {
       var t = S.sheet && S.sheet.type;
+      if (t === 'confirm' && S.sheet.what === 'wargiveup') return A.warback();
       if (['emp', 'cand', 'confirm', 'stat', 'share', 'vip', 'power', 'offline'].indexOf(t) >= 0 || (t === 'post' && !S.sheet.res) || (t === 'gift' && !S.sheet.amount) || (t === 'adtry' && S.sheet.phase === 'done')) { S.sheet = null; showOverlay(); } else return false;
     },
     loan: function (v) { var o = G.loanOffers(S.g)[+v]; if (!o || !o.ok) return; G.addLoan(S.g, o.amount, o.apr, o.weeks); afterAction(); toast('🏦 Got ' + M(o.amount) + '!'); SFX.play('coin'); coinBurst(10); },
@@ -1508,10 +1686,11 @@ var CS = globalThis.CS = globalThis.CS || {};
         if (g.mode === 'main') { G.recordLegacy(g, 'Started over'); G.clearSave('main'); } else G.clearSave('daily');
         S.g = null; S.screen = 'create'; S.create.step = 0; S.create.name = '';
       } else if (w === 'wargiveup') {
-        var bt = g.war && g.war.battle;
         if (warGame) warGame.stop();
-        while (bt && !bt.done) G.warSubmit(g, 0);
+        G.warQuit(g);
         S.sheet = { type: 'war', k: 'war', stage: 'end' };
+        var br = g.war.battle && g.war.battle.result;
+        if (br) { SFX.play(br.won ? 'level' : 'bad'); queueCelebrations(br, true); }
       } else { g.over = { reason: g.mode === 'daily' ? 'daily' : 'gaveup', week: g.week }; G.checkAchievements(g); endCompany(); }
     },
     restart: function () { S.g = null; S.screen = 'create'; S.create.step = 0; S.create.name = ''; window.scrollTo(0, 0); }
@@ -1527,6 +1706,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     render();
   }
   function onInput(ev) {
+    if (ev.target.id === 'warcode') S.warDraft = ev.target.value;
     if (ev.target.id === 'cname') {
       S.create.name = ev.target.value;
       var p = document.getElementById('cprev'); if (p) p.textContent = ev.target.value || 'Your Company';
@@ -1536,6 +1716,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   // Android back button: close things first, then go back, then leave the app.
   CS.onBack = function () {
     if ($over.innerHTML) { $over.innerHTML = ''; return true; }
+    if (S.sheet && S.sheet.type === 'war') { if (A.warquit() !== false) render(); return true; }
     if (S.sheet) { if (A.scrim() !== false) { render(); return true; } return true; }
     if (S.screen === 'game' && S.tab !== 'home') { A.tab('home'); render(); return true; }
     if (S.screen === 'create') { A.cback(); render(); return true; }

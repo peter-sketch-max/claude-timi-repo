@@ -338,7 +338,12 @@ CS.WAR_GAMES = [
   { id: 'stop', emoji: '🎯', name: 'Perfect Stop', desc: 'Tap to stop the bar in the green zone. 5 tries, and it gets faster!', typical: 300 },
   { id: 'whack', emoji: '🔨', name: 'Whack-a-Rival', desc: 'Hit your rival\'s logo when it pops up. Don\'t hit your own!', typical: 11 },
   { id: 'math', emoji: '🧮', name: 'Quick Math', desc: 'Answer as many as you can in 15 seconds.', typical: 6 },
-  { id: 'memory', emoji: '🧠', name: 'Memory Grid', desc: 'Remember the lit squares, then tap them. One mistake and it\'s over! 25 seconds.', typical: 12 }
+  { id: 'memory', emoji: '🧠', name: 'Memory Grid', desc: 'Remember the lit squares, then tap them. One mistake and it\'s over! 25 seconds.', typical: 12 },
+  { id: 'numbers', emoji: '🔢', name: 'Number Rush', desc: 'Tap the numbers in order, 1 to 12. Finish a board and a new one appears. 20 seconds.', typical: 22 },
+  { id: 'colors', emoji: '🎨', name: 'Color Clash', desc: 'Tap the COLOR the word is painted in, not what it says! 15 seconds.', typical: 12 },
+  { id: 'stack', emoji: '🏗️', name: 'Tower Stack', desc: 'Tap to drop each block on the tower. Miss the edge and it gets smaller!', typical: 9 },
+  { id: 'reaction', emoji: '⚡', name: 'Quick Draw', desc: 'Wait for GREEN, then tap as fast as you can. Too early and you get 0! 5 tries.', typical: 330 },
+  { id: 'catch', emoji: '🧺', name: 'Cash Catch', desc: 'Drag the basket to catch the falling money. Dodge the bombs! 15 seconds.', typical: 15 }
 ];
 CS.WAR_RANKS = [
   { emoji: '🪖', name: 'Recruit', min: 0 },

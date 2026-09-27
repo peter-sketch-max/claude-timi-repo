@@ -2,13 +2,16 @@
 const fs = require('fs'), vm = require('vm'), path = require('path');
 require('./core-files').forEach(f => vm.runInThisContext(fs.readFileSync(path.join(__dirname, '../src/js', f + '.js'), 'utf8'), { filename: f + '.js' }));
 const CS = globalThis.CS;
-const KEYS = new Set('cash money rep happy fans team a b m skill loyal reliable rel date breakup raise teamRaise teamBonus bonus promote mgr demote fire quit demand capacity supply extra closed price equip rent viral hire hireSpecial pet rival next chance say xp flag run die'.split(' '));
+const KEYS = new Set('cash money rep happy fans team a b m skill loyal reliable rel date breakup raise teamRaise teamBonus bonus promote mgr demote fire quit demand capacity supply extra closed price equip rent viral hire hireSpecial pet rival next chance say xp flag run die then leave'.split(' '));
 let bad = 0; const ids = {};
 function checkFx(fx, where) {
   if (!fx || typeof fx === 'function') return;
   Object.keys(fx).forEach(k => { if (!KEYS.has(k)) { console.log('Unknown fx key', k, 'in', where); bad++; } });
   if (fx.chance) { checkFx(fx.chance.win, where); checkFx(fx.chance.lose, where); }
   if (fx.next) (typeof fx.next[0] === 'string' ? [fx.next] : fx.next).forEach(n => { if (!CS.EV[n[0]]) { console.log('Missing chain event', n[0], 'in', where); bad++; } });
+  if (fx.then && !CS.EV[fx.then]) { console.log('Missing follow-up event', fx.then, 'in', where); bad++; }
+  if (fx.then && CS.EV[fx.then] && !CS.EV[fx.then].chainOnly) { console.log('Follow-up event should be chainOnly:', fx.then, 'in', where); bad++; }
+  if (fx.then && (fx.fire || fx.quit || fx.die || fx.leave)) { console.log('A follow-up can\'t come after someone leaves:', where); bad++; }
 }
 CS.EVENTS.forEach(d => {
   if (ids[d.id]) { console.log('Duplicate id', d.id); bad++; } ids[d.id] = 1;
@@ -79,6 +82,19 @@ CS.EVENTS.forEach(d => {
     });
     ['win', 'lose', 'tie'].forEach(k => says(d.id, d[k]));
   });
+})();
+
+// Every follow-up event must be reachable: some answer leads to it (or the game itself schedules it).
+(function () {
+  const used = { jealous: 1, resign: 1, joined_rival: 1 };
+  function walk(fx) {
+    if (!fx || typeof fx !== 'object') return;
+    if (fx.then) used[fx.then] = 1;
+    if (fx.next) (typeof fx.next[0] === 'string' ? [fx.next] : fx.next).forEach(n => { used[n[0]] = 1; });
+    if (fx.chance) { walk(fx.chance.win); walk(fx.chance.lose); }
+  }
+  CS.EVENTS.forEach(d => { (d.choices || []).forEach(c => walk(c.fx)); ['win', 'lose', 'tie'].forEach(k => walk(d[k])); });
+  CS.EVENTS.forEach(d => { if (d.chainOnly && !used[d.id]) { console.log('Follow-up event that nothing leads to:', d.id); bad++; } });
 })();
 
 const kinds = {}; CS.EVENTS.forEach(d => kinds[d.kind] = (kinds[d.kind] || 0) + 1);

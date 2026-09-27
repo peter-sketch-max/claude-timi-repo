@@ -28,11 +28,12 @@
 //
 // Effect (fx) keys: cash (share of weekly sales, negative = cost), money ($), rep, happy, fans, team,
 //   a/b/m (mood of that person), skill/loyal/reliable ({a: n}), rel ['a','b',n], date, breakup,
-//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a', die 'a',
+//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a' (may join a rival),
+//   leave 'a' (leaves on good terms), die 'a',
 //   demand/capacity/supply [value, weeks, label], extra [share, weeks, label], closed [weeks, label],
 //   price (+1/-1), equip (permanent speed), rent (permanent), viral [min, max], hire 'cand', hireSpecial {...},
 //   pet (emoji), rival (+/- share of that rival's strength), next ['id', minWeeks, maxWeeks, chance],
-//   chance { p, win, lose }, say, xp, flag, run(g, c).
+//   chance { p, win, lose }, say, xp, flag, run(g, c), then 'id' (the story continues right away with that event).
 var CS = globalThis.CS = globalThis.CS || {};
 
 (function () {
@@ -56,8 +57,14 @@ var CS = globalThis.CS = globalThis.CS || {};
     season: function (from, to) { return function (g) { var w = ((g.week - 1) % 52) + 1; return w >= from && w <= to; }; },
     busy: function (g) { var h = g.history[g.history.length - 1]; return h && h.demand > h.capacity * 1.08; },
     isInd: function (id) { return function (g) { return g.company.industry === id; }; },
-    person: function (g, c) { c.name = U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST); }
+    person: function (g, c) { c.name = U.pick(CS.FIRST) + ' ' + U.pick(CS.LAST); },
+    // For stories that say "he" or "she": a name that fits.
+    man: function (g, c) { c.name = U.pick(MEN) + ' ' + U.pick(CS.LAST); },
+    woman: function (g, c) { c.name = U.pick(WOMEN) + ' ' + U.pick(CS.LAST); },
+    boy: function (g, c) { c.name = U.pick(MEN); }
   };
+  var MEN = ['Liam', 'Noah', 'Leo', 'Mateo', 'Omar', 'Ethan', 'Lucas', 'Diego', 'Felix', 'Jonah', 'Ravi', 'Tariq', 'Marcus', 'Kofi', 'Oscar', 'Ivan', 'Malik', 'Theo', 'Hugo', 'Bruno', 'Arjun', 'Emeka', 'Max', 'Finn', 'Axel', 'Ezra'];
+  var WOMEN = ['Ava', 'Maya', 'Zara', 'Priya', 'Chloe', 'Amara', 'Sofia', 'Nia', 'Hana', 'Aisha', 'Ines', 'Grace', 'Elena', 'Lena', 'Mei', 'Leila', 'Freya', 'Rosa', 'Tess', 'Nora', 'Imani', 'Keiko', 'Ruby', 'Lola', 'Jade', 'Luna', 'Isla', 'Mila', 'Nala'];
   // Short way to write a normal event: CS.E(id, category, icon, title, text, [[answer, effect] x4], extra fields).
   CS.E = function (id, cat, icon, title, text, choices, o) {
     var d = { id: id, cat: cat, icon: icon, title: title, text: text };
@@ -136,9 +143,9 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { chainOnly: true });
 
   E('theft', 'team', '💸', 'Money is missing from the register', 'It happened three times this month. {a} was working every time.', [
-    ['🔍 Confront {a}', { chance: { p: 0.5, win: { fire: 'a', rep: 1, say: '{a} confessed and was fired.' }, lose: { a: -20, team: -6, say: '{a} was innocent. The team is upset with you.' } } }],
+    ['🔍 Confront {a}', { chance: { p: 0.5, win: { then: 'theft_confession', say: '{a} went pale.' }, lose: { a: -20, team: -6, say: '{a} was innocent. The team is upset with you.' } } }],
     ['📹 Install cameras', { cash: -0.4, next: ['theft_again', 3, 6, 0.5], say: 'Now you\'ll see everything.' }],
-    ['🪤 Set a trap with marked bills', { chance: { p: 0.6, win: { fire: 'a', rep: 2, say: 'Marked bills in {a}\'s bag. Busted.' }, lose: { say: 'Nothing. The thief got careful.' } } }],
+    ['🪤 Set a trap with marked bills', { chance: { p: 0.6, win: { then: 'theft_confession', say: 'Marked bills in {a}\'s bag. Caught.' }, lose: { say: 'Nothing. The thief got careful.' } } }],
     ['🤷 Let it slide', { cash: -0.3, next: ['theft_again', 2, 5, 0.7], say: 'More money went missing.' }]
   ], { w: 2, cd: 20, need: 2, who: { a: 'any' }, cond: noCams });
 
@@ -150,8 +157,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { chainOnly: true });
 
   E('spy', 'team', '🕵️', '{a} might be a spy for {rival}', 'You saw {a} texting {rival}\'s manager. Twice.', [
-    ['📱 Check {a}\'s work phone', { chance: { p: 0.5, win: { fire: 'a', rival: -0.05, say: 'It was true. You caught a spy.' }, lose: { a: -15, loyal: { a: -15 }, say: 'Innocent. {a} feels betrayed.' } } }],
-    ['🎭 Feed {a} fake plans', { chance: { p: 0.5, win: { rival: -0.1, say: '{rival} copied your fake plan. It flopped.' }, lose: { say: 'Nothing happened. Maybe it wasn\'t {a}.' } } }],
+    ['📱 Check {a}\'s work phone', { chance: { p: 0.5, win: { then: 'spy_caught', say: 'The messages are all there.' }, lose: { a: -15, loyal: { a: -15 }, say: 'Innocent. {a} feels betrayed.' } } }],
+    ['🎭 Feed {a} fake plans', { chance: { p: 0.5, win: { rival: -0.05, next: ['fake_plan_flop', 2, 4], say: '{a} passed it on. Now you know.' }, lose: { say: 'Nothing happened. Maybe it wasn\'t {a}.' } } }],
     ['💬 Ask {a} straight out', { chance: { p: 0.6, win: { loyal: { a: 15 }, say: 'They were friends from school. Nothing more.' }, lose: { quit: 'a', say: '{a} quit on the spot. Suspicious.' } } }],
     ['🙈 Do nothing', { next: ['idea_stolen', 3, 6, 0.4], say: 'You let it go.' }]
   ], { w: 1.5, cd: 25, minWeek: 8, who: { a: 'any' }, init: rival });
@@ -262,8 +269,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25, who: { a: 'any' } });
 
   E('worker_viral', 'team', '📱', '{a} went viral', 'A video of {a} working super fast has 2 million views.', [
-    ['📱 Repost it', { fans: 20, a: 8, say: 'New fans are pouring in.' }],
-    ['🎥 Put {a} in your ads', { raise: ['a', 0.1], fans: 30, a: 15, say: '{a} is a local star.' }],
+    ['📱 Repost it', { fans: 20, a: 8, next: ['viral_offer', 4, 8, 0.3], say: 'New fans are pouring in.' }],
+    ['🎥 Put {a} in your ads', { raise: ['a', 0.1], fans: 30, a: 15, next: ['viral_offer', 4, 8, 0.5], say: '{a} is a local star.' }],
     ['🤐 Keep it low-key', { a: -3, say: 'It faded in a week.' }],
     ['🔒 Sign {a} to a contract', { cash: -0.2, loyal: { a: 20 }, fans: 10, say: 'Nobody can steal {a} now.' }]
   ], { w: 1.5, cd: 25, who: { a: 'front' } });
@@ -277,7 +284,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('bully', 'team', '😠', '{a} is bullying {b}', '{b} is afraid to come to work. Everyone knows why.', [
     ['🚪 Fire {a}', { fire: 'a', b: 15, team: 6, say: 'The team feels safer.' }],
-    ['⚠️ Final warning for {a}', { a: -10, b: 5, say: '{a} backed off. For now.' }],
+    ['⚠️ Final warning for {a}', { a: -10, b: 5, next: ['bully_again', 3, 6, 0.5], say: '{a} backed off. For now.' }],
     ['🔀 Separate them', { rel: ['a', 'b', -10], capacity: [0.97, 4, 'Separate shifts'], say: 'Out of sight, out of mind.' }],
     ['🙈 "Sort it out yourselves"', { b: -20, chance: { p: 0.5, win: { say: '{b} is holding on. Barely.' }, lose: { quit: 'b', say: '{b} quit. Everyone knows why.' } } }]
   ], { w: 1.5, cd: 20, need: 2, who: { a: 'aggressive', b: 'any' } });
@@ -293,7 +300,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🚪 Fire {a}', { fire: 'a', say: 'No liars here.' }],
     ['💬 Give them a chance', { chance: { p: 0.5, win: { skill: { a: 5 }, loyal: { a: 20 }, say: '{a} works harder than anyone now.' }, lose: { rep: -2, say: '{a} kept messing up.' } } }],
     ['📉 Cut their pay', { raise: ['a', -0.15], a: -10, say: '{a} took the pay cut.' }],
-    ['🤐 Ignore it', { rep: -1, say: 'Customers noticed the mistakes.' }]
+    ['🤐 Ignore it', { rep: -1, next: ['fake_cv_exposed', 3, 6, 0.6], say: 'You hope nobody finds out.' }]
   ], { w: 1.5, cd: 20, who: { a: 'new' } });
 
   E('manager_raise', 'team', '👔', 'Manager {m} wants a raise', null, [
@@ -374,10 +381,10 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.2, cd: 30, who: { a: 'any' } });
 
   E('worker_jackpot', 'team', '🎰', '{a} won the lottery', null, [
-    ['🎉 "Go live your dream!"', { quit: 'a', rep: 2, say: '{a} left happy. They bought a boat.' }],
-    ['💼 "Invest in our company!"', { chance: { p: 0.5, win: { cash: 4, quit: 'a', say: '{a} invested, then retired to a beach.' }, lose: { quit: 'a', say: '{a} said no thanks and left.' } } }],
-    ['🙏 "Please stay!"', { chance: { p: 0.35, win: { a: 20, say: '{a} stays because they love the job.' }, lose: { quit: 'a', say: '{a} said sorry and left.' } } }],
-    ['🤔 "Can I borrow some?"', { chance: { p: 0.3, win: { cash: 1, say: '{a} gave the company a gift.' }, lose: { quit: 'a', say: '{a} left without saying goodbye.' } } }]
+    ['🎉 "Go live your dream!"', { leave: 'a', rep: 2, say: '{a} left happy. They bought a boat.' }],
+    ['💼 "Invest in our company!"', { chance: { p: 0.5, win: { cash: 4, leave: 'a', say: '{a} invested, then retired to a beach.' }, lose: { leave: 'a', say: '{a} said no thanks and left.' } } }],
+    ['🙏 "Please stay!"', { chance: { p: 0.35, win: { a: 20, say: '{a} stays because they love the job.' }, lose: { leave: 'a', say: '{a} said sorry and left.' } } }],
+    ['🤔 "Can I borrow some?"', { chance: { p: 0.3, win: { cash: 1, say: '{a} gave the company a gift.' }, lose: { leave: 'a', say: '{a} left without saying goodbye.' } } }]
   ], { kind: 'chat', from: 'a', msgs: ['BOSS', 'I WON THE LOTTERY', 'like... A LOT', 'I don\'t need to work anymore'], rarity: 'rare', w: 1, cd: 50, who: { a: 'any' } });
 
   E('cpr_hero', 'team', '🚑', '{a} saved a customer\'s life', 'A customer collapsed. {a} did CPR until the ambulance came.', [
@@ -404,7 +411,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('whistleblower', 'team', '📣', '{a} wants to report you', '{a} says you\'re breaking safety rules and wants to tell the city.', [
     ['🛠️ Fix the problems now', { cash: -0.6, rep: 3, a: 15, say: 'You fixed everything. {a} is satisfied.' }],
     ['🤝 Thank {a} for the warning', { cash: -0.4, loyal: { a: 20 }, say: 'You fixed it together.' }],
-    ['🤫 Pay {a} to keep quiet', { cash: -0.3, chance: { p: 0.5, win: { say: '{a} took the money. For now.' }, lose: { rep: -10, cash: -1, say: '{a} reported it anyway. Now you\'re fined for bribery too.' } } }],
+    ['🤫 Pay {a} to keep quiet', { cash: -0.3, chance: { p: 0.5, win: { next: ['hush_money', 3, 6, 0.6], say: '{a} took the money. For now.' }, lose: { rep: -10, cash: -1, say: '{a} reported it anyway. Now you\'re fined for bribery too.' } } }],
     ['🚪 Fire {a}', { fire: 'a', rep: -8, cash: -1, say: '{a} reported you anyway. The fine was huge.' }]
   ], { w: 1, cd: 40, minWeek: 10, who: { a: 'serious' } });
 
@@ -416,10 +423,10 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25, need: 4, who: { a: 'any' } });
 
   E('worker_drunk', 'team', '🍺', '{a} showed up drunk', 'Slurring words, dropping things. Customers are staring.', [
-    ['🏠 Send {a} home', { a: -5, capacity: [0.95, 1, '{a} sent home'], say: '{a} left, embarrassed.' }],
-    ['💬 Talk tomorrow, in private', { chance: { p: 0.6, win: { a: 10, loyal: { a: 15 }, say: '{a} is going through a divorce. You offered help.' }, lose: { say: '{a} brushed it off.' } } }],
+    ['🏠 Send {a} home', { a: -5, capacity: [0.95, 1, '{a} sent home'], next: ['worker_drunk_again', 2, 5, 0.4], say: '{a} left, embarrassed.' }],
+    ['💬 Talk tomorrow, in private', { chance: { p: 0.6, win: { a: 10, loyal: { a: 15 }, next: ['worker_recovered', 8, 14, 0.6], say: '{a} is going through a divorce. You offered help.' }, lose: { say: '{a} brushed it off.' } } }],
     ['🚪 Fire {a}', { fire: 'a', say: 'Zero tolerance.' }],
-    ['🙈 Pretend you didn\'t see', { rep: -4, say: 'A customer complained to the city.' }]
+    ['🙈 Pretend you didn\'t see', { rep: -4, next: ['worker_drunk_again', 1, 3, 0.6], say: 'A customer complained to the city.' }]
   ], { w: 1.2, cd: 30, who: { a: 'any' } });
 
   E('salary_leak', 'team', '📄', 'Everyone saw everyone\'s salary', 'A payslip was left on the printer. {a} earns much less than {b} for the same job.', [
@@ -451,23 +458,23 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 0.8, cd: 50, need: 6, minWeek: 20, who: { a: 'serious' } });
 
   E('retirement', 'team', '🎣', '{a} wants to retire', 'After many years. "I\'m tired. I want to see my grandkids."', [
-    ['🎉 A big farewell party', { quit: 'a', cash: -0.1, team: 8, rep: 2, say: 'Everyone cried. Good tears.' }],
-    ['🎁 A retirement gift', { quit: 'a', cash: -0.3, team: 6, say: '{a} was very touched.' }],
-    ['🧑‍🏫 Train a replacement first', { skill: { b: 8 }, quit: 'a', say: '{b} learned everything from {a}.' }],
-    ['🙏 Ask {a} to stay a bit', { chance: { p: 0.5, win: { a: 5, say: 'One more year.' }, lose: { quit: 'a', say: '{a} said no, kindly.' } } }]
+    ['🎉 A big farewell party', { leave: 'a', cash: -0.1, team: 8, rep: 2, say: 'Everyone cried. Good tears.' }],
+    ['🎁 A retirement gift', { leave: 'a', cash: -0.3, team: 6, say: '{a} was very touched.' }],
+    ['🧑‍🏫 Train a replacement first', { skill: { b: 8 }, leave: 'a', say: '{b} learned everything from {a}.' }],
+    ['🙏 Ask {a} to stay a bit', { chance: { p: 0.5, win: { a: 5, say: 'One more year.' }, lose: { leave: 'a', say: '{a} said no, kindly.' } } }]
   ], { w: 0.8, cd: 40, who: { a: 'old', b: 'any' } });
 
   E('stalker', 'team', '😨', 'A customer follows {a} home', 'Every night. {a} is scared to leave work alone.', [
     ['👮 Call the police', { a: 12, team: 4, say: 'He was warned. It stopped.' }],
     ['🚗 Drive {a} home yourself', { a: 15, loyal: { a: 15 }, say: '{a} feels safe.' }],
-    ['🚫 Ban him from the shop', { a: 10, rep: 1, say: 'He hasn\'t come back.' }],
+    ['🚫 Ban him from the shop', { a: 10, rep: 1, next: ['stalker_back', 2, 4, 0.5], say: 'He hasn\'t come back. Yet.' }],
     ['🤷 "Probably nothing"', { a: -20, next: ['resign', 1, 3, 0.6], say: '{a} feels alone.' }]
   ], { w: 0.8, cd: 40, who: { a: 'front' } });
 
   E('two_quit', 'team', '🚪', '{a} and {b} quit together', 'Same day. Same letter. They\'re opening their own shop.', [
-    ['💰 Big raises to stay', { raise: ['a', 0.2], chance: { p: 0.5, win: { raise: ['b', 0.2], say: 'Both stayed.' }, lose: { quit: 'b', say: '{a} stayed. {b} left.' } } }],
-    ['🤝 Invest in their shop', { quit: 'a', chance: { p: 1, win: { quit: 'b', cash: -0.5, extra: [0.05, 16, 'Their shop'], say: 'They left. You own a piece of their shop.' }, lose: { say: 'They left.' } } }],
-    ['👋 Wish them luck', { quit: 'a', chance: { p: 1, win: { quit: 'b', say: 'Two gone. A new rival.' }, lose: { say: 'They left.' } } }],
+    ['💰 Big raises to stay', { raise: ['a', 0.2], chance: { p: 0.5, win: { raise: ['b', 0.2], say: 'Both stayed.' }, lose: { leave: 'b', say: '{a} stayed. {b} left.' } } }],
+    ['🤝 Invest in their shop', { leave: 'a', chance: { p: 1, win: { leave: 'b', cash: -0.5, extra: [0.05, 16, 'Their shop'], say: 'They left. You own a piece of their shop.' }, lose: { say: 'They left.' } } }],
+    ['👋 Wish them luck', { leave: 'a', chance: { p: 1, win: { leave: 'b', say: 'Two gone. A new rival.' }, lose: { say: 'They left.' } } }],
     ['⚖️ Remind them of their contracts', { a: -20, b: -20, team: -6, say: 'They stayed. Angry.' }]
   ], { w: 0.8, cd: 40, need: 4, minWeek: 15, who: { a: 'ambitious', b: 'any' } });
 

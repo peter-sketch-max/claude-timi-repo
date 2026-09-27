@@ -13,6 +13,7 @@ let errors = 0;
 function playEvent(g) {
   const x = G.currentEvent(g), def = CS.EV[x.id];
   seenKinds[def.kind] = (seenKinds[def.kind] || 0) + 1;
+  if (def.chainOnly) seenKinds.story = (seenKinds.story || 0) + 1; // follow-ups that continue a story
   ['title', 'text'].forEach(k => { const t = G.fill(def[k], g, x.ctx); if (/\{\w+\}/.test(t)) throw new Error('Unfilled text in ' + x.id + ': ' + t); });
   const r = Math.random;
   switch (def.kind) {

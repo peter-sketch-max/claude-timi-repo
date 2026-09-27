@@ -40,7 +40,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 25, minWeek: 6, init: rival });
 
   E('rival_buyout', 'rivals', '💼', '{rival} wants to buy your company', 'Their boss sends an offer. A lot of money. But {company} would be gone.', [
-    ['🙅 "Not for sale."', { team: 6, say: 'Your team cheered.' }],
+    ['🙅 "Not for sale."', { team: 6, next: ['rival_hostile', 6, 12, 0.4], say: 'Your team cheered.' }],
     ['🔄 "I\'ll buy YOU instead."', { chance: { p: 0.3, win: { cash: -3, rival: -0.5, demand: [1.2, 16, 'Bought rival shops'], say: 'You bought half their shops.' }, lose: { rep: -2, say: 'They laughed at your offer.' } } }],
     ['🤝 Offer a partnership', { rival: -0.05, extra: [0.1, 8, 'Partner deal'], say: 'Money for both sides. For now.' }],
     ['📈 Ask for triple', { chance: { p: 0.2, win: { cash: 4, say: 'They sent more money just to talk. You still said no.' }, lose: { say: 'They walked away.' } } }]
@@ -56,8 +56,8 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('rival_sabotage', 'rivals', '🧨', 'Someone sabotaged your delivery', 'Your stock arrived ruined. The driver saw someone in a {rival} jacket.', [
     ['👮 Report it to the police', { chance: { p: 0.5, win: { rival: -0.12, rep: 3, say: 'They caught them. {rival} is in the news.' }, lose: { cash: -0.3, say: 'No proof. Stock still ruined.' } } }],
     ['📹 Put cameras on deliveries', { cash: -0.5, say: 'It won\'t happen again.' }],
-    ['🗣️ Confront {rival}', { chance: { p: 0.4, win: { cash: 0.3, rival: -0.05, say: 'They paid for the damage.' }, lose: { cash: -0.3, say: 'They laughed in your face.' } } }],
-    ['😈 Get revenge', { chance: { p: 0.4, win: { rival: -0.1, say: 'They had a bad week too.' }, lose: { rep: -10, cash: -0.5, say: 'You got caught. Now you\'re the villain.' } } }]
+    ['🗣️ Confront {rival}', { chance: { p: 0.4, win: { cash: 0.3, rival: -0.05, say: 'They paid for the damage.' }, lose: { cash: -0.3, next: ['rival_retaliates', 2, 4, 0.4], say: 'They laughed in your face.' } } }],
+    ['😈 Get revenge', { chance: { p: 0.4, win: { rival: -0.1, next: ['rival_retaliates', 2, 4, 0.7], say: 'They had a bad week too.' }, lose: { rep: -10, cash: -0.5, say: 'You got caught. Now you\'re the villain.' } } }]
   ], { w: 1, cd: 30, minWeek: 10, init: rival });
 
   E('rival_tv_debate', 'rivals', '📺', '{rival}\'s boss wants a TV debate', 'Live TV. Both bosses. The topic: who\'s the best {industry} in {city}.', [
@@ -91,7 +91,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('rival_spy', 'rivals', '🕵️', 'You caught a spy from {rival}', 'A "customer" was photographing your prices and your kitchen.', [
     ['🚪 Throw them out', { say: 'Gone. But they got photos.' }],
     ['📸 Take their phone', { chance: { p: 0.5, win: { rival: -0.05, say: 'You deleted everything.' }, lose: { rep: -3, cash: -0.2, say: 'They called the police on you.' } } }],
-    ['🎭 Show them fake plans', { rival: -0.08, say: '{rival} copied your fake plans. They flopped.' }],
+    ['🎭 Show them fake plans', { next: ['fake_plan_flop', 2, 4], say: 'They took photos of everything. Perfect.' }],
     ['📢 Post it online', { fans: 15, rival: -0.05, say: 'Everyone laughed at {rival}.' }]
   ], { w: 1.5, cd: 25, minWeek: 6, init: rival });
 
@@ -661,6 +661,56 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['💵 Pay them something', { cash: -0.3, equip: 0.04, rep: 4, say: 'They were touched.' }],
     ['🙅 No space', { say: 'You passed.' }]
   ], { w: 0.8, cd: 50 });
+
+  // More rivals, world news and lucky moments (v6).
+  E('rival_boss_sick', 'rivals', '🏥', '{rival}\'s boss is in the hospital', 'Their shop is struggling without them. Their workers look lost.', [
+    ['💐 Visit with flowers', { rep: 5, say: 'Their boss called you a friend. Rivals can be kind.' }],
+    ['🤝 Lend them a worker', { capacity: [0.95, 2, 'Helping a rival'], rep: 6, rival: 0.03, say: 'They never forgot it.' }],
+    ['📢 Grab their customers', { demand: [1.1, 3, 'Rival struggling'], rep: -4, say: 'Smart, but cold. People noticed.' }],
+    ['🤐 Carry on', { say: 'You kept to your own business.' }]
+  ], { w: 0.8, cd: 60, minWeek: 10, init: rival });
+
+  E('rival_charity_game', 'rivals', '⚽', '{rival} wants a charity match', 'Your team against theirs. Money goes to a children\'s hospital. The whole town will watch.', [
+    ['⚽ Play to win', { team: 6, chance: { p: 0.5, win: { fans: 30, rep: 4, rival: -0.05, say: 'You won. The town cheered.' }, lose: { fans: 15, rep: 3, say: 'You lost, but the kids got the money.' } } }],
+    ['🎉 Play for fun', { team: 10, fans: 20, rep: 4, say: 'Nobody remembers the score. Everyone had fun.' }],
+    ['💰 Double the donation', { cash: -0.4, rep: 8, fans: 20, say: 'The biggest donation in the town\'s history.' }],
+    ['🙅 Too busy', { rep: -3, say: 'They played against the fire department instead.' }]
+  ], { w: 0.8, cd: 60, minWeek: 8, init: rival });
+
+  E('rival_price_list', 'rivals', '📄', '{rival}\'s secret price list', 'A supplier accidentally sent you {rival}\'s price list. You know exactly what they pay.', [
+    ['📞 Demand the same prices', { supply: [-0.03, 12, 'Better deal'], say: 'Your supplier gave you the same deal.' }],
+    ['🔙 Send it back unread', { rep: 4, say: 'The supplier respects you. So does {rival}.' }],
+    ['📊 Use it to undercut them', { demand: [1.08, 6, 'Undercut'], rival: -0.05, say: 'You knew exactly how low to go.' }],
+    ['🗑️ Delete it', { say: 'It never happened.' }]
+  ], { w: 0.8, cd: 60, minWeek: 8, init: rival });
+
+  E('national_holiday', 'world', '🎆', 'A big national holiday', 'Everyone has the day off. Parades, parties, and crowds everywhere.', [
+    ['🎉 Open with a holiday special', { extra: [0.15, 1, 'Holiday'], team: -3, say: 'Your busiest day in weeks.' }],
+    ['🏖️ Close for the day', { closed: [1, 'Holiday'], team: 12, say: 'A happy, rested team.' }],
+    ['💵 Open, with double pay', { extra: [0.12, 1, 'Holiday'], cash: -0.1, team: 4, say: 'Busy day. Happy team.' }],
+    ['🎪 Get a booth at the parade', { cash: -0.2, fans: 25, say: 'Thousands saw your logo.' }]
+  ], { w: 1, cd: 40 });
+
+  E('marathon_route', 'world', '🏃', 'The marathon runs past your door', 'Tomorrow. The road will be closed, but thousands of people will be watching.', [
+    ['🥤 Free water for runners', { cash: -0.1, fans: 30, rep: 4, say: 'The runners cheered your team.' }],
+    ['🛍️ Sell to the crowd', { extra: [0.12, 1, 'Marathon'], say: 'The crowd bought a lot.' }],
+    ['📣 Cheer every runner', { team: 8, fans: 15, say: 'Your team had the best day.' }],
+    ['🔒 Close for the day', { closed: [1, 'Road closed'], say: 'A quiet day off.' }]
+  ], { w: 0.8, cd: 50 });
+
+  E('late_night_law', 'world', '🌙', 'A new law bans late-night opening', 'Starting next month, no shop can stay open after 10 PM.', [
+    ['⏰ Open earlier instead', { team: -3, say: 'The morning crowd makes up for it.' }],
+    ['🛵 Late-night delivery', { cash: -0.3, demand: [1.03, 12, 'Night delivery'], say: 'Delivery isn\'t banned. Smart.' }],
+    ['📢 Fight the law', { chance: { p: 0.3, win: { fans: 20, say: 'The city changed its mind.' }, lose: { capacity: [0.94, 12, 'Shorter hours'], say: 'The law stayed.' } } }],
+    ['🤷 Accept it', { capacity: [0.94, 12, 'Shorter hours'], team: 5, say: 'Shorter hours. Happier team.' }]
+  ], { kind: 'news', w: 0.6, cd: 80, minWeek: 15 });
+
+  E('found_in_wall', 'lucky', '🧱', 'Your team found letters in the wall', 'Love letters from 1952, hidden behind a brick. They tell a whole love story.', [
+    ['🔍 Find the family', { rep: 6, fans: 20, say: 'The writer\'s grandson cried when he read them.' }],
+    ['🖼️ Display them in the shop', { fans: 15, rep: 2, say: 'People come just to read them.' }],
+    ['📰 Give them to the newspaper', { fans: 25, say: 'The story went all over the country.' }],
+    ['🧱 Put them back in the wall', { rep: 2, say: 'Some secrets belong to the building.' }]
+  ], { w: 0.6, cd: 80, rarity: 'rare' });
 
   // The name of an event in the Event Book.
   G.bookName = function (d) {

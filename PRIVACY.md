@@ -27,7 +27,7 @@ The game has a **Share** button that lets you share a picture or text about your
 
 ## Company Wars codes
 
-To battle a friend, the game makes a "war code" that you can send with your phone's share menu. The code holds your company's name, logo, color and business type, your number of in-game fans, your war trophies, your 5 mini-game scores, the number that picks the games, and a random game ID. It never contains your real name, contact details or location. There is no server: the code only goes where you send it, and your friend's game reads it on their phone.
+To battle a friend, the game makes a short "war code" that you can send with your phone's share menu or read out loud. The code holds your business type, logo and color, your number of in-game fans (rounded), your war trophies, your 5 mini-game scores, the number that picks the games, and a small random number. When you use the share menu, the message also includes your company's name. It never contains your real name, contact details or location. There is no server: the code only goes where you send it, and your friend's game reads it on their phone.
 
 ## Internet
 

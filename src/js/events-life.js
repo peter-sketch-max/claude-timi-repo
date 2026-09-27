@@ -152,7 +152,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   // =====================================================================
 
   E('shady_inspector', 'shady', '🕶️', 'The inspector hints at a bribe', 'He found problems. "Or... maybe I found nothing. For a price."', [
-    ['💵 Pay him', { cash: -0.3, next: ['bribe_exposed', 4, 12, 0.35], say: 'He found nothing. Of course.' }],
+    ['💵 Pay him', { cash: -0.3, next: [['bribe_exposed', 4, 12, 0.35], ['inspector_greedy', 4, 8, 0.5]], say: 'He found nothing. Of course.' }],
     ['🛠️ Fix the problems', { cash: -0.6, rep: 2, say: 'All fixed. Legally.' }],
     ['📹 Record him and report it', { chance: { p: 0.6, win: { rep: 8, fans: 15, say: 'He was fired. You\'re a local hero.' }, lose: { cash: -0.6, say: 'He found more problems. Big fine.' } } }],
     ['🙅 Take the fine', { cash: -0.5, say: 'Painful, but clean.' }]
@@ -230,9 +230,9 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('protection', 'shady', '🧥', 'Men in suits want "protection money"', '"Nice shop. Would be a shame if something happened to it."', [
     ['💵 Pay them', { cash: -0.4, next: ['protection_again', 4, 8, 0.7], say: 'They left. They\'ll be back.' }],
-    ['👮 Go to the police', { chance: { p: 0.6, win: { rep: 5, say: 'They were arrested.' }, lose: { cash: -0.8, say: 'Your window was smashed that night.' } } }],
+    ['👮 Go to the police', { chance: { p: 0.6, win: { rep: 5, say: 'They were arrested.' }, lose: { next: ['gang_revenge', 1, 2], say: 'The police did nothing. The men saw you go in.' } } }],
     ['🦺 Hire security', { cash: -0.6, say: 'They didn\'t come back.' }],
-    ['🗣️ Tell them to get lost', { chance: { p: 0.4, win: { team: 8, say: 'They left. Your team is impressed.' }, lose: { cash: -1, closed: [1, 'Vandalized'], say: 'They wrecked the shop that night.' } } }]
+    ['🗣️ Tell them to get lost', { chance: { p: 0.4, win: { team: 8, say: 'They left. Your team is impressed.' }, lose: { cash: -0.3, next: ['gang_revenge', 1, 2], say: 'They smiled. "See you soon."' } } }]
   ], { w: 0.8, cd: 50, minWeek: 12 });
 
   E('protection_again', 'shady', '🧥', 'The men in suits are back', '"The price went up." They want double.', [
@@ -516,4 +516,40 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['💰 Just donate', { cash: -0.3, rep: 4, say: 'Kind, and easy on the legs.' }],
     ['🙅 No time', { say: 'Maybe next year.' }]
   ], { w: 0.8, cd: 60 });
+
+  // More of your life and more trouble (v6).
+  E('graduation_speech', 'boss', '🎓', 'Your old school wants you to give a speech', 'At graduation. Hundreds of students and parents. You\'ve never spoken in public.', [
+    ['🎤 Say yes and prepare', { chance: { p: 0.7, win: { rep: 6, fans: 25, say: 'A standing ovation. It went viral.' }, lose: { rep: 2, say: 'You were nervous. They clapped anyway.' } } }],
+    ['😬 Say yes, improvise', { chance: { p: 0.4, win: { rep: 6, fans: 25, say: 'Your honest speech was the best one.' }, lose: { rep: -2, say: 'You forgot everything. Awkward.' } } }],
+    ['🎁 Offer a scholarship instead', { cash: -0.5, rep: 8, say: 'Your name is on a scholarship now.' }],
+    ['🙅 Politely say no', { say: 'Maybe next year.' }]
+  ], { w: 0.7, cd: 80, minWeek: 20 });
+
+  E('interview_mistake', 'boss', '🎙️', 'You said something wrong in an interview', 'You joked about your customers. The clip is everywhere, without the context.', [
+    ['🙏 Apologize right away', { rep: 1, say: 'People accepted it.' }],
+    ['🎥 Post the full interview', { chance: { p: 0.6, win: { rep: 2, say: 'With context, it was clearly a joke.' }, lose: { rep: -4, say: 'People didn\'t watch the full video.' } } }],
+    ['🎁 A thank-you week for customers', { cash: -0.3, happy: 6, say: 'Actions spoke louder than words.' }],
+    ['🤐 Say nothing', { rep: -5, say: 'It took weeks to go away.' }]
+  ], { w: 0.8, cd: 60, minWeek: 10 });
+
+  E('power_surge', 'trouble', '⚡', 'A power surge fried your machines', 'A lightning storm. Half your equipment won\'t turn on.', [
+    ['🔧 Repair what you can', { cash: -0.5, capacity: [0.85, 2, 'Broken machines'], say: 'Back to normal in two weeks.' }],
+    ['🆕 Replace everything', { cash: -1.2, equip: 0.03, say: 'New machines. Faster than before.' }],
+    ['📄 Call insurance', { chance: { p: function (g) { return g.flags.insured ? 0.9 : 0.3; }, win: { cash: -0.1, say: 'Insurance paid for it all.' }, lose: { cash: -0.9, say: 'Not covered.' } } }],
+    ['🛡️ Surge protectors for all', { cash: -0.8, say: 'Fixed, and it won\'t happen again.' }]
+  ], { w: 0.7, cd: 60 });
+
+  E('bees_in_sign', 'trouble', '🐝', 'Bees built a nest in your sign', 'Thousands of them. Customers are scared to walk in.', [
+    ['🐝 Call a beekeeper', { cash: -0.1, rep: 3, say: 'He moved them safely. And gave you a jar of honey.' }],
+    ['🧪 Call pest control', { cash: -0.1, rep: -2, say: 'Gone. Some people were sad about the bees.' }],
+    ['🍯 Keep them and sell honey', { happy: -3, fans: 20, extra: [0.04, 8, 'Shop honey'], say: '"Shop honey" sells out every week.' }],
+    ['🚪 Use the back door', { happy: -4, say: 'Confusing, but it works.' }]
+  ], { w: 0.6, cd: 80 });
+
+  E('shady_counterfeit', 'shady', '🏷️', 'A supplier offers fake brand-name stock', 'Looks exactly like the real thing. A quarter of the price.', [
+    ['🤫 Buy it', { supply: [-0.05, 8, 'Fake stock'], next: ['investigation', 4, 10, 0.5], say: 'Cheap stock. Big risk.' }],
+    ['🙅 No', { say: 'You sell the real thing.' }],
+    ['👮 Report him', { rep: 4, say: 'He was shut down.' }],
+    ['📸 Warn other shops', { rep: 3, say: 'Nobody bought from him.' }]
+  ], { w: 0.7, cd: 60, minWeek: 8 });
 })();

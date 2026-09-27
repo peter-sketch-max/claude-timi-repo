@@ -24,14 +24,17 @@ Company Simulator is a fun business life game. Pick a company, hire a team with 
 🏢 56 COMPANIES TO RUN
 Lemonade stand, candy shop, pizza place, banana farm, chocolate factory, football academy, sneaker brand, oil company, football club, gold mine and many more. Every company has its own workers, customers and problems.
 
-🎲 700+ EVENTS, 4 ANSWERS EACH
-A customer screams at you. Someone slaps you. Your manager is stealing. A rival opens right next door. A billionaire wants to buy your company. Every business has its own events, so a football club and a banana farm feel totally different. Every event is short and gives you 4 ways to react. Some are safe, some are a gamble, and some come back weeks later with a twist.
+🎲 800 EVENTS, 4 ANSWERS EACH
+A customer screams at you. Someone slaps you. Your manager is stealing. A rival opens right next door. A billionaire wants to buy your company. Every business has its own events, so a football club and a banana farm feel totally different. Every event is short and gives you 4 ways to react.
+
+🔗 STORIES THAT CONTINUE
+Catch a scammer, and the story keeps going: call the police, or forgive him... and see if he comes back with the same trick. Shoplifters, spies, a greedy inspector, a pushy investor who tries to take your company: your choices come back to you.
 
 🥊 RIVALS WHO FIGHT BACK
 Rival companies slash prices, steal your workers, post fake reviews and challenge you on live TV. Beat them in showdowns, win the quarterly Business Cup and climb the leaderboard.
 
 ⚔️ COMPANY WARS
-Every war is 5 rounds of different mini-games: Coin Rush, Perfect Stop, Whack-a-Rival, Quick Math and Memory Grid. The winner takes 10% of the loser's fans! Send your war code to friends, they play the same 5 games, and you can rematch with one tap. Win trophies and climb from Recruit to Emperor.
+Every war is 5 rounds picked from 10 mini-games: Coin Rush, Perfect Stop, Whack-a-Rival, Quick Math, Memory Grid, Number Rush, Color Clash, Tower Stack, Quick Draw and Cash Catch. The winner takes 10% of the loser's fans! Send your short war code to friends, they play the same 5 games, and you can rematch with one tap. Win trophies and climb from Recruit to Emperor.
 
 📺 FREE ADS WITH STARS
 Try to get into 15 ads with superstars, from a radio DJ to a football superstar and a movie star. Will they say yes? The more famous you are, the better your chances!
@@ -54,7 +57,7 @@ Missions, CEO levels, 48 achievements, upgrades, company ranks from Tiny Startup
 📅 DAILY CHALLENGE
 Everyone gets the same company each day. Play 52 weeks and share your score with friends!
 
-🎵 Happy music and sound effects
+🎵 5 original songs and sound effects
 📴 Works offline, no internet needed
 🚫 No ads
 
@@ -75,4 +78,4 @@ How big can YOUR company get? 💰
 |---|---|
 | App icon (512×512 PNG) | `playstore-icon-512.png` |
 | Feature graphic (1024×500) | `feature-graphic-1024x500.png` |
-| Phone screenshots (1080×1920) | `screenshot-1-title.png` to `screenshot-8-chat.png` (title, companies, home, ads, slap event, rival event, war, chat) |
+| Phone screenshots (1080×1920) | `screenshot-1-title.png` to `screenshot-8-chat.png` (title, companies, home, ads, slap event, story event, war, chat) |
