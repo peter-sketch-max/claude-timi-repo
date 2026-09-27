@@ -31,7 +31,7 @@ com.companysim.game
 
 Once you upload the app, this ID is **permanent**. If someone else already uses it, Google will reject it. A safer choice includes your own name, for example `com.yourname.companysim`.
 
-**If you want a different ID, tell Claude before your first upload.** It has to be changed in a few files at once (`capacitor.config.json`, `android/app/build.gradle`, the `MainActivity.java` folder and `strings.xml`).
+**If you want a different ID, tell Claude before your first upload.** It has to be changed in a few files at once (`capacitor.config.json`, `android/app/build.gradle`, the `MainActivity.java` folder, `strings.xml`, and the share link `CS.SHARE_URL` at the bottom of `src/js/data.js`).
 
 ---
 
@@ -112,10 +112,11 @@ These are in Play Console under **Policy → App content**.
   - Put your email in it first.
   - If this repository is public, you can use the GitHub link to that file.
   - If it's private, paste the text into a free page (for example Google Sites) and use that link.
-- **Ads:** No, the app has no ads.
+- **Ads:** No, the app has no ads. (The "Ads" tab is a pretend in-game feature where your company appears in ads. There are no real ads.)
 - **App access:** All features are available without a login.
 - **Content rating:** Fill in the questionnaire honestly.
-  - There's no violence, no bad language, and no real gambling.
+  - There's no bad language and no real gambling.
+  - Some event texts mention a customer slapping the boss, and a few gently mention an old worker or pet passing away. There are no pictures of this, only text. Answer the violence questions honestly (this usually counts as mild, text-only content).
   - The **lucky wheel** and **mystery boxes** only use pretend in-game money. You can never pay real money for spins. Some questionnaires still count this as "simulated gambling", so answer based on what the question says.
   - If the rating comes out higher than you want, Claude can rename or change those mini-games.
 - **Target audience:** This one matters.
@@ -125,6 +126,7 @@ These are in Play Console under **Policy → App content**.
 - **Data safety:** The app **collects no data and shares no data**.
   - Game saves stay on the phone.
   - Payments are handled by Google Play itself, not by the app.
+  - War codes are sent by the player through their own share menu. The app has no server and never uploads them.
 - **Government apps / news / health / financial features:** No.
 
 ---

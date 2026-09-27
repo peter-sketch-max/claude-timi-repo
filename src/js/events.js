@@ -1,9 +1,10 @@
-// All events, part 1: team, business and customers. Parts 2 and 3 live in events-more.js and events-fun.js.
+// All events, part 1: team, business and customers. The rest live in events-more.js, events-fun.js, events-life.js
+// and the events-biz*.js files (events for one kind of business).
 // Every event that asks the player something has exactly 4 responses.
 //
 // Common fields:
 //   id, cat (see CS.CATS), icon, kind, rarity (common|rare|epic|legendary), w (weight), cd (cooldown weeks),
-//   minWeek, need (min staff), cond(g), who ({a: 'any'|'<trait>'|'front'|'mgr'|'lowmood'|'star'|'new'|'veteran'|'notmgr', b: ...}),
+//   minWeek, need (min staff), cond(g), who ({a: 'any'|'<trait>'|'front'|'mgr'|'lowmood'|'star'|'new'|'veteran'|'notmgr'|'old', b: ...}),
 //   init(g, ctx) to add data (return false to skip), start (effect applied when the event appears),
 //   chainOnly (only happens as a follow-up).
 // Text uses {a} {b} {m} {rival} {amt} {company} {front} {fronts} {unit} {industry} {city} and any ctx key.
@@ -24,7 +25,7 @@
 //
 // Effect (fx) keys: cash (share of weekly sales, negative = cost), money ($), rep, happy, fans, team,
 //   a/b/m (mood of that person), skill/loyal/reliable ({a: n}), rel ['a','b',n], date, breakup,
-//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a',
+//   raise ['a', pct], teamRaise, teamBonus, bonus 'a', promote 'a', mgr 'a', demote 'a', fire 'a', quit 'a', die 'a',
 //   demand/capacity/supply [value, weeks, label], extra [share, weeks, label], closed [weeks, label],
 //   price (+1/-1), equip (permanent speed), rent (permanent), viral [min, max], hire 'cand', hireSpecial {...},
 //   pet (emoji), rival (+/- share of that rival's strength), next ['id', minWeeks, maxWeeks, chance],
@@ -50,7 +51,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     noCams: function (g) { return !G.upLevel(g, 'cameras'); },
     hasRole: function (r) { return function (g) { return g.employees.some(function (e) { return e.role === r; }); }; },
     season: function (from, to) { return function (g) { var w = ((g.week - 1) % 52) + 1; return w >= from && w <= to; }; },
-    busy: function (g) { var h = g.history[g.history.length - 1]; return h && h.demand > h.capacity * 1.08; }
+    busy: function (g) { var h = g.history[g.history.length - 1]; return h && h.demand > h.capacity * 1.08; },
+    isInd: function (id) { return function (g) { return g.company.industry === id; }; }
   };
   var rival = H.rival, amt = H.amt, noCams = H.noCams, season = H.season, busy = H.busy;
   var FOOD = H.tag('food'), TECH = H.tag('tech');

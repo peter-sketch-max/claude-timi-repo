@@ -2,7 +2,7 @@
 // Usage: node tools/simulate.js [weeks] [runsPerIndustry]
 // Env: NOEVENTS=1 tests the base economy only.
 const fs = require('fs'), vm = require('vm'), path = require('path');
-['util', 'data', 'game', 'events', 'events-more', 'events-fun'].forEach(f => vm.runInThisContext(fs.readFileSync(path.join(__dirname, '../src/js', f + '.js'), 'utf8'), { filename: f + '.js' }));
+require('./core-files').forEach(f => vm.runInThisContext(fs.readFileSync(path.join(__dirname, '../src/js', f + '.js'), 'utf8'), { filename: f + '.js' }));
 const CS = globalThis.CS, G = CS.G;
 if (process.env.NOEVENTS) CS.EVENTS.length = 0;
 const weeks = +process.argv[2] || 156, runs = +process.argv[3] || 6;
@@ -54,14 +54,21 @@ for (const ind of CS.INDUSTRIES) {
         if (!g.posted) G.post(g, G.postOptions(g)[0].id);
         CS.POWERS.forEach(p => { if (G.powerReadyIn(g, p.id) === 0 && Math.random() < 0.5) G.usePower(g, p.id); });
         if (g.golden && Math.random() < 0.7) G.tapGolden(g);
+        // Try the free ads and fight rivals now and then.
+        if (!process.env.NOADS) CS.CELEB_ADS.forEach(a => { if (G.adReadyIn(g, a) === 0 && G.adChance(g, a) > 0.25 && Math.random() < 0.5) G.tryAd(g, a.id); });
+        const war = G.warInit(g);
+        if (!process.env.NOWAR && war.energy > 0 && Math.random() < 0.3 && G.warAttackRival(g, CS.U.pick(g.rivals))) {
+          while (!war.battle.done) G.warRound(g, CS.U.pick(CS.WAR_TACTICS).id);
+          G.warClose(g);
+        }
         CS.UPGRADES.forEach(u => { const c = G.upCost(g, u.id); if (c && g.cash > c * 4 && g.level >= G.upNeedLevel(g, u.id)) G.buyUpgrade(g, u.id); });
         if (Number.isNaN(g.cash) || Number.isNaN(g.followers)) throw new Error('NaN at week ' + g.week);
       }
     } catch (e) { errors++; console.error(ind.id, e.stack); break; }
-    out.push({ over: g.over && g.over.reason === 'bankrupt', mult: (g.cash / start).toFixed(1), staff: g.employees.length, lvl: g.level, fans: g.followers, cups: g.cups.gold });
+    out.push({ over: g.over && g.over.reason === 'bankrupt', mult: (g.cash / start).toFixed(1), staff: g.employees.length, lvl: g.level, fans: g.followers, cups: g.cups.gold, trophies: g.war ? g.war.trophies : 0 });
   }
   const bust = out.filter(o => o.over).length;
-  console.log(ind.id.padEnd(14), 'bankrupt', bust + '/' + runs, ' cash x', out.map(o => o.mult).join(' '), ' lvl', out.map(o => o.lvl).join(','), ' fans', out.map(o => CS.U.num(o.fans)).join(','), ' gold cups', out.map(o => o.cups).join(','));
+  console.log(ind.id.padEnd(14), 'bankrupt', bust + '/' + runs, ' cash x', out.map(o => o.mult).join(' '), ' lvl', out.map(o => o.lvl).join(','), ' fans', out.map(o => CS.U.num(o.fans)).join(','), ' gold cups', out.map(o => o.cups).join(','), ' war trophies', out.map(o => o.trophies).join(','));
 }
 console.log('event kinds played:', JSON.stringify(seenKinds));
 if (errors) { console.error(errors + ' errors'); process.exit(1); }

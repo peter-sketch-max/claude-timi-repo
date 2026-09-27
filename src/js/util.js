@@ -77,6 +77,9 @@ var CS = globalThis.CS = globalThis.CS || {};
       return n.toLocaleString('en-US');
     },
     signed: function (n) { return (n >= 0 ? '+' : '') + CS.U.money(n); },
+    // Base64 that is safe in links and supports emoji (used for war codes).
+    b64enc: function (str) { return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    b64dec: function (str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; return decodeURIComponent(escape(atob(str))); },
     // coach -> coaches, baker -> bakers
     plural: function (w) { return /(s|sh|ch|x|z)$/i.test(w) ? w + 'es' : w + 's'; },
     esc: function (str) {

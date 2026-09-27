@@ -557,8 +557,8 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; font-we
 
 /* ---------- living scene ---------- */
 .scene-card { position: relative; border: var(--stroke) solid var(--line); border-radius: 22px; overflow: hidden; box-shadow: var(--pop); background: #6FD3FF; }
-.scene-card canvas { display: block; width: 100%; height: 200px; touch-action: manipulation; }
-.scene-hint { position: absolute; left: 10px; top: 10px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 99px; padding: 3px 10px; font-family: var(--display); font-weight: 600; font-size: 13px; animation: wiggle 1s ease-in-out infinite; pointer-events: none; }
+.scene-card canvas { display: block; width: 100%; height: 230px; touch-action: manipulation; }
+.scene-hint { position: absolute; left: 10px; bottom: 8px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 99px; padding: 3px 10px; font-family: var(--display); font-weight: 600; font-size: 13px; animation: wiggle 1s ease-in-out infinite; pointer-events: none; }
 
 /* ---------- boss powers ---------- */
 .powers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -659,3 +659,108 @@ h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; font-we
   .powers { grid-template-columns: repeat(2, 1fr); }
   .boxes { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* =====================================================================
+   v4: 7-tab nav, settings, ads, wars
+   ===================================================================== */
+.nav .wrap { grid-template-columns: repeat(7, 1fr); padding-inline: 3px; gap: 2px; }
+.nav button { font-size: 10.5px; padding: 5px 0; border-radius: 14px; white-space: nowrap; }
+.nav button .e { font-size: 21px; }
+.nav .badge { right: 6%; }
+@media (min-width: 420px) { .nav button { font-size: 12px; } .nav button .e { font-size: 23px; } }
+
+.share-game { background: linear-gradient(135deg, #DFFFE9, #E6F4FF); }
+.share-game .sg-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.share-game .sg-top .e { font-size: 38px; animation: wiggle 2s ease-in-out infinite; }
+.share-game b { font-family: var(--display); font-size: 18px; }
+.share-game small { display: block; font-size: 14px; color: var(--ink-2); }
+.about { text-align: center; }
+.about b { font-family: var(--display); display: block; }
+.about small { color: var(--ink-2); }
+
+/* ads */
+.ads-hero { display: flex; gap: 12px; align-items: center; background: linear-gradient(135deg, #FFF3C4, #FFD9EC); }
+.ads-hero .e { font-size: 42px; animation: wiggle 2.2s ease-in-out infinite; }
+.ads-hero b { font-family: var(--display); font-size: 20px; }
+.ads-hero small { display: block; font-size: 14px; color: var(--ink-2); }
+.fame-meter { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--ink); color: #fff; border-radius: 16px; padding: 8px 14px; font-family: var(--display); font-weight: 600; }
+.fame-meter b { color: var(--yellow); font-size: 18px; }
+.ad-list { display: grid; gap: 10px; }
+.ad-card { display: flex; gap: 10px; align-items: center; background: #fff; border: var(--stroke) solid var(--line); border-radius: 18px; padding: 10px 12px; box-shadow: 0 4px 0 var(--ink); animation: pop .35s ease-out backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.ad-card.wait { opacity: .6; box-shadow: 0 2px 0 var(--ink); }
+.ad-card .ad-e { font-size: 34px; flex: none; width: 44px; text-align: center; }
+.ad-card .ad-mid { flex: 1; min-width: 0; }
+.ad-card b { font-family: var(--display); font-size: 16px; display: block; line-height: 1.15; }
+.ad-card small { display: block; font-size: 12.5px; color: var(--ink-2); }
+.ad-card .ad-boost { color: var(--green-d); font-weight: 800; }
+.ad-card .fits { color: var(--purple, #7C4DFF); }
+.ad-card .try { flex: none; line-height: 1.1; min-width: 64px; }
+.chance { position: relative; height: 20px; border: 2px solid var(--line); border-radius: 99px; background: #F1EEFF; overflow: hidden; margin-top: 5px; }
+.chance i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; }
+.chance.hi i { background: var(--green); } .chance.mid i { background: var(--yellow); } .chance.lo i { background: #FF8A8A; }
+.chance span { position: relative; display: block; text-align: center; font-size: 11.5px; font-weight: 800; line-height: 16px; }
+.spin-e { display: inline-block; animation: adspin 0.9s ease-in-out infinite; }
+@keyframes adspin { 0% { transform: rotate(-12deg) scale(1); } 50% { transform: rotate(12deg) scale(1.15); } 100% { transform: rotate(-12deg) scale(1); } }
+
+/* wars */
+.war-banner { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: linear-gradient(135deg, #FFE1E5, #E9E1FF); }
+.war-banner .e { font-size: 36px; animation: wiggle 1.6s ease-in-out infinite; }
+.war-banner b { font-family: var(--display); font-size: 19px; display: block; }
+.war-banner small { font-size: 13px; color: var(--ink-2); }
+.war-banner .faint { opacity: .3; }
+.back-btn { margin-bottom: 12px; }
+.war-hero { background: linear-gradient(135deg, #2B2250, #5528D6); color: #fff; }
+.war-hero .wh-top { display: flex; gap: 12px; align-items: center; }
+.war-hero .wh-top .e { font-size: 46px; }
+.war-hero b { font-family: var(--display); font-size: 24px; display: block; }
+.war-hero small { color: #D9D2FF; }
+.war-hero .wh-stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+.war-hero .wh-stats span { background: rgba(255,255,255,.14); border-radius: 99px; padding: 4px 10px; font-size: 13px; font-weight: 800; }
+.war-hero .wh-stats b { display: inline; font-size: 15px; color: var(--yellow); }
+.war-hero .muted { color: #CFC6FF; }
+.war-list { display: grid; gap: 10px; }
+.war-foe { display: flex; align-items: center; gap: 10px; background: #fff; border: var(--stroke) solid var(--line); border-radius: 18px; padding: 10px 12px; box-shadow: 0 4px 0 var(--ink); animation: pop .35s ease-out backwards; animation-delay: calc(var(--i, 0) * 60ms); }
+.war-foe .logo, .war-vs .logo { width: 44px; height: 44px; font-size: 24px; flex: none; }
+.war-foe b { font-family: var(--display); font-size: 16px; display: block; }
+.war-foe small { font-size: 12.5px; color: var(--ink-2); }
+.friend-war p { margin: 0 0 10px; }
+.friend-war .plan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 12px; }
+.friend-war .slot { display: grid; justify-items: center; gap: 2px; background: #F1EEFF; border: var(--stroke) solid var(--line); border-radius: 16px; padding: 8px 4px; font-family: var(--display); font-weight: 600; font-size: 12.5px; box-shadow: 0 3px 0 var(--ink); }
+.friend-war .slot span { font-size: 28px; }
+.friend-war .slot small { font-size: 11px; color: var(--ink-2); }
+.friend-war textarea { width: 100%; border: var(--stroke) solid var(--line); border-radius: 14px; padding: 10px; font: 600 13px/1.3 var(--body); margin: 6px 0 10px; resize: none; background: #FBFAFF; }
+.rules-card b { font-family: var(--display); display: block; font-size: 17px; }
+.rules-card small { display: block; color: var(--ink-2); font-size: 13.5px; }
+.rules-card .rules { margin: 8px 0; }
+.war-sheet { text-align: center; }
+.war-sheet h2 { margin: 0 0 10px; }
+.war-vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; }
+.war-vs .side { display: grid; justify-items: center; gap: 2px; animation: pop .4s ease-out backwards; }
+.war-vs .side.them { animation-delay: .15s; }
+.war-vs .side b { font-family: var(--display); font-size: 14px; line-height: 1.1; max-width: 130px; overflow-wrap: anywhere; }
+.war-vs .side small { font-weight: 800; color: var(--ink-2); }
+.war-vs .vs { font-family: var(--display); font-weight: 700; font-size: 30px; color: var(--red); -webkit-text-stroke: 1.5px var(--ink); animation: bump .8s ease-in-out infinite alternate; }
+.war-dots { display: flex; justify-content: center; gap: 10px; margin: 12px 0; }
+.war-dots i { width: 38px; height: 38px; border-radius: 50%; border: var(--stroke) solid var(--line); display: grid; place-items: center; font-style: normal; font-weight: 800; background: #F1EEFF; }
+.war-dots i.w { background: #DFFFE9; } .war-dots i.l { background: #FFE1E5; }
+.clash { display: flex; justify-content: center; align-items: center; gap: 14px; font-size: 44px; margin: 4px 0; }
+.clash span { animation: clashL .45s ease-out both; }
+.clash span:last-child { animation-name: clashR; }
+.clash span.lose { opacity: .45; filter: grayscale(.6); }
+.clash b { font-size: 34px; animation: pop .4s .3s ease-out backwards; }
+@keyframes clashL { from { transform: translateX(-60px) rotate(-30deg); opacity: 0; } to { transform: none; } }
+@keyframes clashR { from { transform: translateX(60px) rotate(30deg); opacity: 0; } to { transform: none; } }
+.clash-text { font-weight: 800; margin: 0 0 8px; }
+.war-pick { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 6px 0 10px; }
+.war-pick small { font-family: var(--body); font-size: 13px; color: var(--ink-2); }
+.war-sheet .moves { grid-template-columns: repeat(2, 1fr); }
+.war-sheet .moves .btn { min-height: 76px; }
+.war-sheet .rules { margin-top: 10px; }
+.war-end .face-big { animation: pop .5s ease-out backwards; }
+.war-end.won h2 { color: var(--green-d); } .war-end.lost h2 { color: var(--red); }
+.war-foe .btn { white-space: nowrap; flex: none; }
+.memorial { text-align: center; background: #F4F1FF; }
+.memorial b { font-family: var(--display); display: block; margin-bottom: 6px; }
+.memorial span { display: inline-block; margin: 3px 8px; font-weight: 700; }
+.memorial small { color: var(--ink-2); font-weight: 600; }
+.fame-meter .tries { color: var(--yellow); font-size: 13.5px; } .fame-meter b { font-size: 16px; }

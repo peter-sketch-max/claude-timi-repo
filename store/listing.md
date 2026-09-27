@@ -24,11 +24,17 @@ Company Simulator is a fun business life game. Pick a company, hire a team with 
 🏢 56 COMPANIES TO RUN
 Lemonade stand, candy shop, pizza place, banana farm, chocolate factory, football academy, sneaker brand, oil company, football club, gold mine and many more. Every company has its own workers, customers and problems.
 
-🎲 227 FUNNY EVENTS, 4 ANSWERS EACH
-A pigeon flies in and refuses to leave. A YouTuber wants to film a challenge in your shop. Your rival's mascot starts a dance battle outside your door. Monkeys raid the banana farm. You hide golden tickets in your chocolate! Every event gives you 4 ways to react, and events can come back weeks later with a twist.
+🎲 700+ EVENTS, 4 ANSWERS EACH
+A customer yells at you. Someone SLAPS you. A bear walks into your shop. A cat gets stuck on your crane. Your rival's mascot starts a dance battle outside your door. Every business has its own events, so a football club and a banana farm feel totally different. Every event gives you 4 ways to react, and some come back weeks later with a twist.
 
 🥊 RIVALS WHO FIGHT BACK
 Rival companies copy your logo, steal your ideas, post fake reviews and challenge you to battles. Beat them in rock-paper-scissors showdowns, win the quarterly Business Cup and climb the leaderboard.
+
+⚔️ COMPANY WARS
+Attack rival companies in 3-round battles: Price Attack, Spy Mission, Iron Defense or Ad Blitz. Send your war code to friends and battle them too! Win trophies and climb from Recruit to Emperor.
+
+📺 FREE ADS WITH STARS
+Try to get into 15 ads with superstars, from a radio DJ to a football superstar and a movie star. Will they say yes? The more famous you are, the better your chances!
 
 🎮 MINI-GAMES
 Spin the lucky wheel, open mystery boxes, tap as fast as you can in rush hour, answer money quizzes, push for a better deal, interview new workers, and post on social media to go viral.
@@ -37,13 +43,13 @@ Spin the lucky wheel, open mystery boxes, tap as fast as you can in rush hour, a
 Flash Sale, Team Party, Crazy Stunt and Overtime. Use them at the right moment!
 
 🏙️ A LIVING TOWN
-Watch customers line up at your shop, your workers in the windows, your pet bouncing by the door and the weather changing. Catch the golden customer for a big bonus!
+Cartoon customers walk in and come out with shopping bags, cars drive by, and your workers wave from the windows. Your building grows as you get bigger, with an oil pump, banana trees or a rocket next to it. Catch the golden customer for a big bonus!
 
 👥 WORKERS WITH PERSONALITY
 Lazy, creative, funny, greedy, hothead... Workers make friends, start feuds, ask for raises and sometimes quit to join your rival.
 
 🏆 LOTS TO UNLOCK
-Missions, CEO levels, 41 achievements, upgrades, company ranks from Tiny Startup to Galactic Corp, and an Event Book to collect every event.
+Missions, CEO levels, 48 achievements, upgrades, company ranks from Tiny Startup to Galactic Corp, and an Event Book to collect every event.
 
 📅 DAILY CHALLENGE
 Everyone gets the same company each day. Play 52 weeks and share your score with friends!
@@ -53,7 +59,7 @@ Everyone gets the same company each day. Play 52 weeks and share your score with
 🚫 No ads
 
 👑 VIP (optional subscription)
-Unlock VIP companies like the Space Company, Theme Park, Zoo and Esports Team. You also get double daily gifts, faster Boss Powers, an extra mission slot and double offline earnings. Cancel anytime in Google Play.
+Unlock VIP companies like the Space Company, Theme Park, Zoo and Esports Team. You also get double daily gifts, faster Boss Powers, an extra mission slot, an extra ad try, more war energy and double offline earnings. Cancel anytime in Google Play.
 
 How big can YOUR company get? 💰
 ```
@@ -69,4 +75,4 @@ How big can YOUR company get? 💰
 |---|---|
 | App icon (512×512 PNG) | `playstore-icon-512.png` |
 | Feature graphic (1024×500) | `feature-graphic-1024x500.png` |
-| Phone screenshots (1080×1920) | `screenshot-1-title.png` to `screenshot-8-chat.png` |
+| Phone screenshots (1080×1920) | `screenshot-1-title.png` to `screenshot-8-chat.png` (title, companies, home, ads, slap event, rival event, war, chat) |

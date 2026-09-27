@@ -98,17 +98,18 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   // ================= big celebrations (level up, rank up, cup) =================
 
-  function queueCelebrations(r) {
+  // later: wait until the current sheet is closed before showing them.
+  function queueCelebrations(r, later) {
     (r.levelUps || []).forEach(function (l) { S.overlays.push({ kind: 'level', level: l.level, gift: l.gift }); });
     if (r.rankUp != null) S.overlays.push({ kind: 'rank', rank: r.rankUp });
     if (r.cup) S.overlays.push({ kind: 'cup', cup: r.cup });
     (r.unlocked || []).forEach(function (a) { S.overlays.push({ kind: 'ach', a: a }); });
-    showOverlay();
+    if (!later) showOverlay();
   }
   function showOverlay() {
     if ($over.innerHTML || !S.overlays.length) return;
     var o = S.overlays.shift(), h;
-    if (o.kind === 'level') h = '<div class="burst"></div><div class="ov-e">🎖️</div><h1>LEVEL UP!</h1><p>You are now <b>CEO level ' + o.level + '</b></p><div class="chip gold">🎁 Gift: ' + M(o.gift) + '</div><p class="small">New ads and upgrades may be unlocked in the Shop!</p>';
+    if (o.kind === 'level') h = '<div class="burst"></div><div class="ov-e">🎖️</div><h1>LEVEL UP!</h1><p>You are now <b>CEO level ' + o.level + '</b></p><div class="chip gold">🎁 Gift: ' + M(o.gift) + '</div><p class="small">New upgrades and ads may be unlocked!</p>';
     else if (o.kind === 'rank') h = '<div class="burst"></div><div class="ov-e">' + CS.RANKS[o.rank].emoji + '</div><h1>RANK UP!</h1><p>Your company is now a</p><div class="rank-big">' + CS.RANKS[o.rank].name + '</div>';
     else if (o.kind === 'ach') h = '<div class="burst"></div><div class="ov-e">' + o.a.emoji + '</div><h1>ACHIEVEMENT!</h1><div class="rank-big">' + esc(o.a.name) + '</div><p class="small">' + esc(o.a.desc) + '</p>';
     else {
@@ -265,12 +266,12 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   function gameScreen() {
     var g = S.g;
-    var h = '<div class="game">' + hud(g) + '<main class="wrap tabview">' + ({ home: homeTab, team: teamTab, shop: shopTab, money: moneyTab, more: moreTab })[S.tab](g) + '</main>';
+    var h = '<div class="game">' + hud(g) + '<main class="wrap tabview">' + ({ home: homeTab, team: teamTab, shop: shopTab, ads: adsTab, money: moneyTab, more: moreTab, settings: settingsTab, war: warTab })[S.tab](g) + '</main>';
     var pend = g.queue.length;
     h += '<div class="dock"><div class="wrap"><button class="next ' + (pend ? 'pending' : '') + '" data-a="' + (pend ? 'events' : 'next') + '">' +
       (pend ? '⚡ ' + pend + ' THING' + (pend > 1 ? 'S' : '') + ' TO DECIDE' : '▶ NEXT WEEK') + '<span class="wk">Week ' + (g.week + 1) + '</span></button></div></div>';
     var ready = G.readyMissions(g), gift = g.mode === 'main' && G.giftStatus().available;
-    h += '<nav class="nav"><div class="wrap">' + [['home', '🏠', 'Home', ready + (gift ? 1 : 0) + (g.golden && !g.golden.tapped ? 1 : 0)], ['team', '👥', 'Team', 0], ['shop', '🛠️', 'Shop', upgradesReady(g) ? 1 : 0], ['money', '💰', 'Money', g.cash < 0 ? 1 : 0], ['more', '🏆', 'Goals', 0]].map(function (t) {
+    h += '<nav class="nav"><div class="wrap">' + [['home', '🏠', 'Home', ready + (gift ? 1 : 0) + (g.golden && !g.golden.tapped ? 1 : 0)], ['team', '👥', 'Team', 0], ['shop', '🛠️', 'Shop', upgradesReady(g) ? 1 : 0], ['ads', '📺', 'Ads', G.adsReady(g)], ['money', '💰', 'Money', g.cash < 0 ? 1 : 0], ['more', '🏆', 'Goals', 0], ['settings', '⚙️', 'Settings', g.mode === 'main' && G.shareGameReady() ? 1 : 0]].map(function (t) {
       return '<button data-a="tab" data-v="' + t[0] + '" class="' + (S.tab === t[0] ? 'on' : '') + '"><span class="e">' + t[1] + '</span>' + t[2] + (t[3] ? '<span class="badge">' + t[3] + '</span>' : '') + '</button>';
     }).join('') + '</div></nav></div>';
     return h;
@@ -308,6 +309,10 @@ var CS = globalThis.CS = globalThis.CS || {};
         (left ? '<i class="cd" style="height:' + Math.round(left / cd * 100) + '%"></i>' : '') + '</button>';
     });
     h += '</div></div>';
+
+    // Company Wars
+    var wr = G.warInit(g), wrank = CS.WAR_RANKS[G.warRankIndex(g)];
+    h += '<button class="section card war-banner" data-a="tab" data-v="war"><span class="e">⚔️</span><span class="grow"><b>Company Wars</b><small>' + wrank.emoji + ' ' + wrank.name + ' · 🏆 ' + wr.trophies + ' trophies · ' + '⚡'.repeat(wr.energy) + '<span class="faint">' + '⚡'.repeat(Math.max(0, G.warMaxEnergy() - wr.energy)) + '</span></small></span><span class="chip ' + (wr.energy ? 'gold' : '') + '">' + (wr.energy ? 'FIGHT!' : 'Open') + '</span></button>';
 
     // Missions
     h += '<div class="section"><div class="section-head"><h3>🎯 Missions</h3><span class="label">' + (vip() ? '👑 4 slots' : 'Rewards!') + '</span></div><div class="card">';
@@ -378,6 +383,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     h += '<div class="section"><div class="section-head"><h3>🧑‍💼 Hire people</h3><span class="label">New every week</span></div>' +
       '<div class="card" style="margin-bottom:12px;font-size:14px">' + ind(g).emoji + ' <b>' + U.plural(ind(g).front) + '</b> serve customers · 🗣️ <b>Salespeople</b> bring more customers · 🧮 <b>Accountants</b> cut costs · 👔 <b>Managers</b> keep 8 people happy</div>' +
       g.candidates.map(function (c, i) { return personRow(g, c, true, i); }).join('') + '</div>';
+    if (g.memorial && g.memorial.length) h += '<div class="section card memorial"><b>🕊️ In loving memory</b>' + g.memorial.map(function (m) { return '<span>' + esc(m.face) + ' ' + esc(m.name) + ' <small>week ' + m.week + '</small></span>'; }).join('') + '</div>';
     return h;
   }
 
@@ -394,15 +400,42 @@ var CS = globalThis.CS = globalThis.CS || {};
       h += '<div class="up"' + stagger(i) + '><span class="e">' + u.emoji + '</span><b>' + u.name + '</b><div class="pips">' + pips + '</div><small>' + u.desc + '</small>' + btn + '</div>';
     });
     h += '</div></div>';
-    h += '<div class="section"><div class="section-head"><h3>📢 Ads</h3><span class="label">Get more fans</span></div><div class="card">';
+    if (!vip()) h += '<button class="card vip-card section" data-a="vip"><span style="font-size:34px">👑</span><span style="flex:1;text-align:left"><b style="font-family:var(--display);font-size:18px">VIP</b><br><small>Faster powers, double gifts, VIP companies & more</small></span><span class="chip gold">See</span></button>';
+    return h;
+  }
+
+  // ---------- ads ----------
+
+  function adsTab(g) {
+    var h = '<div class="section card ads-hero in"><span class="e">📺</span><div><b>Free Ads!</b><small>Tap an ad to try to get in. It\'s <b>FREE</b>, but they can say no! 😬 More 📱 fans and ⭐ reputation = better chances. You get ' + G.adTriesMax() + ' tries every week.</small></div></div>';
+    var tries = G.adTriesLeft(g);
+    h += '<div class="section fame-meter"><span>📱 <b>' + U.num(g.followers) + '</b> fans · ⭐ ' + Math.round(g.reputation) + '</span><span class="tries">🎟️ ' + tries + '/' + G.adTriesMax() + ' tries this week</span></div>';
+    h += '<div class="section ad-list">';
+    CS.CELEB_ADS.forEach(function (a, i) {
+      var p = G.adChance(g, a), pct = Math.round(p * 100), wait = G.adReadyIn(g, a), fits = G.adFits(g, a);
+      var tone = pct >= 60 ? 'hi' : pct >= 25 ? 'mid' : 'lo';
+      h += '<div class="ad-card ' + (wait ? 'wait' : '') + '"' + stagger(i % 10) + '><span class="ad-e">' + a.emoji + '</span><div class="ad-mid"><b>' + a.name + '</b><small>with ' + esc(a.who) + '</small>' +
+        '<small class="ad-boost">📈 +' + Math.round(a.boost * 100) + '% customers for ' + a.weeks + ' weeks' + (fits ? ' · <span class="fits">' + ind(g).emoji + ' Fits you! +15%</span>' : '') + '</small>' +
+        '<div class="chance ' + tone + '"><i style="width:' + pct + '%"></i><span>' + pct + '% chance</span></div></div>' +
+        (wait ? '<button class="btn small" disabled>⏳ ' + wait + ' wk' + (wait > 1 ? 's' : '') + '</button>' : !tries ? '<button class="btn small" disabled>🎟️ Next<br>week</button>' : '<button class="btn small green try" data-a="tryad" data-v="' + a.id + '">🎲 Try<br>FREE</button>') + '</div>';
+    });
+    h += '</div>';
+    h += '<div class="section"><div class="section-head"><h3>💸 Paid ads</h3><span class="label">Always work</span></div><div class="card">';
     CS.ADS.forEach(function (a) {
       var cost = G.adCost(g, a), locked = g.level < a.lvl;
       h += '<div class="ad-row"><span class="e">' + a.emoji + '</span><span class="grow"><b>' + a.name + '</b><br><small class="muted">+' + a.fans + ' fame</small></span>' +
         (locked ? '<button class="btn small" disabled>🔒 Lv ' + a.lvl + '</button>' : '<button class="btn small orange" data-a="ad" data-v="' + a.id + '">' + U.short(cost) + '</button>') + '</div>';
     });
     h += '</div></div>';
-    if (!vip()) h += '<button class="card vip-card section" data-a="vip"><span style="font-size:34px">👑</span><span style="flex:1;text-align:left"><b style="font-family:var(--display);font-size:18px">VIP</b><br><small>Faster powers, double gifts, VIP companies & more</small></span><span class="chip gold">See</span></button>';
     return h;
+  }
+
+  function adTrySheet() {
+    var sh = S.sheet, r = sh.res, a = r.ad;
+    if (sh.phase === 'roll') return '<div class="result ad-roll"><div class="face-big spin-e">' + a.emoji + '</div><h2>Calling ' + esc(a.who) + '...</h2><div class="typing"><i></i><i></i><i></i></div><p class="muted">Your chance: <b>' + Math.round(r.chance * 100) + '%</b> 🤞</p></div>';
+    return '<div class="result"><div class="face-big">' + (r.ok ? '🎉' : '😢') + '</div><h2>' + (r.ok ? 'YOU\'RE IN!' : 'NOT THIS TIME') + '</h2><p style="font-size:17px">' + esc(r.text) + '</p>' +
+      (r.chips.length ? '<div class="chips">' + r.chips.map(function (c, i) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + i * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
+      '<p class="small muted">You can try this ad again in ' + a.cd + ' weeks.</p><button class="btn ' + (r.ok ? 'green' : 'blue') + ' big block" data-a="close">' + (r.ok ? 'Awesome! 🌟' : 'Try another ad') + '</button></div>';
   }
 
   // ---------- money ----------
@@ -462,12 +495,81 @@ var CS = globalThis.CS = globalThis.CS || {};
     });
     h += '</div></div></div>';
 
-    h += '<div class="section"><div class="section-head"><h3>⚙️ Settings</h3></div><div class="card">' +
-      '<div class="toggle"><span>🎵 Music</span><button class="switch ' + (S.settings.music ? 'on' : '') + '" data-a="setting" data-v="music" aria-label="Music"><i></i></button></div>' +
-      '<div class="toggle"><span>🔊 Sounds</span><button class="switch ' + (S.settings.sound ? 'on' : '') + '" data-a="setting" data-v="sound" aria-label="Sounds"><i></i></button></div>' +
-      '<div class="toggle"><span>📳 Vibration</span><button class="switch ' + (S.settings.vibe ? 'on' : '') + '" data-a="setting" data-v="vibe" aria-label="Vibration"><i></i></button></div>' +
-      '<div class="row2" style="margin-top:8px"><button class="btn small" data-a="confirm" data-v="newgame">🔄 Start over</button><button class="btn small red" data-a="confirm" data-v="bankrupt">📉 Give up</button></div>' +
-      '<button class="btn small block" style="margin-top:10px" data-a="home">🏠 Main menu</button></div></div>';
+    return h;
+  }
+
+  // ---------- wars ----------
+
+  function tacticBtn(t, action, v, extra) { return '<button class="btn in" data-a="' + action + '" data-v="' + v + '"' + (extra || '') + '><span>' + t.emoji + '</span>' + t.name + '</button>'; }
+  function warTab(g) {
+    var w = G.warInit(g), ri = G.warRankIndex(g), rk = CS.WAR_RANKS[ri], nx = CS.WAR_RANKS[ri + 1], pw = G.warPower(g);
+    var h = '<button class="btn small back-btn" data-a="tab" data-v="home">⬅ Back</button>';
+    h += '<div class="section card war-hero in"><div class="wh-top"><span class="e">' + rk.emoji + '</span><div class="grow"><b>' + rk.name + '</b><small>🏆 ' + w.trophies + ' trophies' + (nx ? ' · ' + (nx.min - w.trophies) + ' more for ' + nx.emoji + ' ' + nx.name : ' · Top rank!') + '</small>' + (nx ? bar((w.trophies - rk.min) / (nx.min - rk.min) * 100) : '') + '</div></div>' +
+      '<div class="wh-stats"><span>⚔️ Power <b>' + pw + '</b></span><span>⚡ Energy <b>' + w.energy + '/' + G.warMaxEnergy() + '</b></span><span>✅ ' + w.wins + ' · ❌ ' + w.losses + '</span></div>' +
+      '<small class="muted">Power comes from your company value, team, fans, reputation, level and upgrades. Energy refills +1 every week.</small></div>';
+
+    h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1</span></div><div class="war-list">';
+    (g.rivalCos || []).forEach(function (rv, i) {
+      var st = G.tactic(G.rivalStyle(rv.name)), ep = G.rivalWarPower(g, rv);
+      h += '<div class="war-foe"' + stagger(i) + '><span class="logo" style="background:' + esc(rv.color) + '">' + esc(rv.logo) + '</span><div class="grow"><b>' + esc(rv.name) + '</b><small>⚔️ ~' + ep + ' power · 🕵️ Spies say: loves ' + st.emoji + '</small></div>' +
+        '<button class="btn small ' + (w.energy ? 'red' : '') + '" data-a="warattack" data-v="' + i + '" ' + (w.energy ? '' : 'disabled') + '>⚔️ Attack</button></div>';
+    });
+    h += '</div></div>';
+
+    h += '<div class="section"><div class="section-head"><h3>🤝 Friend Wars</h3><span class="label">No internet server!</span></div><div class="card friend-war">' +
+      '<p class="small">1️⃣ Pick your secret defense plan. 2️⃣ Send your war code to a friend in any chat app. 3️⃣ They paste it in their game and attack you! Paste their code below to attack them. You can fight each friend once a day.</p>' +
+      '<span class="label">Your secret defense plan (tap to change)</span><div class="plan">' + w.plan.map(function (id, i) { var t = G.tactic(id); return '<button class="slot" data-a="warplan" data-v="' + i + '"><small>Round ' + (i + 1) + '</small><span>' + t.emoji + '</span>' + t.name + '</button>'; }).join('') + '</div>' +
+      '<button class="btn pink block" data-a="warsend">📤 Send my war code</button>' +
+      '<span class="label" style="margin-top:14px;display:block">Got a code from a friend?</span><textarea id="warcode" rows="3" placeholder="Paste the war code here (starts with CSW1.)"></textarea>' +
+      '<button class="btn red big block" data-a="warpaste">⚔️ ATTACK THEM!</button></div></div>';
+    h += '<div class="section card rules-card"><b>How battles work</b><small>3 rounds. Win 2 to win the war! Each round, pick a move:</small><div class="rules">💸 beats 🕵️ · 🕵️ beats 🛡️ · 🛡️ beats 📣 · 📣 beats 💸</div><small>A move that beats theirs makes you 35% stronger that round. Higher power helps, but a smart move can beat a bigger company!</small></div>';
+    return h;
+  }
+
+  function warSide(c, cls) { return '<div class="side ' + cls + '"><span class="logo" style="background:' + esc(c.color) + '">' + esc(c.logo) + '</span><b>' + esc(c.name) + '</b><small>⚔️ ' + c.power + '</small></div>'; }
+  function warSheet() {
+    var g = S.g, b = g.war && g.war.battle;
+    if (!b) return null;
+    var h = '<div class="war-sheet"><h2>' + (b.foe.kind === 'friend' ? '🤜 Friend War!' : '⚔️ WAR!') + '</h2><div class="war-vs">' + warSide(b.me, 'me') + '<span class="vs">VS</span>' + warSide(b.foe, 'them') + '</div>' +
+      '<div class="war-dots">' + [0, 1, 2].map(function (i) { var r = b.rounds[i]; return '<i class="' + (r ? (r.win ? 'w' : 'l') : '') + '">' + (r ? (r.win ? '✅' : '❌') : i + 1) + '</i>'; }).join('') + '</div>';
+    var last = b.rounds[b.rounds.length - 1];
+    if (last) {
+      var mt = G.tactic(last.me), tt = G.tactic(last.them);
+      h += '<div class="clash" data-n="' + b.rounds.length + '"><span class="' + (last.win ? 'win' : 'lose') + '">' + mt.emoji + '</span><b>' + (last.beat === 1 ? '💥' : last.beat === -1 ? '💢' : '⚡') + '</b><span class="' + (last.win ? 'lose' : 'win') + '">' + tt.emoji + '</span></div>' +
+        '<p class="clash-text">' + (last.beat === 1 ? mt.name + ' beats ' + tt.name + '! ' : last.beat === -1 ? tt.name + ' beats ' + mt.name + '! ' : 'Even moves! ') + (last.win ? 'You win round ' + b.rounds.length + '! 🎉' : 'They win round ' + b.rounds.length + '! 😬') + '</p>';
+    }
+    if (!b.done) {
+      h += '<p class="war-pick">Round ' + (b.rounds.length + 1) + ': pick your move!' + (b.foe.style && !b.rounds.length ? '<br><small>🕵️ Spy tip: they love ' + G.tactic(b.foe.style).emoji + '</small>' : '') + '</p><div class="moves">' +
+        CS.WAR_TACTICS.map(function (t, i) { return tacticBtn(t, 'warmove', t.id, ' style="animation-delay:' + (0.08 * i) + 's"'); }).join('') + '</div><div class="rules">💸 beats 🕵️ · 🕵️ beats 🛡️ · 🛡️ beats 📣 · 📣 beats 💸</div>';
+    } else {
+      var r = b.result;
+      h += '<div class="war-end ' + (r.won ? 'won' : 'lost') + '"><div class="face-big">' + (r.won ? '🏆' : '😭') + '</div><h2>' + (r.won ? 'VICTORY!' : 'DEFEAT') + '</h2><p>' + esc(r.text) + '</p>' +
+        (r.chips.length ? '<div class="chips">' + r.chips.map(function (c, i) { return '<span class="chip ' + (c.good ? 'good' : 'bad') + '" style="animation-delay:' + (0.15 + i * 0.1) + 's">' + esc(c.txt) + '</span>'; }).join('') + '</div>' : '') +
+        '<div class="row2"><button class="btn pink" data-a="warshare">📤 Share</button><button class="btn green" data-a="warclose">Continue ▶</button></div></div>';
+    }
+    return h + '</div>';
+  }
+
+  // ---------- settings ----------
+
+  function toggleRow(k, label) {
+    return '<div class="toggle"><span>' + label + '</span><button class="switch ' + (S.settings[k] ? 'on' : '') + '" data-a="setting" data-v="' + k + '" aria-label="' + label + '"><i></i></button></div>';
+  }
+  function settingsTab(g) {
+    var h = '<div class="section"><div class="section-head"><h3>⚙️ Settings</h3></div><div class="card">' +
+      toggleRow('music', '🎵 Music') + toggleRow('sound', '🔊 Sound effects') + toggleRow('vibe', '📳 Vibration') + '</div></div>';
+    if (g.mode === 'main') {
+      var ready = G.shareGameReady(), amt = G.shareGameAmount(g);
+      h += '<div class="section card share-game in"><div class="sg-top"><span class="e">📤</span><div><b>Share the game, get +10%!</b><small>Send Company Simulator to a friend and get <b>+10% cash</b> (' + U.short(amt) + '). Once a day!</small></div></div>' +
+        (ready ? '<button class="btn green big block" data-a="sharegame">📤 Share &amp; get +' + U.short(amt) + '</button>' : '<button class="btn block" disabled>✅ Done today! Come back tomorrow</button>') + '</div>';
+    }
+    h += '<div class="section"><div class="section-head"><h3>🎮 Game</h3></div><div class="card">' +
+      '<button class="btn block" data-a="share">🖼️ Share my company card</button>' +
+      '<button class="btn blue block" style="margin-top:10px" data-a="quit">💾 Save &amp; quit to menu</button>' +
+      '<div class="row2" style="margin-top:10px"><button class="btn small" data-a="confirm" data-v="newgame">🔄 Start over</button><button class="btn small red" data-a="confirm" data-v="bankrupt">📉 Give up</button></div></div></div>';
+    h += vip() ? '<div class="card vip-card section"><span style="font-size:30px">👑</span><span style="flex:1"><b>You are VIP!</b><br><small>Thank you for supporting the game! 💖</small></span><button class="btn small" data-a="vip">Manage</button></div>'
+      : '<button class="card vip-card section" data-a="vip"><span style="font-size:34px">👑</span><span style="flex:1;text-align:left"><b style="font-family:var(--display);font-size:18px">Go VIP</b><br><small>' + CS.VIP_PERKS.length + ' awesome perks</small></span><span class="chip gold">Unlock</span></button>';
+    h += '<div class="section card about"><b>Company Simulator</b><small>No ads · No accounts · Your saves stay on this device.</small></div>';
     return h;
   }
 
@@ -796,7 +898,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (sh) {
       html = sh.type === 'week' ? weekSheet(sh.report) : sh.type === 'event' ? eventSheet() : sh.type === 'emp' || sh.type === 'cand' ? empSheet()
         : sh.type === 'stat' ? statSheet() : sh.type === 'gift' ? giftSheet() : sh.type === 'post' ? postSheet() : sh.type === 'share' ? shareSheet()
-          : sh.type === 'confirm' ? confirmSheet() : sh.type === 'vip' ? vipSheet() : sh.type === 'power' ? powerSheet() : sh.type === 'offline' ? offlineSheet() : null;
+          : sh.type === 'confirm' ? confirmSheet() : sh.type === 'vip' ? vipSheet() : sh.type === 'power' ? powerSheet() : sh.type === 'offline' ? offlineSheet()
+            : sh.type === 'adtry' ? adTrySheet() : sh.type === 'war' ? warSheet() : null;
       if (html == null) S.sheet = null;
     }
     var key = sh ? sh.type + ':' + (sh.x ? sh.x.id + sh.x.ctx.a + (sh.phase || '') : sh.id || sh.k || '') + ':' + (sh.n || 0) : null;
@@ -951,7 +1054,19 @@ var CS = globalThis.CS = globalThis.CS || {};
     S.screen = 'game'; S.tab = 'home'; S.prev = null; window.scrollTo(0, 0);
     var off = G.offlineEarnings(S.g);
     if (off) { S.sheet = { type: 'offline', o: off }; SFX.play('coin'); return; }
+    if (S.g.war && S.g.war.battle) { S.sheet = { type: 'war', k: 'war' }; return; }
     if (G.currentEvent(S.g)) openNextEvent();
+  }
+  // Android app: the WebView has no navigator.share, so the native share menu (Capacitor) is used.
+  function nativeShare() { var Cap = globalThis.Capacitor; return Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins && Cap.Plugins.Share; }
+  // Shares text. Resolves true if it was shared or copied, false if the player cancelled.
+  function shareText(text, title) {
+    var NS = nativeShare();
+    if (NS) return NS.share({ title: 'Company Simulator', text: text, dialogTitle: title }).then(function () { return true; }, function () { return false; });
+    if (navigator.share) return navigator.share({ title: 'Company Simulator', text: text }).then(function () { return true; }, function (e) { return !(e && e.name === 'AbortError'); });
+    return new Promise(function (res) {
+      try { navigator.clipboard.writeText(text).then(function () { toast('📋 Copied! Paste it to your friends.'); res(true); }, function () { res(true); }); } catch (e) { res(true); }
+    });
   }
   function startMusic() { if (S.settings.music && S.started && CS.Music) CS.Music.start(); }
 
@@ -1041,6 +1156,53 @@ var CS = globalThis.CS = globalThis.CS || {};
     gift: function () { S.sheet = { type: 'gift' }; },
     claimgift: function () { var amt = G.claimGift(S.g); S.sheet.amount = amt; SFX.play('level'); confetti(90); coinBurst(16); buzz([30, 30, 30]); },
     price: function (v) { S.g.price = +v; G.save(S.g); SFX.play('tap'); },
+    warattack: function (v) {
+      var rv = S.g.rivalCos[+v];
+      if (!rv || !G.warAttackRival(S.g, rv.name)) return false;
+      S.sheet = { type: 'war', k: 'war' + Math.random() };
+      SFX.play('power'); buzz([30, 30, 30]); setTimeout(shake, 60);
+    },
+    warmove: function (v) {
+      var g = S.g, r = G.warRound(g, v);
+      if (!r) return false;
+      SFX.play(r.win ? 'good' : 'bad'); buzz(r.win ? 20 : 50);
+      if (!r.win) setTimeout(shake, 60);
+      var b = g.war.battle;
+      if (b.done) {
+        if (b.result.won) { confetti(90); coinBurst(14); setTimeout(function () { SFX.play('level'); }, 300); }
+        queueCelebrations(b.result, true);
+      }
+    },
+    warclose: function () { G.warClose(S.g); G.save(S.g); S.sheet = null; showOverlay(); },
+    warshare: function () { shareText(G.warShareText(S.g), 'Share your war'); return false; },
+    warplan: function (v) {
+      var w = G.warInit(S.g), i = +v, ids = CS.WAR_TACTICS.map(function (t) { return t.id; });
+      w.plan[i] = ids[(ids.indexOf(w.plan[i]) + 1) % ids.length];
+      G.save(S.g); SFX.play('tap');
+    },
+    warsend: function () { shareText(G.warCodeText(S.g), 'Send your war code'); return false; },
+    warpaste: function () {
+      var ta = document.getElementById('warcode'), foe = G.readWarCode(S.g, ta && ta.value);
+      if (foe.error) { toast(foe.error); SFX.play('bad'); return false; }
+      if (!G.warAttackFriend(S.g, foe)) return false;
+      G.save(S.g);
+      S.sheet = { type: 'war', k: 'war' + Math.random() };
+      SFX.play('power'); buzz([30, 30, 30]); setTimeout(shake, 60);
+    },
+    tryad: function (v) {
+      var r = G.tryAd(S.g, v);
+      if (!r) return false;
+      S.sheet = { type: 'adtry', res: r, phase: 'roll', k: v };
+      SFX.play('tick'); buzz(10);
+      setTimeout(function () {
+        if (!S.sheet || S.sheet.type !== 'adtry' || S.sheet.res !== r) return;
+        S.sheet.phase = 'done';
+        if (r.ok) { SFX.play('good'); confetti(60); coinBurst(10); buzz([20, 30, 20]); CS.Scene.burst(r.ad.emoji); }
+        else { SFX.play('bad'); buzz(40); }
+        queueCelebrations(r, true);
+        render();
+      }, 1500);
+    },
     ad: function (v) { var c = G.advertise(S.g, v); if (c) { toast('📢 Ad is running! -' + U.short(c)); SFX.play('coin'); afterAction(); } },
     upgrade: function (v) { if (G.buyUpgrade(S.g, v)) { toast(CS.UP[v].emoji + ' ' + CS.UP[v].name + ' upgraded!'); SFX.play('level'); confetti(40); afterAction(); } },
     emp: function (v) { S.sheet = { type: 'emp', id: +v }; },
@@ -1061,18 +1223,26 @@ var CS = globalThis.CS = globalThis.CS || {};
     closeov: function () { $over.innerHTML = ''; setTimeout(showOverlay, 250); return false; },
     scrim: function () {
       var t = S.sheet && S.sheet.type;
-      if (['emp', 'cand', 'confirm', 'stat', 'share', 'vip', 'power', 'offline'].indexOf(t) >= 0 || (t === 'post' && !S.sheet.res) || (t === 'gift' && !S.sheet.amount)) S.sheet = null; else return false;
+      if (['emp', 'cand', 'confirm', 'stat', 'share', 'vip', 'power', 'offline'].indexOf(t) >= 0 || (t === 'post' && !S.sheet.res) || (t === 'gift' && !S.sheet.amount) || (t === 'adtry' && S.sheet.phase === 'done')) { S.sheet = null; showOverlay(); } else return false;
     },
     loan: function (v) { var o = G.loanOffers(S.g)[+v]; if (!o || !o.ok) return; G.addLoan(S.g, o.amount, o.apr, o.weeks); afterAction(); toast('🏦 Got ' + M(o.amount) + '!'); SFX.play('coin'); coinBurst(10); },
     repay: function (v) { if (G.repayLoan(S.g, +v)) { afterAction(); toast('🕊️ Loan paid off!'); SFX.play('good'); } },
     stake: function (v) { var a = G.sellStake(S.g, +v); if (a) { afterAction(); toast('💼 Investors paid ' + M(a) + '!'); SFX.play('coin'); coinBurst(10); } },
     share: function () { S.sheet = { type: 'share' }; },
+    sharegame: function () {
+      var g = S.g;
+      shareText(G.shareGameText(g), 'Share Company Simulator').then(function (ok) {
+        if (!ok) return;
+        var amt = G.claimShareGame(g);
+        if (amt) { toast('📤 Thanks for sharing! +' + M(amt)); SFX.play('coin'); coinBurst(14); confetti(40); render(); }
+      });
+      return false;
+    },
+    quit: function () { if (S.g) G.save(S.g); A.home(); },
     doshare: function () {
       var text = document.getElementById('shareText').value, img = document.getElementById('shareImg');
       var data = { text: text, title: 'Company Simulator' };
-      // Android app: the WebView has no navigator.share, so use the native share menu.
-      var Cap = globalThis.Capacitor, NS = Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins && Cap.Plugins.Share;
-      if (NS) { NS.share({ title: data.title, text: text, dialogTitle: 'Share your company' }).catch(function () {}); return false; }
+      if (nativeShare()) { shareText(text, 'Share your company'); return false; }
       try {
         if (navigator.share) {
           fetch(img.src).then(function (r) { return r.blob(); }).then(function (b) {

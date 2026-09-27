@@ -70,7 +70,7 @@ CS.INDUSTRIES = [
   { id: 'soda', tags: 'food sweet', name: 'Soda Company', emoji: '🥤', tier: 'large', t: 2, s: 0.40, l: 0.20, front: 'Flavor Mixer', unit: 'soda cans' },
   { id: 'footballclub', tags: 'sport fun', name: 'Football Club', emoji: '🏟️', tier: 'large', t: 60, s: 0.15, l: 0.50, front: 'Player', unit: 'tickets sold' },
   { id: 'shipping', tags: '', name: 'Shipping Company', emoji: '🚢', tier: 'large', t: 3000, s: 0.45, l: 0.20, front: 'Captain', unit: 'containers shipped' },
-  { id: 'goldmine', tags: 'oil', name: 'Gold Mine', emoji: '⛏️', tier: 'large', t: 40000, s: 0.40, l: 0.25, front: 'Miner', unit: 'gold bars' },
+  { id: 'goldmine', tags: 'mine', name: 'Gold Mine', emoji: '⛏️', tier: 'large', t: 40000, s: 0.40, l: 0.25, front: 'Miner', unit: 'gold bars' },
   { id: 'themepark', tags: 'fun', vip: true, name: 'Theme Park', emoji: '🎢', tier: 'large', t: 60, s: 0.20, l: 0.35, front: 'Ride Operator', unit: 'visitors' },
   { id: 'space', tags: 'tech', vip: true, name: 'Space Company', emoji: '🚀', tier: 'large', t: 2000000, s: 0.50, l: 0.20, front: 'Rocket Scientist', unit: 'rocket launches' },
   { id: 'socialapp', tags: 'tech media', vip: true, name: 'Social Media App', emoji: '📲', tier: 'large', t: 30, s: 0.15, l: 0.45, front: 'Programmer', unit: 'thousand users' }
@@ -269,7 +269,14 @@ CS.ACHIEVEMENTS = [
   { id: 'powers10', emoji: '⚡', name: 'Power Boss', desc: 'Use Boss Powers 10 times' },
   { id: 'golden5', emoji: '🤑', name: 'Golden Touch', desc: 'Catch 5 golden customers' },
   { id: 'pet', emoji: '🐾', name: 'Pet Lover', desc: 'Get an office pet' },
-  { id: 'bankrupt', emoji: '📉', name: 'Lesson Learned', desc: 'Go bankrupt. It happens!' }
+  { id: 'bankrupt', emoji: '📉', name: 'Lesson Learned', desc: 'Go bankrupt. It happens!' },
+  { id: 'starad', emoji: '🌟', name: 'Star Struck', desc: 'Get into a free ad' },
+  { id: 'famous10', emoji: '📺', name: 'Famous Face', desc: 'Get into 10 free ads' },
+  { id: 'queenad', emoji: '👑', name: 'World Famous', desc: 'Get the Worldwide Icon Ad' },
+  { id: 'war1', emoji: '⚔️', name: 'First Victory', desc: 'Win a Company War' },
+  { id: 'war10', emoji: '🛡️', name: 'War Hero', desc: 'Win 10 Company Wars' },
+  { id: 'friendwar', emoji: '🤜', name: 'Friendly Fire', desc: 'Beat a friend\'s war code' },
+  { id: 'warlord', emoji: '🐉', name: 'Warlord', desc: 'Reach the Warlord war rank' }
 ];
 
 // Your face as the boss.
@@ -293,6 +300,49 @@ CS.VIP_PERKS = [
   ['⚡', 'Faster Boss Powers', 'Every power recharges 1 week sooner'],
   ['🎯', '4 missions at once', 'One extra mission slot with bigger rewards'],
   ['💤', 'Bigger offline earnings', 'Your shop earns 2x while you are away'],
+  ['📺', 'Extra ad try', '4 free ad tries every week instead of 3'],
+  ['⚔️', 'More war energy', 'Store up to 4 war energy instead of 3'],
   ['👑', 'VIP look', 'Golden name badge and VIP logos']
 ];
 CS.VIP_LOGOS = ['👑', '💰', '🏆', '🪐', '🐉', '🌈'];
+
+// Link used when players share the game. Update it if you change the app id (see PLAYSTORE.md).
+CS.SHARE_URL = 'https://play.google.com/store/apps/details?id=com.companysim.game';
+
+// Free ads in the Ads tab. Trying is free, but the ad might say no!
+// need = followers for a 50% chance (more fame = better chance). cd = weeks before you can try that ad again.
+// You get 3 tries a week (4 with VIP).
+// All the stars are made up (real people can't be used without their permission).
+CS.CELEB_ADS = [
+  { id: 'radio', emoji: '📻', name: 'Radio Shout-out', who: 'DJ Danny Decks', need: 10, cd: 2, boost: 0.05, weeks: 2, fans: 3, rep: 1, xp: 6, tags: [] },
+  { id: 'poster', emoji: '🚌', name: 'Bus Stop Poster', who: 'artist Pixel Pete', need: 40, cd: 3, boost: 0.06, weeks: 2, fans: 4, rep: 1, xp: 7, tags: [] },
+  { id: 'talent', emoji: '🎤', name: 'School Talent Show', who: 'MC Tiny Tina', need: 120, cd: 3, boost: 0.07, weeks: 2, fans: 5, rep: 2, xp: 8, tags: ['fun', 'sweet'] },
+  { id: 'tiktok', emoji: '📱', name: 'Viral Dance Video', who: 'dancer Zoe Zoom', need: 300, cd: 4, boost: 0.08, weeks: 2, fans: 8, rep: 2, xp: 10, tags: ['media', 'fashion'] },
+  { id: 'stream', emoji: '🎮', name: 'Gaming Stream', who: 'gamer NinjaPanda', need: 800, cd: 4, boost: 0.1, weeks: 3, fans: 11, rep: 2, xp: 12, tags: ['tech', 'media'] },
+  { id: 'chef', emoji: '👨‍🍳', name: 'TV Cooking Show', who: 'Chef Marco Mambo', need: 2000, cd: 5, boost: 0.12, weeks: 3, fans: 14, rep: 3, xp: 14, tags: ['food', 'sweet'] },
+  { id: 'hoops', emoji: '🏀', name: 'Basketball Ad', who: 'Big Jay Dunkins', need: 5000, cd: 5, boost: 0.14, weeks: 3, fans: 18, rep: 3, xp: 16, tags: ['sport', 'fashion'] },
+  { id: 'popstar', emoji: '🎸', name: 'Music Video', who: 'pop star Lila Luxe', need: 12000, cd: 6, boost: 0.16, weeks: 3, fans: 22, rep: 4, xp: 18, tags: ['media', 'fashion', 'fun'] },
+  { id: 'ronny', emoji: '⚽', name: 'Football Superstar Ad', who: 'striker Rocket Ronny', need: 30000, cd: 6, boost: 0.18, weeks: 4, fans: 28, rep: 4, xp: 20, tags: ['sport'] },
+  { id: 'leo', emoji: '🪄', name: 'Football Magic Ad', who: 'dribble king Magic Leo', need: 70000, cd: 7, boost: 0.2, weeks: 4, fans: 32, rep: 5, xp: 22, tags: ['sport'] },
+  { id: 'movie', emoji: '🎬', name: 'Movie Star Commercial', who: 'movie star Brad Stone', need: 150000, cd: 8, boost: 0.22, weeks: 4, fans: 40, rep: 5, xp: 25, tags: ['media', 'fun'] },
+  { id: 'stadium', emoji: '🏟️', name: 'Cup Final Big Screen', who: 'the whole stadium', need: 350000, cd: 9, boost: 0.25, weeks: 4, fans: 48, rep: 6, xp: 28, tags: ['sport', 'food'] },
+  { id: 'rocket', emoji: '🚀', name: 'Live Rocket Launch Ad', who: 'astronaut Captain Nova', need: 800000, cd: 10, boost: 0.28, weeks: 5, fans: 55, rep: 6, xp: 32, tags: ['tech', 'oil'] },
+  { id: 'megabowl', emoji: '🏈', name: 'Mega Bowl Halftime Ad', who: '100 million viewers', need: 2000000, cd: 12, boost: 0.32, weeks: 5, fans: 65, rep: 8, xp: 36, tags: [] },
+  { id: 'queen', emoji: '👑', name: 'Worldwide Icon Ad', who: 'global icon Queen Sky', need: 5000000, cd: 13, boost: 0.4, weeks: 6, fans: 80, rep: 10, xp: 45, tags: [] }
+];
+
+// Company Wars. Each tactic beats one other tactic: 💸 > 🕵️ > 🛡️ > 📣 > 💸.
+CS.WAR_TACTICS = [
+  { id: 'price', emoji: '💸', name: 'Price Attack', beats: 'spy' },
+  { id: 'spy', emoji: '🕵️', name: 'Spy Mission', beats: 'shield' },
+  { id: 'shield', emoji: '🛡️', name: 'Iron Defense', beats: 'blitz' },
+  { id: 'blitz', emoji: '📣', name: 'Ad Blitz', beats: 'price' }
+];
+CS.WAR_RANKS = [
+  { emoji: '🪖', name: 'Recruit', min: 0 },
+  { emoji: '🎖️', name: 'Soldier', min: 10 },
+  { emoji: '⭐', name: 'Captain', min: 30 },
+  { emoji: '🌟', name: 'General', min: 60 },
+  { emoji: '🐉', name: 'Warlord', min: 100 },
+  { emoji: '👑', name: 'Emperor', min: 200 }
+];
