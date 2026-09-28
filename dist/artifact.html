@@ -6370,8 +6370,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🍼 Bring {kid} to the shop', { run: addKid, fans: 25, happy: 4, say: 'Customers line up to say hello.' }],
     ['🏷️ Name a product after {kid}', { run: addKid, fans: 15, demand: [1.05, 6, 'Baby special'], say: 'It became a best seller.' }],
     ['💼 Back to work tomorrow', { run: addKid, team: -3, say: 'You yawned all day. Worth it.' }]
-  ], CH);
-  function addKid(g, c) { var f = g.family; if (f) { f.kids = (f.kids || []).concat([c.kid]); G.news(g, '👶 Welcome to the world, ' + c.kid + '!', 'good'); } }
+  ], { chainOnly: true, init: function (g, c) { if (!c.kid) c.kid = U.pick(CS.FIRST); return partner(g, c); } });
+  function addKid(g, c) { var f = g.family; if (!c.kid) c.kid = U.pick(CS.FIRST); if (f) { f.kids = (f.kids || []).concat([c.kid]); G.news(g, '👶 Welcome to the world, ' + c.kid + '!', 'good'); } }
   // =====================================================================
   // 🔗 WHAT HAPPENS NEXT (follow-ups for everyday events)
   // =====================================================================
