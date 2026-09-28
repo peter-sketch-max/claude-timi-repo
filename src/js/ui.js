@@ -444,6 +444,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     var debt = G.debt(g), val = G.valuation(g);
     var h = '<div class="section card"><div class="summary3"><div><b>' + U.short(val) + '</b><small>🏢 Worth</small></div><div><b>' + Math.round(g.ownership) + '%</b><small>🥧 You own</small></div><div><b class="' + (debt ? 'bad' : '') + '">' + U.short(debt) + '</b><small>🏦 Debt</small></div></div>' +
       '<button class="btn pink block" style="margin-top:12px" data-a="share">📤 Share my company</button></div>';
+    h += '<button class="card shop-card section" data-a="shop"><span class="e">💎</span><span class="grow"><b>Shop</b><small>Cash packs, Starter Pack and the VIP Pass</small></span><span class="chip gold">Open</span></button>';
     h += '<div class="section"><div class="section-head"><h3>🏦 Bank loans</h3><span class="label">Pay back weekly</span></div><div class="card">';
     G.loanOffers(g).forEach(function (o, i) {
       var r = o.apr / 52, pay = o.amount * r / (1 - Math.pow(1 + r, -o.weeks));
@@ -477,6 +478,12 @@ var CS = globalThis.CS = globalThis.CS || {};
       '<small class="muted">Get XP by making choices, playing mini-games, using powers and finishing missions. New levels unlock ads and upgrades!</small></div>';
     var rk = CS.RANKS[g.rank], nx = CS.RANKS[g.rank + 1];
     h += '<div class="card"><b style="font-family:var(--display);font-size:18px">' + rk.emoji + ' ' + rk.name + '</b>' + (nx ? '<br><small class="muted">Next rank: ' + nx.emoji + ' ' + nx.name + ' when your company is worth ' + U.short(nx.min) + '</small>' + bar(G.valuation(g) / nx.min * 100) : '<br><small>Top rank! 🪐</small>') + '</div>';
+    var fm = g.family;
+    if (fm && fm.stage) {
+      h += '<div class="card family section in"><span class="e">' + (fm.stage === 'married' ? '💍' : fm.stage === 'engaged' ? '💎' : '💘') + '</span><span class="grow"><b>' +
+        (fm.stage === 'married' ? 'Married to ' : fm.stage === 'engaged' ? 'Engaged to ' : 'Dating ') + esc(fm.partner) + '</b><small>' +
+        (fm.stage === 'married' ? 'Since week ' + fm.married : 'Since week ' + fm.since) + ((fm.kids || []).length ? ' · 👶 ' + fm.kids.map(esc).join(', ') : '') + '</small></span></div>';
+    }
     h += '<div class="card cups"><span>🥇 ' + (g.cups.gold || 0) + '</span><span>🥈 ' + (g.cups.silver || 0) + '</span><span>🥉 ' + (g.cups.bronze || 0) + '</span><small class="muted">Business Cups won</small></div>';
     h += vip() ? '<div class="card vip-card section"><span style="font-size:30px">👑</span><span style="flex:1"><b>You are VIP!</b><br><small>Thank you for supporting the game! 💖</small></span><button class="btn small" data-a="vip">Manage</button></div>'
       : '<button class="card vip-card section" data-a="vip"><span style="font-size:34px">👑</span><span style="flex:1;text-align:left"><b style="font-family:var(--display);font-size:18px">Go VIP</b><br><small>' + CS.VIP_PERKS.length + ' awesome perks</small></span><span class="chip gold">Unlock</span></button>';
@@ -510,7 +517,8 @@ var CS = globalThis.CS = globalThis.CS || {};
       '<div class="wh-games">' + CS.WAR_GAMES.map(function (x) { var best = (w.best || {})[x.id]; return '<span>' + x.emoji + ' ' + x.name + (best ? ' <b>🏅' + best + '</b>' : '') + '</span>'; }).join('') + '</div></div>';
 
     if (w.battle && !w.battle.done) h += '<button class="card war-banner section" data-a="warback"><span class="e">⚔️</span><span class="grow"><b>You\'re in the middle of a war!</b><small>Tap to go back to it.</small></span><span class="chip red">Go</span></button>';
-    h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1 · +1 every week</span></div><div class="war-list">';
+    h += '<div class="section"><div class="section-head"><h3>🎯 Attack a rival</h3><span class="label">Costs ⚡1 · +1 every week</span></div>' +
+      (w.energy ? '' : '<button class="btn block small" style="margin-bottom:10px" data-a="shop">⚡ Out of energy? Refill in the shop</button>') + '<div class="war-list">';
     (g.rivalCos || []).forEach(function (rv, i) {
       var fans = G.rivalFans(g, rv);
       h += '<div class="war-foe"' + stagger(i) + '><span class="logo" style="background:' + esc(rv.color) + '">' + esc(rv.logo) + '</span><div class="grow"><b>' + esc(rv.name) + '</b><small>📱 ' + U.num(fans) + ' fans · win to take ' + U.num(Math.round(fans * G.WAR_FAN_SHARE)) + '</small></div>' +
@@ -1179,19 +1187,47 @@ var CS = globalThis.CS = globalThis.CS || {};
       '<button class="btn green big block" data-a="close">Collect! 💰</button></div>';
   }
 
+  // VIP Pass: one payment, yours forever.
   function vipSheet() {
     var st = CS.Store.info(), on = vip();
-    var h = '<div class="vip-head"><div class="crown">👑</div><h2>Company Sim VIP</h2><p>' + (on ? 'You are VIP. Thank you! 💖' : 'Unlock everything and help us make more updates!') + '</p></div>' +
+    var h = '<div class="vip-head"><div class="crown">👑</div><h2>VIP Pass</h2><p>' + (on ? 'You are VIP. Thank you! 💖' : 'Pay once, keep it forever. It also helps us make more updates!') + '</p></div>' +
       '<div class="perks">' + CS.VIP_PERKS.map(function (p, i) { return '<div class="perk"' + stagger(i) + '><span class="e">' + p[0] + '</span><span><b>' + p[1] + '</b><small>' + p[2] + '</small></span>' + (on ? '<span>✅</span>' : '') + '</div>'; }).join('') + '</div>';
-    if (on) {
-      h += st.native ? '<p class="small muted">You can cancel any time in Google Play → Payments & subscriptions.</p>' : '<button class="btn block" data-a="vipoff">Turn off demo VIP</button>';
-    } else {
-      h += '<button class="btn yellow big block" data-a="buyvip" ' + (st.busy ? 'disabled' : '') + '>👑 ' + (st.native ? 'Get VIP · ' + esc(st.price) : 'Try VIP (free demo)') + '</button>' +
-        (st.native ? '<button class="btn block" style="margin-top:8px" data-a="restorevip">Restore my purchase</button><p class="small muted">Monthly subscription through Google Play. Renews every month until you cancel. Cancel any time in Google Play → Payments & subscriptions. Ask a parent before buying!</p>'
-          : '<p class="small muted">This web version can\'t take payments, so VIP is free here for testing. In the Play Store app, VIP is a real monthly subscription.</p>');
-      if (st.error) h += '<p class="small bad">' + esc(st.error) + '</p>';
-    }
+    if (!on) h += buyButton('vip', 'btn yellow big block', '👑 Get VIP forever · ');
+    h += shopFoot(st);
+    return h + '<div class="row2" style="margin-top:10px"><button class="btn" data-a="shop">💎 Shop</button><button class="btn" data-a="close">Close</button></div>';
+  }
+  function buyButton(key, cls, label) {
+    var st = CS.Store.info();
+    if (!st.native) return '<button class="' + cls + '" disabled>' + label + esc(CS.Store.price(key)) + '</button>';
+    return '<button class="' + cls + '" data-a="buy" data-v="' + key + '" ' + (st.busy ? 'disabled' : '') + '>' + label + esc(CS.Store.price(key)) + '</button>';
+  }
+  function shopFoot(st) {
+    return (st.error ? '<p class="small bad">' + esc(st.error) + '</p>' : '') +
+      (st.native ? '<button class="btn small block" style="margin-top:8px" data-a="restorevip">Restore my purchases</button>' +
+        '<p class="small muted shop-note">💳 These cost real money, paid through Google Play. Ask a parent before you buy!</p>'
+        : '<p class="small muted shop-note">📱 Buying works in the Company Simulator app from Google Play. This web version can\'t take payments.</p>');
+  }
+  // The real-money shop.
+  function shopSheet() {
+    var st = CS.Store.info(), g = S.g;
+    var h = '<div class="vip-head"><div class="crown">💎</div><h2>Shop</h2><p>Boost your company with real purchases.</p></div><div class="shop-list">';
+    CS.Store.PRODUCTS.forEach(function (p, i) {
+      var item = CS.SHOP[p.key], owned = p.kind === 'forever' && CS.Store.owns(p.key);
+      var extra = item.weeks && g && g.mode === 'main' ? ' <b>(' + U.short(U.nice(G.scale(g) * item.weeks)) + ' for this company)</b>' : '';
+      h += '<div class="shop-item ' + (p.key === 'vip' ? 'gold' : '') + '"' + stagger(i) + '><span class="e">' + item.emoji + '</span><span class="grow"><b>' + item.name + '</b><small>' + item.desc + extra + '</small></span>' +
+        (owned ? '<span class="chip good">✅ Owned</span>' : buyButton(p.key, 'btn small ' + (p.key === 'vip' ? 'yellow' : 'green'), '')) + '</div>';
+    });
+    h += '</div>' + shopFoot(st);
     return h + '<button class="btn block" style="margin-top:10px" data-a="close">Close</button>';
+  }
+  // Gives the current company anything bought in the shop.
+  function giveGrants() {
+    var g = S.g;
+    if (!g || g.mode !== 'main' || g.over || !CS.Store.hasGrants()) return;
+    CS.Store.takeGrants().forEach(function (key) {
+      var t = G.shopGrant(g, key);
+      if (t) { toast(t); SFX.play('level'); confetti(70); coinBurst(16); }
+    });
   }
 
   function shareSheet() {
@@ -1252,7 +1288,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     if (sh) {
       html = sh.type === 'week' ? weekSheet(sh.report) : sh.type === 'event' ? eventSheet() : sh.type === 'emp' || sh.type === 'cand' ? empSheet()
         : sh.type === 'stat' ? statSheet() : sh.type === 'gift' ? giftSheet() : sh.type === 'post' ? postSheet() : sh.type === 'share' ? shareSheet()
-          : sh.type === 'confirm' ? confirmSheet() : sh.type === 'vip' ? vipSheet() : sh.type === 'power' ? powerSheet() : sh.type === 'offline' ? offlineSheet()
+          : sh.type === 'confirm' ? confirmSheet() : sh.type === 'vip' ? vipSheet() : sh.type === 'shop' ? shopSheet() : sh.type === 'power' ? powerSheet() : sh.type === 'offline' ? offlineSheet()
             : sh.type === 'adtry' ? adTrySheet() : sh.type === 'war' ? warSheet() : null;
       if (html == null) S.sheet = null;
     }
@@ -1406,6 +1442,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   }
   function enterGame() {
     S.screen = 'game'; S.tab = 'home'; S.prev = null; window.scrollTo(0, 0);
+    giveGrants();
     var off = G.offlineEarnings(S.g);
     if (off) { S.sheet = { type: 'offline', o: off }; SFX.play('coin'); return; }
     if (S.g.war && S.g.war.battle) { S.sheet = { type: 'war', k: 'war', stage: S.g.war.battle.done ? 'end' : 'intro' }; return; }
@@ -1668,16 +1705,18 @@ var CS = globalThis.CS = globalThis.CS || {};
     },
     togglemusic: function () { A.setting('music'); },
     vip: function () { S.sheet = { type: 'vip' }; },
-    buyvip: function () {
-      CS.Store.buy().then(function (ok) {
-        if (ok) { SFX.play('level'); confetti(100); toast('👑 Welcome to VIP!'); if (S.g) G.fillMissions(S.g); }
+    shop: function () { S.sheet = { type: 'shop' }; },
+    buy: function (v) {
+      var wasVip = vip();
+      CS.Store.buy(v).then(function (ok) {
+        if (ok && v === 'vip' && !wasVip && vip()) { SFX.play('level'); confetti(100); toast('👑 Welcome to VIP!'); if (S.g) G.fillMissions(S.g); }
+        giveGrants();
         render();
       });
       render();
       return false;
     },
-    restorevip: function () { CS.Store.restore().then(function (ok) { toast(ok ? '👑 VIP restored!' : 'No VIP purchase found.'); render(); }); return false; },
-    vipoff: function () { CS.Store.demoOff(); toast('Demo VIP turned off.'); },
+    restorevip: function () { CS.Store.restore().then(function (ok) { toast(ok ? '👑 VIP restored!' : 'Purchases checked.'); giveGrants(); render(); }); return false; },
     confirm: function (v) { S.sheet = { type: 'confirm', what: v }; },
     doconfirm: function () {
       var g = S.g, w = S.sheet.what;
@@ -1740,6 +1779,7 @@ var CS = globalThis.CS = globalThis.CS || {};
       if (amt) { toast('🤑 Golden customer! +' + M(amt)); SFX.play('coin'); coinBurst(16); buzz([20, 20, 20]); render(); }
     });
     CS.Store.onChange(function () { render(); });
+    CS.Store.onGrant(function () { setTimeout(function () { giveGrants(); render(); }, 50); });
     try { CS.Store.init(); } catch (e) {}
     // In the app, the billing plugin is ready after 'deviceready'.
     document.addEventListener('deviceready', function () { try { CS.Store.init(); } catch (e) {} }, false);

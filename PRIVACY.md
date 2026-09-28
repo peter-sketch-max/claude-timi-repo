@@ -1,6 +1,6 @@
 # Privacy Policy for Company Simulator
 
-_Last updated: September 27, 2026_
+_Last updated: September 28, 2026_
 
 Company Simulator ("the game") is a business simulation game for Android and the web. This page explains what happens to your information when you play.
 
@@ -13,13 +13,14 @@ Company Simulator ("the game") is a business simulation game for Android and the
 - **Your game progress:** your companies, settings, achievements and daily streak. These are saved only on your own phone or browser. They are never sent to us or anyone else.
 - If you uninstall the game or clear its data, this progress is deleted.
 
-## Purchases (VIP subscription)
+## Purchases (VIP Pass and shop)
 
-- VIP is sold through **Google Play Billing**. Google handles the whole payment.
+- The VIP Pass and the shop items (Starter Pack, cash packs, war energy) are sold through **Google Play Billing**. Google handles the whole payment.
+- These are one-time purchases. There is no subscription and nothing renews by itself.
 - We never see your name, email address or payment details.
-- The game only receives a yes/no answer from Google Play about whether VIP is active.
+- The game only receives from Google Play which items were bought, and a purchase number so the same purchase is not counted twice. This stays on your phone.
 - Google's privacy policy covers payments: https://policies.google.com/privacy
-- You can cancel VIP any time in the Google Play Store under **Payments & subscriptions**.
+- Refunds are handled by Google Play: https://support.google.com/googleplay/answer/2479637
 
 ## Sharing
 
@@ -31,7 +32,7 @@ To battle a friend, the game makes a short "war code" that you can send with you
 
 ## Internet
 
-The Android app does not need the internet to play. The only time it connects is to Google Play, to check or buy VIP. The web version loads its fonts from Google Fonts (https://developers.google.com/fonts/faq/privacy).
+The Android app does not need the internet to play. The only time it connects is to Google Play, to check or make purchases. The web version loads its fonts from Google Fonts (https://developers.google.com/fonts/faq/privacy).
 
 ## Children
 

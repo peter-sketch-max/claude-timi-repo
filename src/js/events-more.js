@@ -58,7 +58,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('slip_lawsuit', 'customers', '⚖️', 'A customer slipped and is suing', 'They fell on a wet floor. Their lawyer wants {amt}.', [
     ['💸 Pay it', { cash: -1, say: 'Paid. The case is closed.' }],
-    ['⚖️ Fight it in court', { chance: { p: 0.5, win: { rep: 2, say: 'The camera showed they faked the fall. You won.' }, lose: { cash: -1.8, rep: -3, say: 'You lost, and paid the lawyers too.' } } }],
+    ['⚖️ Fight it in court', { cash: -0.2, then: 'slip_trial', say: 'Your lawyer filed the papers. The trial is set.' }],
     ['🤝 Offer half', { chance: { p: 0.6, win: { cash: -0.5, say: 'They took half. Done.' }, lose: { cash: -1.2, say: 'They said no. You ended up paying more.' } } }],
     ['🧯 Pay, and buy anti-slip mats', { cash: -1.2, rep: 3, equip: 0.01, say: 'Paid, and it won\'t happen again.' }]
   ], { w: 1.5, cd: 25, init: amt(1) });
@@ -67,7 +67,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🔒 Close and deep-clean', { closed: [1, 'Deep clean'], rep: 3, say: 'You found the bad batch. It won\'t happen again.' }],
     ['💸 Pay their doctor bills', { cash: -0.6, rep: 2, say: 'The families were grateful. No lawsuits.' }],
     ['🔍 Blame the supplier', { chance: { p: 0.5, win: { rep: 1, say: 'Tests proved it was the supplier.' }, lose: { rep: -8, say: 'It was your kitchen. Now you look like a liar.' } } }],
-    ['🙈 Stay open like nothing happened', { chance: { p: 0.4, win: { say: 'No one else got sick. Lucky.' }, lose: { rep: -12, closed: [2, 'Shut down'], say: 'More people got sick. The city shut you down.' } } }]
+    ['🙈 Stay open like nothing happened', { chance: { p: 0.4, win: { say: 'No one else got sick. Lucky.' }, lose: { rep: -8, then: 'health_shutdown', say: 'More people got sick.' } } }]
   ], { w: 1.2, cd: 30, cond: FOOD });
 
   E('refund_scam', 'customers', '🧾', 'Is this customer scamming you?', '{name} wants a refund for the fifth time this month. Always a new excuse.', [
@@ -204,7 +204,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1, cd: 30, rarity: 'rare', cond: FOOD });
 
   E('fight_in_shop', 'customers', '🥊', 'Two customers are fighting', 'A fight over the last table. Chairs are flying.', [
-    ['🙅 Get between them', { chance: { p: 0.6, win: { rep: 4, say: 'You calmed them down. Everyone was impressed.' }, lose: { rep: 1, cash: -0.1, say: 'You took an elbow. But they stopped.' } } }],
+    ['🙅 Get between them', { chance: { p: 0.6, win: { rep: 4, say: 'You calmed them down. Everyone was impressed.' }, lose: { rep: 1, then: 'fight_hurt', say: 'You took a punch meant for someone else.' } } }],
     ['👮 Call the police', { rep: 2, say: 'Both were taken away.' }],
     ['🚪 Throw them both out', { happy: 2, say: 'Done. Back to work.' }],
     ['📹 Let it play out', { cash: -0.3, rep: -4, say: 'They broke two tables. You did nothing.' }]
@@ -294,7 +294,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('health_inspection', 'business', '📋', 'Surprise inspection', 'An inspector is at the door. Right now. With a clipboard.', [
     ['🙂 Show them everything', { chance: { p: satP(0.8, 0.5), win: { rep: 3, say: 'Passed with a top grade.' }, lose: { cash: -0.4, say: 'A few problems. A fine.' } } }],
     ['⏳ Stall while the team cleans', { chance: { p: 0.5, win: { rep: 2, say: 'It worked. Passed.' }, lose: { cash: -0.5, rep: -2, say: 'They saw the panic. Fine.' } } }],
-    ['🍪 Offer free snacks', { chance: { p: 0.3, win: { say: 'They smiled. And passed you.' }, lose: { cash: -0.6, say: '"Is that a bribe?" Fined.' } } }],
+    ['🍪 Offer free snacks', { chance: { p: 0.3, win: { say: 'They smiled. And passed you.' }, lose: { then: 'bribe_accused', say: '"Is that a bribe?"' } } }],
     ['📋 Ask for a report to improve', { cash: -0.2, rep: 3, say: 'They were impressed you asked.' }]
   ], { w: 1.2, cd: 30, minWeek: 5 });
 
@@ -323,7 +323,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🧯 Grab the extinguisher', { chance: { p: 0.6, win: { rep: 3, say: 'You put it out. Minor damage.' }, lose: { cash: -1, closed: [1, 'Fire'], say: 'Too big. The firefighters took over.' } } }],
     ['🚪 Get everyone out first', { cash: -0.8, closed: [1, 'Fire'], rep: 4, say: 'Everyone got out safe. That\'s what matters.' }],
     ['📞 Call the fire department', { cash: -0.6, closed: [1, 'Fire'], say: 'They came fast.' }],
-    ['📦 Save the cash register', { chance: { p: 0.5, win: { say: 'You saved it. And the fire went out.' }, lose: { cash: -1.2, rep: -3, say: 'You went back in. Everyone saw.' } } }]
+    ['📦 Save the cash register', { chance: { p: 0.5, win: { say: 'You saved it. And the fire went out.' }, lose: { cash: -1, then: 'boss_burned', say: 'You went back in. Big mistake.' } } }]
   ], { w: 0.8, cd: 50, minWeek: 8 });
 
   E('break_in', 'business', '🚨', 'Someone broke in last night', 'The door is smashed. The register is empty.', [
@@ -334,7 +334,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1, cd: 35, cond: noCams, init: H.man });
 
   E('ransomware', 'business', '💻', 'Your computers got hacked', 'A message on screen: "Pay or lose everything." Your files are locked.', [
-    ['💸 Pay them', { cash: -1, chance: { p: 0.6, win: { say: 'They unlocked it. You feel sick.' }, lose: { cash: -0.5, say: 'They took the money and vanished.' } } }],
+    ['💸 Pay them', { cash: -1, chance: { p: 0.6, win: { say: 'They unlocked it. You feel sick.' }, lose: { then: 'hackers_again', say: 'The screen went black again.' } } }],
     ['🧑‍💻 Hire an expert', { cash: -0.6, say: 'Files restored. Hackers get nothing.' }],
     ['💾 Restore from backup', { chance: { p: 0.5, win: { say: 'The backup worked.' }, lose: { cash: -0.8, closed: [1, 'Hacked'], say: 'The backup was two years old.' } } }],
     ['🆕 Wipe it all, start fresh', { closed: [1, 'Hacked'], say: 'A painful week.' }]
@@ -379,7 +379,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['📢 Recall it all, publicly', { cash: -0.6, rep: 4, say: 'People trusted you more for it.' }],
     ['🤫 Recall it quietly', { cash: -0.4, chance: { p: 0.6, win: { say: 'Handled. Nobody noticed.' }, lose: { rep: -6, say: 'The news found out you hid it.' } } }],
     ['🎁 Replace it plus a gift', { cash: -0.8, rep: 5, happy: 3, say: 'Customers were impressed.' }],
-    ['🙈 Hope nobody notices', { chance: { p: 0.3, win: { say: 'Nobody noticed.' }, lose: { rep: -12, cash: -1, say: 'People got hurt. Lawsuits followed.' } } }]
+    ['🙈 Hope nobody notices', { chance: { p: 0.3, win: { say: 'Nobody noticed.' }, lose: { rep: -4, then: 'recall_victims', say: 'Then a parent called.' } } }]
   ], { w: 0.8, cd: 40 });
 
   E('counterfeits', 'business', '🎭', 'Someone is selling fakes of your brand', 'Cheap copies with your name are sold online.', [
@@ -432,8 +432,8 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['💳 Use your own savings', { cash: 0.5, say: 'You saved the business with your own money.' }],
     ['⏳ Pay suppliers late', { cash: 0.3, rep: -3, say: 'Suppliers are annoyed.' }],
     ['🎟️ Big weekend sale', { demand: [1.2, 1, 'Emergency sale'], supply: [0.05, 1, 'Deep discounts'], say: 'Crowds came. Cash flowed.' }],
-    ['🙏 Ask the team to wait for pay', { team: -12, say: 'They agreed. But they\'re worried.' }]
-  ], { w: 1.2, cd: 30, cond: function (g) { return g.cash < G.cost(g, 1); } });
+    ['🙏 Ask the team to wait for pay', { team: -6, then: 'payday_missed', say: 'They agreed. Then payday came.' }]
+  ], { w: 1.2, cd: 30, who: { a: 'any' }, cond: function (g) { return g.cash < G.cost(g, 1); } });
 
   E('accountant_error', 'money', '🧮', 'Your accounts don\'t add up', 'There\'s a big hole in the books. Nobody knows where the money went.', [
     ['🔍 Hire an auditor', { cash: -0.3, chance: { p: 0.6, win: { cash: 0.6, say: 'Found it. A billing mistake. Money back.' }, lose: { say: 'Nothing found. Just gone.' } } }],
@@ -450,7 +450,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 0.8, cd: 50, minWeek: 12 });
 
   E('stock_tip', 'money', '📈', 'A friend has a "sure" stock tip', '"Put money in now. It will triple. Trust me."', [
-    ['💰 Invest big', { cash: -1, chance: { p: 0.3, win: { cash: 3, say: 'It tripled. Your friend was right.' }, lose: { say: 'It crashed. The money is gone.' } } }],
+    ['💰 Invest big', { cash: -1, chance: { p: 0.3, win: { cash: 3, say: 'It tripled. Your friend was right.' }, lose: { then: 'friend_ruined', say: 'It crashed. The money is gone.' } } }],
     ['💵 Invest a little', { cash: -0.3, chance: { p: 0.3, win: { cash: 0.9, say: 'Nice profit.' }, lose: { say: 'Gone.' } } }],
     ['🔍 Research it first', { chance: { p: 0.5, win: { say: 'It was a scam. You dodged it.' }, lose: { say: 'By the time you looked, it had already jumped.' } } }],
     ['🙅 Stick to your business', { say: 'You kept your money.' }]
@@ -480,7 +480,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('bank_mistake', 'money', '🏦', 'The bank put extra money in your account', 'A big deposit you didn\'t earn. The bank hasn\'t noticed.', [
     ['📞 Report it', { rep: 3, say: 'The bank thanked you.' }],
     ['🤫 Keep quiet', { chance: { p: 0.3, win: { cash: 1.5, say: 'They never noticed.' }, lose: { cash: -0.3, rep: -3, say: 'They took it back, plus a fee.' } } }],
-    ['💰 Move it somewhere else', { chance: { p: 0.1, win: { cash: 1.5, say: 'Nobody came looking.' }, lose: { cash: -1, rep: -8, say: 'That was a crime. Big fine.' } } }],
+    ['💰 Move it somewhere else', { chance: { p: 0.1, win: { cash: 1.5, say: 'Nobody came looking.' }, lose: { then: 'bank_fraud', say: 'Someone knocked on the door.' } } }],
     ['⏳ Wait and see', { say: 'They took it back a week later.' }]
   ], { w: 0.8, cd: 50 });
 
@@ -584,7 +584,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('accused_theft', 'customers', '👛', 'A customer says {a} stole her wallet', 'She\'s shouting. {a} swears it isn\'t true.', [
     ['📹 Check the cameras', { chance: { p: 0.8, win: { a: 12, rep: 2, say: 'She left it in her car. {a} was innocent.' }, lose: { fire: 'a', say: 'It was {a}. Fired.' } } }],
-    ['🛡️ Believe {a}', { a: 12, loyal: { a: 12 }, chance: { p: 0.8, win: { say: 'The wallet turned up. {a} was right.' }, lose: { rep: -5, say: 'It was {a}. You looked foolish.' } } }],
+    ['🛡️ Believe {a}', { a: 12, loyal: { a: 12 }, chance: { p: 0.8, win: { say: 'The wallet turned up. {a} was right.' }, lose: { rep: -3, then: 'accused_truth', say: 'Then you checked the camera.' } } }],
     ['💸 Pay her to calm down', { cash: -0.1, a: -10, say: '{a} feels you didn\'t trust them.' }],
     ['👮 Let the police decide', { a: -6, say: 'The police found the wallet in her bag.' }]
   ], { w: 1.2, cd: 30, who: { a: 'front' } });

@@ -17,7 +17,7 @@ Every time code is pushed, GitHub builds a test version of the app.
 5. Send the file to your Android phone (Google Drive, email, or USB) and tap it.
 6. Your phone will ask to allow "install unknown apps". Say yes for this one install.
 
-In this test version the VIP button won't work. Payments only work once the app is installed from Google Play (see step 8).
+In this test version the shop (VIP Pass, cash packs) won't work. Payments only work once the app is installed from Google Play (see steps 8 and 9).
 
 ---
 
@@ -93,7 +93,7 @@ To get a new build without changing any code: **Actions → Android build → Ru
    - App name: `Company Simulator`
    - Default language: English
    - App or game: **Game**
-   - Free or paid: **Free** (VIP is a subscription inside the free app)
+   - Free or paid: **Free** (the VIP Pass and packs are in-app purchases inside the free app)
 3. Fill in the **store listing**. All the text is ready in [`store/listing.md`](store/listing.md), and the pictures are in the `store/` folder:
 
 | What Play asks for | File |
@@ -132,19 +132,34 @@ These are in Play Console under **Policy → App content**.
 
 ---
 
-## 8. Set up the VIP subscription
+## 8. Set up the shop (real money)
+
+The game has a shop with 6 things people can buy with real money. Google handles the payment and sends the money to you (minus Google's fee: **15%** on your first $1M a year).
+
+> ⚠️ You must be 18 to receive money from Google. If you're younger, a parent has to own the Play Console account and the payments profile.
 
 1. First, set up a **payments profile**: Play Console → **Settings → Payments profile**. This is where Google pays you.
 2. Upload the `.aab` once to **Testing → Internal testing** (step 9). Google only lets you create products after the app has been uploaded once.
-3. Go to **Monetize → Products → Subscriptions → Create subscription**:
-   - Product ID: **`vip_monthly`** (it must match exactly, since the game looks for this name)
-   - Name: `VIP`
-   - Benefits: *VIP companies · Double daily gifts · Faster Boss Powers · 4 missions · 2x offline earnings · Unlimited Friend Wars*
-4. Add a **base plan**:
-   - Auto-renewing, billing period **1 month**
-   - Set a price, for example $2.99
-   - Click **Activate**
+3. Go to **Monetize → Products → In-app products** (on newer consoles: **One-time products**) and create these. The **Product ID must match exactly**, because the game looks for these names:
+
+| Product ID | Name | Suggested price | Description |
+|---|---|---|---|
+| `vip_pass` | VIP Pass | **$9.99** | VIP forever: 7 VIP companies, double gifts, faster powers and more. Pay once. |
+| `starter_pack` | Starter Pack | $2.99 | A star worker, 3 war energy and 500 fans. Once per player. |
+| `cash_small` | Pile of Cash | $0.99 | 5 weeks of your company's profit, right now. |
+| `cash_medium` | Briefcase of Cash | $4.99 | 30 weeks of your company's profit, right now. |
+| `cash_large` | Bank Vault | $9.99 | 80 weeks of your company's profit, right now. |
+| `war_energy` | War Energy | $0.99 | Fills your war energy and adds 2 extra. |
+
+4. Set each one to **Active**. Google turns your US price into prices for every other country automatically.
 5. To test paying without being charged, go to **Settings → License testing** and add your Gmail. Test purchases are then free.
+
+Good to know:
+- The VIP Pass and the Starter Pack are bought **once and kept forever**. If someone reinstalls or gets a new phone, the **Restore my purchases** button in the shop gives them back.
+- Cash packs and war energy can be bought again and again. They go to the company you are playing (or the next one you open).
+- You can change prices any time in Play Console. The game shows whatever price Google says.
+- Players who bought the old monthly VIP (`vip_monthly`) in an earlier version still get VIP. You don't need to create it for a new app.
+- The shop reminds players to ask a parent before buying, which Google likes to see in games that kids play.
 
 What VIP unlocks in the game:
 - 7 VIP companies: Space Company, Theme Park, Zoo, Esports Team, YouTube Channel, Music Label, Social Media App
@@ -188,7 +203,7 @@ What VIP unlocks in the game:
 - [ ] Store listing filled in and pictures uploaded
 - [ ] Privacy policy link (with your email in it)
 - [ ] Content rating, target audience, data safety done
-- [ ] Payments profile + `vip_monthly` subscription active
-- [ ] Internal test works, VIP purchase tested
+- [ ] Payments profile + the 6 shop products active (`vip_pass` and the rest)
+- [ ] Internal test works, VIP Pass and a cash pack purchase tested
 - [ ] 12 testers × 14 days of closed testing
 - [ ] Applied for production 🚀

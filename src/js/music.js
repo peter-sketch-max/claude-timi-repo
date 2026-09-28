@@ -14,7 +14,7 @@ CS.Music = (function () {
   // bass/comp: [step, semitones above the root, length] and [step, length, loudness]. Drums: one letter per 16th note.
   var SONGS = {
     morning: {
-      mood: 'menu', bpm: 84, swing: 0, kit: 'soft', lead: 'bell', pad: 1, arp: true, bassType: 'round',
+      mood: 'menu', bpm: 84, swing: 0, kit: 'soft', lead: 'piano', keys: 'piano', pad: 1, arp: true, arpSound: 'bell', bassType: 'round',
       chords: ['Cmaj7', 'Em7', 'Fmaj7', 'G6', 'Am7', 'Em7', 'Fmaj7', 'Gsus4'],
       bass: [[0, 0, 8], [8, 7, 6], [14, 12, 2]],
       comp: [[0, 14, 0.7]],
@@ -24,7 +24,7 @@ CS.Music = (function () {
         '', '', '', '', '0 E5 4|4 G5 4|8 C6 8', '0 B5 8|8 G5 8', '0 A5 4|4 F5 4|8 C5 8', '0 D5 8|8 G4 8']
     },
     sunny: {
-      mood: 'game', bpm: 100, swing: 0.14, kit: 'lofi', lead: 'flute', pad: 0.8, bassType: 'round',
+      mood: 'game', bpm: 100, swing: 0.14, kit: 'lofi', lead: 'flute', keys: 'piano', pad: 0.8, arp: true, arpSound: 'pluck', bassType: 'round',
       chords: ['Fmaj7', 'Am7', 'Dm7', 'C', 'Bbmaj7', 'Am7', 'Gm7', 'C9'],
       bass: [[0, 0, 5], [6, 0, 2], [8, 7, 3], [12, 12, 2], [14, 7, 2]],
       comp: [[0, 7, 1], [10, 5, 0.6]],
@@ -35,7 +35,7 @@ CS.Music = (function () {
         '0 F5 2|2 D5 2|4 F5 2|6 A5 4|10 G5 2|12 F5 4', '0 E5 2|2 C5 2|4 E5 2|6 G5 6|12 E5 4', '0 D5 2|2 F5 2|4 Bb5 4|8 A5 2|10 G5 2|12 F5 2|14 E5 2', '0 G5 4|4 E5 4|8 C5 8']
     },
     bigdeal: {
-      mood: 'game', bpm: 110, swing: 0.06, kit: 'pop', lead: 'pluck', pad: 0.6, bassType: 'funk',
+      mood: 'game', bpm: 110, swing: 0.06, kit: 'pop', lead: 'guitar', keys: 'guitar', pad: 0.6, bassType: 'funk',
       chords: ['Dmaj7', 'Bm7', 'Em7', 'A7', 'Dmaj7', 'F#m7', 'Gmaj7', 'A7'],
       bass: [[0, 0, 2], [3, 0, 1], [6, 12, 1], [8, 0, 2], [11, 7, 1], [14, 12, 1], [15, 7, 1]],
       comp: [[2, 2, 0.8], [6, 2, 0.6], [10, 3, 0.8]],
@@ -46,7 +46,7 @@ CS.Music = (function () {
         '0 D6 6|8 C#6 2|10 A5 2|12 F#5 4', '0 E5 6|8 C#5 2|10 E5 2|12 A5 4', '0 B5 4|4 A5 2|6 G5 2|8 F#5 2|10 G5 2|12 A5 4', '0 A5 4|4 G5 4|8 E5 4|12 C#5 4']
     },
     city: {
-      mood: 'game', bpm: 92, swing: 0.16, kit: 'lofi', lead: 'bell', pad: 0.9, arp: true, bassType: 'round',
+      mood: 'game', bpm: 92, swing: 0.16, kit: 'lofi', lead: 'bell', keys: 'piano', pad: 0.9, arp: true, arpSound: 'pluck', bassType: 'round',
       chords: ['Ebmaj7', 'Dm7', 'Cm7', 'F7', 'Bbmaj7', 'Gm7', 'Cm7', 'F7'],
       bass: [[0, 0, 6], [7, 0, 1], [8, 7, 4], [14, 10, 2]],
       comp: [[0, 6, 0.9], [7, 3, 0.5], [12, 4, 0.6]],
@@ -95,6 +95,7 @@ CS.Music = (function () {
       return bar ? bar.split('|').map(function (t) { var p = t.trim().split(/\s+/); return [+p[0], midi(p[1]), +p[2]]; }) : [];
     });
     s.ready = true;
+    if (ctx) warm(s);
     return s;
   }
 
@@ -130,9 +131,10 @@ CS.Music = (function () {
   function use(o, c) { ctx = c; out = o.out; comp = o.comp; bus = o.bus; mix = o.mix; duck = o.duck; verbIn = o.verbIn; noise = o.noise; }
 
   // An output with an echo send: sound -> gain -> (target) and a bit to the reverb.
-  function voiceOut(t, target, send) {
+  function voiceOut(t, target, send, pan) {
     var g = ctx.createGain();
-    g.connect(target || mix);
+    if (pan && ctx.createStereoPanner) { var pn = ctx.createStereoPanner(); pn.pan.value = pan; g.connect(pn); pn.connect(target || mix); }
+    else g.connect(target || mix);
     if (send) { var s = ctx.createGain(); s.gain.value = send; g.connect(s); s.connect(verbIn); }
     return g;
   }
@@ -151,9 +153,79 @@ CS.Music = (function () {
     return t + Math.max(a, dur) + rel * 5;
   }
 
+  // Sampled instruments, made once per note from math and kept: a piano built from its overtones,
+  // and a plucked string (the Karplus-Strong method), which sound much more real than plain oscillators.
+  var bufs = {};
+  function pianoBuf(m) {
+    var sr = ctx.sampleRate, key = sr + 'p' + m;
+    if (bufs[key]) return bufs[key];
+    var f = hz(m), len = Math.floor(sr * 2.4), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    var B = 0.0001 * Math.pow(2, (m - 60) / 12), base = Math.max(0.5, 2 - (m - 40) / 45);
+    for (var n = 1; n <= 12; n++) {
+      var fn = n * f * Math.sqrt(1 + B * n * n);
+      if (fn > sr * 0.42) break;
+      var amp = Math.pow(n, -1.15) * (0.75 + 0.25 * Math.cos(n * 2.1)), tau = base / (1 + (n - 1) * 0.5);
+      var w = 2 * Math.PI * fn / sr, ph = Math.random() * 6.283, k = Math.exp(-1 / (tau * sr)), a = amp;
+      // two strings per note, a hair out of tune, for a warm chorus
+      var w2 = w * (n === 1 ? 1.0009 : 1.0004), a2 = amp * 0.45;
+      // Sine waves by rotation (much faster than calling Math.sin for every sample).
+      var c1 = Math.cos(w), s1 = Math.sin(w), x1 = Math.cos(ph), y1 = Math.sin(ph), c2 = Math.cos(w2), s2 = Math.sin(w2), x2 = 1, y2 = 0, t1;
+      for (var i = 0; i < len; i++) {
+        d[i] += a * y1 + a2 * y2; a *= k; a2 *= k;
+        t1 = x1 * c1 - y1 * s1; y1 = x1 * s1 + y1 * c1; x1 = t1;
+        t1 = x2 * c2 - y2 * s2; y2 = x2 * s2 + y2 * c2; x2 = t1;
+      }
+    }
+    var att = Math.floor(sr * 0.003), peak = 0;
+    for (i = 0; i < len; i++) { if (i < att) d[i] *= i / att; var v = Math.abs(d[i]); if (v > peak) peak = v; }
+    for (i = 0; i < len; i++) d[i] *= 0.8 / peak;
+    return (bufs[key] = buf);
+  }
+  function pluckBuf(m, soft) {
+    var sr = ctx.sampleRate, key = sr + 'k' + m + (soft ? 's' : '');
+    if (bufs[key]) return bufs[key];
+    var f = hz(m), N = Math.max(2, Math.round(sr / f)), len = Math.floor(sr * 1.6), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    var ring = new Float32Array(N), prev = 0, i, idx = 0, rho = 0.9985, peak = 0;
+    for (i = 0; i < N; i++) { prev += ((Math.random() * 2 - 1) - prev) * (soft ? 0.35 : 0.7); ring[i] = prev; }
+    for (i = 0; i < len; i++) {
+      var nx = idx + 1 === N ? 0 : idx + 1, v = ring[idx];
+      d[i] = v; ring[idx] = rho * 0.5 * (v + ring[nx]); idx = nx;
+      if (Math.abs(v) > peak) peak = Math.abs(v);
+    }
+    for (i = 0; i < len; i++) d[i] *= 0.8 / (peak || 1);
+    return (bufs[key] = buf);
+  }
+  // Plays a sampled note, with a gentle release when it ends.
+  function sample(buf, t, vol, dur, target, send, pan, rate) {
+    var src = ctx.createBufferSource(), g = voiceOut(t, target, send, pan);
+    src.buffer = buf; if (rate) src.playbackRate.value = rate;
+    g.gain.setValueAtTime(vol, t);
+    if (dur) g.gain.setTargetAtTime(0.0001, t + dur, 0.12);
+    src.connect(g); src.start(t); src.stop(t + Math.min(buf.duration, (dur || buf.duration) + 0.8));
+  }
+  // Makes the notes a song needs in the background, a few at a time, so the first bars don't stutter.
+  function warm(s) {
+    var todo = [];
+    s.voiced.forEach(function (c) {
+      c.notes.forEach(function (n) {
+        if (s.keys === 'piano') todo.push(['p', n]);
+        if (s.keys === 'guitar') todo.push(['s', n]);
+        if (s.arp && s.arpSound === 'pluck') todo.push(['s', n + 12], ['s', n + 24]);
+      });
+    });
+    s.bars.forEach(function (b) { b.forEach(function (n) { if (s.lead === 'piano') todo.push(['p', n[1]]); if (s.lead === 'guitar') todo.push(['k', n[1]]); }); });
+    (function next() {
+      if (!ctx) return;
+      for (var i = 0; i < 3 && todo.length; i++) { var x = todo.shift(); if (x[0] === 'p') pianoBuf(x[1]); else pluckBuf(x[1], x[0] === 's'); }
+      if (todo.length) setTimeout(next, 30);
+    })();
+  }
+
   // Melody instruments.
   function lead(kind, m, t, dur, vel) {
     var f = hz(m), g, end, lp;
+    if (kind === 'piano') return sample(pianoBuf(m), t, 0.16 * vel, dur + 0.4, mix, 0.35, 0.05);
+    if (kind === 'guitar') return sample(pluckBuf(m), t, 0.26 * vel, dur + 0.2, mix, 0.3, 0.2);
     if (kind === 'flute') {
       g = voiceOut(t, mix, 0.35); lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; lp.connect(g);
       end = adsr(g, t, 0.05, 0.1 * vel, 0.3, 0.75, dur, 0.09);
@@ -184,7 +256,15 @@ CS.Music = (function () {
     }
   }
   // Electric piano chords (FM), a warm pad, and short brass-like stabs for wars.
-  function keys(notes, t, dur, vel) {
+  function keys(notes, t, dur, vel, kind) {
+    if (kind !== 'ep') {
+      notes.forEach(function (m, i) { // a tiny strum, like a real hand
+        var tt = t + i * (kind === 'guitar' ? 0.012 : 0.006);
+        if (kind === 'guitar') sample(pluckBuf(m, true), tt, 0.11 * vel, dur, duck, 0.25, 0.3);
+        else sample(pianoBuf(m), tt, 0.07 * vel, dur + 0.25, duck, 0.3, -0.12);
+      });
+      return;
+    }
     notes.forEach(function (m) {
       var f = hz(m), g = voiceOut(t, duck, 0.3);
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.045 * vel, t + 0.006); g.gain.setTargetAtTime(0.016 * vel, t + 0.01, 0.35);
@@ -199,7 +279,9 @@ CS.Music = (function () {
       var g = voiceOut(t, duck, 0.6), lp = ctx.createBiquadFilter();
       lp.type = 'lowpass'; lp.frequency.value = 850; lp.connect(g);
       var end = adsr(g, t, 0.5, 0.014 * amt, 1, 1, dur, 0.5);
-      osc('sawtooth', hz(m), t, end, lp, -9); osc('sawtooth', hz(m), t, end, lp, 9);
+      var l = ctx.createStereoPanner ? ctx.createStereoPanner() : null, r = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      if (l) { l.pan.value = -0.6; r.pan.value = 0.6; l.connect(lp); r.connect(lp); osc('sawtooth', hz(m), t, end, l, -9); osc('sawtooth', hz(m), t, end, r, 9); }
+      else { osc('sawtooth', hz(m), t, end, lp, -9); osc('sawtooth', hz(m), t, end, lp, 9); }
     });
   }
   function stab(notes, t, dur, vel) {
@@ -216,12 +298,13 @@ CS.Music = (function () {
     if (type === 'funk') { lp.Q.value = 6; lp.frequency.setValueAtTime(1400, t); lp.frequency.setTargetAtTime(380, t, 0.06); }
     else if (type === 'drive') { lp.Q.value = 3; lp.frequency.setValueAtTime(1100, t); lp.frequency.setTargetAtTime(500, t, 0.05); }
     else { lp.frequency.value = 700; }
-    end = adsr(g, t, 0.006, 0.11, 0.2, 0.75, dur * 0.95, 0.05);
+    end = adsr(g, t, 0.006, type === 'funk' ? 0.09 : 0.11, 0.2, 0.75, dur * 0.95, 0.05);
     var sub = ctx.createGain(); sub.gain.value = 0.35; sub.connect(g);
     osc('sawtooth', f, t, end, lp); osc('sine', f, t, end, sub);
   }
-  function arpNote(m, t) {
-    var g = voiceOut(t, duck, 0.5);
+  function arpNote(m, t, kind) {
+    if (kind === 'pluck') return sample(pluckBuf(m, true), t, 0.07, 0, duck, 0.4, -0.35);
+    var g = voiceOut(t, duck, 0.5, 0.3);
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.028, t + 0.004); g.gain.setTargetAtTime(0.0001, t + 0.01, 0.22);
     var end = t + 1.2, car = osc('sine', hz(m), t, end, g), mod = ctx.createOscillator(), mg = ctx.createGain();
     mod.frequency.value = hz(m) * 3; mg.gain.setValueAtTime(hz(m) * 0.8, t); mg.gain.setTargetAtTime(0, t, 0.15);
@@ -229,8 +312,8 @@ CS.Music = (function () {
   }
 
   // Drums.
-  function noiseHit(t, vol, type, freq, q, decay, send) {
-    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = voiceOut(t, mix, send || 0);
+  function noiseHit(t, vol, type, freq, q, decay, send, pan) {
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = voiceOut(t, mix, send || 0, pan);
     s.buffer = noise; f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
     g.gain.setValueAtTime(vol, t); g.gain.setTargetAtTime(0.0001, t + 0.003, decay);
     s.connect(f); f.connect(g); s.start(t, Math.random() * 0.5); s.stop(t + decay * 6 + 0.05);
@@ -271,32 +354,36 @@ CS.Music = (function () {
   function playStep(s, stp, t) {
     var barLen = 16, bar = Math.floor(stp / barLen), st = stp % barLen, nb = s.bars.length, bi = bar % nb, ch = s.voiced[bar % s.voiced.length];
     var loop = Math.floor(bar / nb), intro = bar < 2, sl = stepLen(s), kit = s.kit;
+    var human = function () { return (Math.random() - 0.5) * 0.014; }, vel = function () { return 0.85 + Math.random() * 0.2; };
+    var partB = bi >= nb / 2, drop = s.mood === 'game' && loop % 2 === 1 && (bi === nb / 2 || bi === nb / 2 + 1);
     // chords
-    if (st === 0 && s.pad) pad(ch.notes, t, sl * 16, s.pad);
-    s.comp.forEach(function (c) { if (c[0] === st) (s.stabs ? stab : keys)(ch.notes, t, sl * c[1], c[2]); });
+    if (st === 0 && s.pad) pad(ch.notes, t, sl * 16, s.pad * (partB ? 1 : 0.8));
+    s.comp.forEach(function (c) { if (c[0] === st) { if (s.stabs) stab(ch.notes, t, sl * c[1], c[2]); else keys(ch.notes, t + human(), sl * c[1], c[2] * vel(), s.keys); } });
     if (s.arp && !intro && st % 2 === 0) {
       var up = ch.notes.concat(ch.notes.map(function (n) { return n + 12; })), order = [0, 1, 2, 3, 4, 3, 2, 1];
-      arpNote(up[order[(st / 2) % 8] % up.length] + 12, t);
+      arpNote(up[order[(st / 2) % 8] % up.length] + 12, t + human(), s.arpSound);
     }
     // bass
     if (!intro || s.mood === 'war') s.bass.forEach(function (b) { if (b[0] === st) bassNote(s.bassType, ch.bass + b[1], t, sl * b[2]); });
     // melody (a second loop sometimes plays an octave up for variety)
-    s.bars[bi].forEach(function (n) { if (n[0] === st) lead(s.lead, n[1] + (loop % 2 === 1 && s.lead === 'bell' ? 12 : 0), t, sl * n[2], 1); });
-    // drums
+    s.bars[bi].forEach(function (n) { if (n[0] === st) lead(s.lead, n[1] + (loop % 2 === 1 && s.lead === 'bell' ? 12 : 0), t + human(), sl * n[2], vel()); });
+    // drums (a short breakdown now and then, so the song breathes)
     if (intro && s.mood !== 'war') return;
+    if (drop) { if (d0(s, st)) noiseHit(t, 0.04, 'highpass', 7500, 0, 0.018, 0, 0.25); return; }
     var d = s.drums, fill = (bi === 7 || bi === nb - 1) && st >= 12;
-    if (d.k && d.k[st] === 'x') kick(t, kit === 'soft' ? 0.35 : kit === 'lofi' ? 0.7 : 0.85, kit === 'soft');
+    if (d.k && d.k[st] === 'x') kick(t, kit === 'soft' ? 0.35 : kit === 'lofi' ? 0.7 : kit === 'pop' ? 0.7 : 0.85, kit === 'soft');
     if (!fill) {
       if (d.s && d.s[st] === 'x') snare(t, kit === 'lofi' ? 0.22 : 0.3, kit);
       if (d.c && d.c[st] === 'x') clap(t, 0.25);
     } else if (kit === 'war') tom(t, [57, 53, 50, 45][st - 12]);
     else if (kit !== 'soft') snare(t, 0.1 + (st - 12) * 0.05, kit);
-    if (d.h && d.h[st] === 'x') noiseHit(t, (st % 4 === 2 ? 0.075 : 0.05) * (kit === 'war' ? 1.3 : 1), 'highpass', 7500, 0, 0.018);
-    if (d.o && d.o[st] === 'x') noiseHit(t, 0.035, 'highpass', 7000, 0, 0.09);
-    if (d.sh && d.sh[st] === 'x') noiseHit(t, 0.03, 'bandpass', 6000, 1, 0.03);
+    if (d.h && d.h[st] === 'x') noiseHit(t, (st % 4 === 2 ? 0.075 : 0.05) * (kit === 'war' ? 1.3 : 1) * vel(), 'highpass', 7500, 0, 0.018, 0, 0.25);
+    if (d.o && d.o[st] === 'x' && partB) noiseHit(t, 0.035, 'highpass', 7000, 0, 0.09, 0, 0.25);
+    if (d.sh && d.sh[st] === 'x' && (partB || kit === 'soft')) noiseHit(t, 0.03 * vel(), 'bandpass', 6000, 1, 0.03, 0, -0.3);
     if (d.r && d.r[st] === 'x') rim(t);
     if (kit === 'war' && st === 0 && bi % 8 === 0) noiseHit(t, 0.07, 'highpass', 5000, 0, 0.45, 0.3);
   }
+  function d0(s, st) { return s.drums.h ? s.drums.h[st] === 'x' : st % 2 === 0; }
   function pick(m) {
     var list = MOODS[m] || MOODS.game;
     if (list.length === 1) return list[0];
@@ -334,32 +421,78 @@ CS.Music = (function () {
     use(graph(c, c.destination), c);
     return true;
   }
-  function start() {
-    if (playing || !setup()) return;
+  function synthStart() {
+    if (!setup()) return;
     if (ctx.state === 'suspended') ctx.resume();
-    playing = true;
+    if (timer) { if (song && song.mood !== mood) fadeTo(pick(mood)); return; }
     begin(songId && SONGS[songId].mood === mood ? songId : pick(mood), ctx.currentTime + 0.08);
     timer = setInterval(schedule, 25);
   }
-  function stop() {
-    playing = false;
+  function synthStop() {
     if (timer) clearInterval(timer);
     timer = null; switchAt = 0;
     if (bus) { bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.08); }
+  }
+
+  // ---------- your own songs ----------
+  // Songs put in src/music are copied into the app by the build, which lists them in CS.MUSIC_FILES
+  // (see src/music/README.txt). A mood that has files plays them one after another; the others use the built-in songs.
+  var FILE_VOL = 0.5, track = null, trackNo = {};
+  function files(m) { var f = CS.MUSIC_FILES; return (f && f[m] && f[m].length && typeof Audio !== 'undefined') ? f[m] : null; }
+  function fade(a, to, secs, done) {
+    clearInterval(a.fader);
+    var from = a.volume, n = Math.max(1, Math.round(secs * 20)), i = 0;
+    a.fader = setInterval(function () {
+      i++; a.volume = Math.max(0, Math.min(1, from + (to - from) * i / n));
+      if (i >= n) { clearInterval(a.fader); if (done) done(); }
+    }, 50);
+  }
+  function fileStop() {
+    if (!track) return;
+    var a = track; track = null;
+    fade(a, 0, 0.7, function () { a.pause(); a.removeAttribute('src'); });
+  }
+  function filePlay(m) {
+    var list = files(m), i = (trackNo[m] || 0) % list.length, name = list[i];
+    trackNo[m] = i + 1;
+    fileStop();
+    var a = new Audio('music/' + name);
+    a.volume = 0; a.loop = list.length === 1; a.mood = m;
+    a.onended = function () { if (track === a && playing) filePlay(m); };
+    // A file that won't play is dropped, and the music carries on without it.
+    a.onerror = function () { if (track !== a) return; track = null; list.splice(list.indexOf(name), 1); if (playing) go(); };
+    track = a;
+    var p = a.play();
+    if (p && p.catch) p.catch(function () {});
+    fade(a, FILE_VOL, 1.2);
+  }
+  function go() {
+    if (files(mood)) { synthStop(); if (!track || track.mood !== mood) filePlay(mood); }
+    else { fileStop(); synthStart(); }
+  }
+
+  function start() {
+    if (playing) return;
+    playing = true;
+    go();
+  }
+  function stop() {
+    playing = false;
+    synthStop(); fileStop();
   }
   // 'menu', 'game' or 'war'. The music fades into the right song.
   function setMood(m) {
     if (!MOODS[m] || m === mood) return;
     mood = m;
-    if (playing && song && song.mood !== m) fadeTo(pick(m));
+    if (playing) go();
   }
 
   // Pause when the app goes to the background.
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function () {
-      if (!ctx) return;
-      if (document.hidden) { stop(); ctx.suspend(); }
-      else if (CS.S && CS.S.settings && CS.S.settings.music && CS.S.started) { ctx.resume(); start(); }
+      if (!ctx && !track && !playing) return;
+      if (document.hidden) { var a = track; stop(); if (a) { clearInterval(a.fader); a.pause(); } if (ctx) ctx.suspend(); }
+      else if (CS.S && CS.S.settings && CS.S.settings.music && CS.S.started) { if (ctx) ctx.resume(); start(); }
     });
   }
 
@@ -373,5 +506,5 @@ CS.Music = (function () {
     return c.startRendering();
   }
 
-  return { start: start, stop: stop, setMood: setMood, playing: function () { return playing; }, song: function () { return songId; }, songs: SONGS, _render: render };
+  return { start: start, stop: stop, setMood: setMood, playing: function () { return playing; }, song: function () { return track ? 'file:' + track.mood : songId; }, songs: SONGS, _render: render };
 })();

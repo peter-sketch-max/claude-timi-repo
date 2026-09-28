@@ -24,11 +24,17 @@ Company Simulator is a fun business life game. Pick a company, hire a team with 
 🏢 56 COMPANIES TO RUN
 Lemonade stand, candy shop, pizza place, banana farm, chocolate factory, football academy, sneaker brand, oil company, football club, gold mine and many more. Every company has its own workers, customers and problems.
 
-🎲 800 EVENTS, 4 ANSWERS EACH
+🎲 840+ EVENTS, 4 ANSWERS EACH
 A customer screams at you. Someone slaps you. Your manager is stealing. A rival opens right next door. A billionaire wants to buy your company. Every business has its own events, so a football club and a banana farm feel totally different. Every event is short and gives you 4 ways to react.
 
 🔗 STORIES THAT CONTINUE
-Catch a scammer, and the story keeps going: call the police, or forgive him... and see if he comes back with the same trick. Shoplifters, spies, a greedy inspector, a pushy investor who tries to take your company: your choices come back to you.
+Catch a scammer, and the story keeps going right away: call the police, or forgive him... and see if he comes back with the same trick. A fight at work, a worker who keeps being late, a kitchen fire, a lawsuit, a spy: one choice opens the next event, and your choices come back to you.
+
+💍 LOVE AND FAMILY
+Meet someone, go on a first date, propose, plan the wedding and get married. Your partner can help at work, or feel left out when you work too much. Start a family and watch your kids grow up.
+
+💔 REAL-LIFE MOMENTS
+Not everything is a joke. A worker is quietly struggling, a family loses their home in a fire, a kid gets bullied, you have to decide who to let go when money runs out. How you treat people matters.
 
 🥊 RIVALS WHO FIGHT BACK
 Rival companies slash prices, steal your workers, post fake reviews and challenge you on live TV. Beat them in showdowns, win the quarterly Business Cup and climb the leaderboard.
@@ -57,12 +63,15 @@ Missions, CEO levels, 48 achievements, upgrades, company ranks from Tiny Startup
 📅 DAILY CHALLENGE
 Everyone gets the same company each day. Play 52 weeks and share your score with friends!
 
-🎵 5 original songs and sound effects
+🎵 5 original songs with piano, guitar and sound effects
 📴 Works offline, no internet needed
 🚫 No ads
 
-👑 VIP (optional subscription)
-Unlock VIP companies like the Space Company, Theme Park, Zoo and Esports Team. You also get double daily gifts, faster Boss Powers, an extra mission slot, an extra ad try, unlimited Friend Wars and double offline earnings. Cancel anytime in Google Play.
+👑 VIP PASS (optional, pay once)
+Unlock VIP companies like the Space Company, Theme Park, Zoo and Esports Team. You also get double daily gifts, faster Boss Powers, an extra mission slot, an extra ad try, unlimited Friend Wars and double offline earnings. Pay once and keep it forever. No subscription.
+
+💎 SHOP (optional)
+The whole game is free to play. If you want a boost, the shop has a Starter Pack, cash packs and war energy. Ask a parent before buying.
 
 How big can YOUR company get? 💰
 ```

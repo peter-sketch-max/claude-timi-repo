@@ -35,7 +35,19 @@ if (fs.existsSync(fontDir('fredoka')) && fs.existsSync(fontDir('nunito'))) {
   }));
   let app = noPwa.replace(/<link rel="preconnect"[^>]*>\n?/g, '').replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>\n?/, '<style>\n' + css + '</style>\n');
   app = app.replace(/\/\*SW\*\/[\s\S]*?\/\*\/SW\*\//, '');
+  // Your own songs: src/music/menu*.mp3, game*.mp3 and war*.mp3 go into the app (see src/music/README.txt).
+  const music = { menu: [], game: [], war: [] }, musicDir = path.join(src, 'music');
+  if (fs.existsSync(musicDir)) fs.readdirSync(musicDir).sort().forEach(f => {
+    const m = /^(menu|game|war).*\.(mp3|ogg|m4a|wav)$/i.exec(f);
+    if (!m) return;
+    fs.mkdirSync(path.join(www, 'music'), { recursive: true });
+    fs.copyFileSync(path.join(musicDir, f), path.join(www, 'music', f));
+    music[m[1].toLowerCase()].push(f);
+  });
+  const songs = music.menu.length + music.game.length + music.war.length;
+  if (songs) app = app.replace('<script>', () => '<script>globalThis.CS = { MUSIC_FILES: ' + JSON.stringify(music) + ' };</script>\n<script>');
   fs.writeFileSync(path.join(www, 'index.html'), app);
+  if (songs) console.log('Added ' + songs + ' of your songs from src/music');
   fs.copyFileSync(path.join(src, 'icon.svg'), path.join(www, 'icon.svg'));
   console.log('Built www/ for the Android app');
 } else console.log('Skipped www/ (run npm install first)');

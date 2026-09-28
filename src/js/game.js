@@ -1545,6 +1545,22 @@ var CS = globalThis.CS = globalThis.CS || {};
   // ---------- VIP ----------
 
   G.isVIP = function () { return !!(CS.Store && CS.Store.isVIP()); };
+  // Gives a company what was bought in the real-money shop. Returns the text to show.
+  G.shopGrant = function (g, key) {
+    var item = CS.SHOP[key], w = G.warInit(g), amt;
+    if (!item || key === 'vip') return '';
+    if (item.weeks) { amt = U.nice(G.scale(g) * item.weeks); g.cash += amt; }
+    if (key === 'starter') {
+      G.addEmployee(g, G.makeEmployee(g, 'front', { skill: 92, traits: ['hardworking', 'loyal'] }));
+      w.energy += 3; g.followers += 500;
+      G.save(g);
+      return '🎒 Starter Pack: +' + U.money(amt) + ', a superstar worker, +3 ⚡ and 500 fans!';
+    }
+    if (key === 'energy') { w.energy = Math.max(w.energy, G.warMaxEnergy()) + 2; G.save(g); return '⚡ War energy: ' + w.energy + '!'; }
+    G.news(g, item.emoji + ' ' + item.name + ': +' + U.money(amt), 'good');
+    G.save(g);
+    return item.emoji + ' ' + item.name + ': +' + U.money(amt) + '!';
+  };
   G.missionSlots = function () { return G.isVIP() ? 4 : 3; };
   G.fillMissions = function (g) { while (g.missions.length < G.missionSlots()) g.missions.push(G.newMission(g)); };
 

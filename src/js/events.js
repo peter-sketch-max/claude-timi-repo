@@ -80,7 +80,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   // =====================================================================
 
   E('fight', 'team', '🥊', '{a} and {b} had a screaming match', 'It happened in front of customers. Now they refuse to work together.', [
-    ['🤝 Sit them down and talk', { chance: { p: 0.6, win: { rel: ['a', 'b', 30], team: 2, say: 'They shook hands. For now.' }, lose: { rel: ['a', 'b', -10], next: ['feud', 1, 2], say: 'It got worse. {b} stormed out.' } } }],
+    ['🤝 Sit them down and talk', { chance: { p: 0.6, win: { rel: ['a', 'b', 30], team: 2, say: 'They shook hands. For now.' }, lose: { rel: ['a', 'b', -20], then: 'fight_punch', say: 'It got worse. Much worse.' } } }],
     ['⚠️ Warn them both', { a: -6, b: -6, rel: ['a', 'b', 5], say: 'Both are mad at you now, but it\'s quiet.' }],
     ['🚪 Fire {a}', { fire: 'a', say: 'The shouting stopped. So did {a}\'s job.' }],
     ['🙈 Stay out of it', { rel: ['a', 'b', -25], next: ['feud', 1, 2, 0.7], say: 'You pretended not to hear it.' }]
@@ -108,7 +108,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { kind: 'news', chainOnly: true });
 
   E('late', 'team', '⏰', '{a} is late. Again.', null, [
-    ['💬 "Is everything okay?"', { chance: { p: 0.5, win: { loyal: { a: 15 }, reliable: { a: 12 }, say: 'Things were rough at home. {a} is grateful.' }, lose: { say: '{a} said thanks. And was late again Friday.' } } }],
+    ['💬 "Is everything okay?"', { chance: { p: 0.5, win: { loyal: { a: 10 }, then: 'late_truth', say: '{a} went quiet. Then told you the truth.' }, lose: { say: '{a} said thanks. And was late again Friday.' } } }],
     ['⚠️ "Final warning."', { reliable: { a: 12 }, a: -10, say: '{a} is on time now. Barely.' }],
     ['💸 Cut their pay', { raise: ['a', -0.1], reliable: { a: 8 }, a: -15, say: '{a} is on time. And bitter.' }],
     ['🚪 "Don\'t come back."', { fire: 'a', say: 'You fired {a} by text.' }]
@@ -116,7 +116,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('raise_request', 'team', '💵', '{a} wants a big raise', null, [
     ['💵 Give 20%', { raise: ['a', 0.2], a: 20, loyal: { a: 10 }, say: 'Done. {a} is staying.' }],
-    ['🤝 Offer 10%', { chance: { p: 0.55, win: { raise: ['a', 0.1], a: 8, say: '{a} took the deal.' }, lose: { quit: 'a', say: '{a} took the other offer.' } } }],
+    ['🤝 Offer 10%', { chance: { p: 0.55, win: { raise: ['a', 0.1], a: 8, say: '{a} took the deal.' }, lose: { then: 'counter_offer', say: '{a} put a letter on your desk.' } } }],
     ['📅 "Ask me in 6 months"', { a: -6, next: ['raise_promise', 20, 26], say: '{a} marked the date.' }],
     ['🚪 "Then go."', { quit: 'a', say: '{a} walked out and didn\'t look back.' }]
   ], { kind: 'chat', from: 'a', msgs: ['can we talk about money?', '{rival} offered me a job', '20% more or I leave'], w: 3, who: { a: 'greedy' }, init: rival });
@@ -167,11 +167,11 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🔧 Pay for repairs', { cash: -0.5, say: 'Fixed in a day.' }],
     ['💸 Take it out of {a}\'s pay', { cash: -0.25, a: -18, say: '{a} is paying for it. Unhappily.' }],
     ['🆕 Buy a better one', { cash: -1.1, equip: 0.03, say: 'The new one is faster.' }],
-    ['🩹 Fix it yourself', { chance: { p: 0.5, win: { say: 'It works. Somehow.' }, lose: { capacity: [0.85, 3, 'Broken machine'], say: 'It broke again. Worse.' } } }]
+    ['🩹 Fix it yourself', { chance: { p: 0.5, win: { say: 'It works. Somehow.' }, lose: { then: 'machine_sparks', say: 'Then you smelled smoke.' } } }]
   ], { w: 2, cd: 15, who: { a: 'any' } });
 
   E('customer_argument', 'team', '😤', '{a} yelled at a customer', 'The customer was rude first. Now they\'re filming.', [
-    ['🛡️ Defend {a}', { a: 12, loyal: { a: 10 }, rep: -3, say: 'Your team loves you. The internet doesn\'t.' }],
+    ['🛡️ Defend {a}', { a: 12, loyal: { a: 10 }, then: 'defend_video', say: 'Your team loves you. Then the video went online.' }],
     ['🙏 Apologize to the customer', { happy: 3, a: -8, say: 'The customer calmed down.' }],
     ['🎓 Send {a} to training', { cash: -0.1, skill: { a: 3 }, say: '{a} learned to stay calm.' }],
     ['🚪 Fire {a} on the spot', { fire: 'a', rep: 2, say: 'The video ends with {a} walking out.' }]
@@ -221,13 +221,13 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('sick', 'team', '🤒', '{a} called in sick', 'On the busiest day of the week.', [
     ['🍲 "Get well soon!"', { a: 8, capacity: [0.95, 1, 'Short-staffed'], say: '{a} appreciated it.' }],
-    ['🤨 Ask for a doctor\'s note', { chance: { p: 0.6, win: { a: -3, say: '{a} really was sick.' }, lose: { a: -10, reliable: { a: -5 }, say: '{a} was at the beach. You saw the photos.' } } }],
+    ['🤨 Ask for a doctor\'s note', { chance: { p: 0.6, win: { a: -3, say: '{a} really was sick.' }, lose: { a: -5, then: 'beach_photos', say: 'No note. Then someone showed you their phone.' } } }],
     ['😤 "Come in anyway"', { a: -15, team: -4, say: '{a} came in coughing. Two others got sick.' }],
     ['🧑‍🍳 Cover the shift yourself', { team: 3, say: 'You worked the counter all day.' }]
   ], { w: 3, cd: 6, who: { a: 'any' } });
 
   E('idea', 'team', '💡', '{a} has a big idea', '{a} wants to launch something new. It could be huge, or a flop.', [
-    ['🚀 Go all in', { cash: -0.8, chance: { p: 0.5, win: { demand: [1.2, 6, 'New idea'], fans: 20, a: 10, say: 'It\'s a hit!' }, lose: { a: -5, say: 'Nobody wanted it.' } } }],
+    ['🚀 Go all in', { cash: -0.8, chance: { p: 0.5, win: { demand: [1.2, 6, 'New idea'], fans: 20, a: 10, then: 'idea_hit', say: 'It\'s a hit! Then the phone rang.' }, lose: { a: -5, say: 'Nobody wanted it.' } } }],
     ['🧪 Test it small first', { cash: -0.2, chance: { p: 0.6, win: { demand: [1.08, 6, 'New idea'], say: 'A nice small win.' }, lose: { say: 'The test flopped. Cheap lesson.' } } }],
     ['🏆 Credit and a bonus for {a}', { bonus: 'a', a: 12, loyal: { a: 10 }, say: '{a} feels like a star.' }],
     ['❌ "Not now."', { a: -10, say: '{a} stopped sharing ideas.' }]
@@ -265,7 +265,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['💵 Pay the medical bills', { cash: -0.6, a: 10, rep: 2, say: '{a} is grateful. No lawsuit.' }],
     ['⚖️ Fight it in court', { chance: { p: 0.5, win: { cash: -0.3, say: 'You won. Barely.' }, lose: { cash: -2, rep: -4, say: 'You lost. It was expensive.' } } }],
     ['🦺 Pay, and add safety rules', { cash: -0.9, a: 12, team: 5, equip: 0.01, say: 'Safer shop, happier team.' }],
-    ['🙅 "Not my problem."', { cash: -1.2, rep: -6, team: -8, say: 'The court disagreed.' }]
+    ['🙅 "Not my problem."', { team: -6, then: 'injury_news', say: '{a} went home in pain. And called a reporter.' }]
   ], { w: 1.5, cd: 25, who: { a: 'any' } });
 
   E('worker_viral', 'team', '📱', '{a} went viral', 'A video of {a} working super fast has 2 million views.', [
@@ -353,7 +353,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1.5, cd: 20, who: { a: 'lazy' } });
 
   E('family_emergency', 'team', '🏥', '{a} has a family emergency', '{a}\'s mother is in the hospital in another city.', [
-    ['✈️ Paid leave and a plane ticket', { cash: -0.2, a: 25, loyal: { a: 30 }, capacity: [0.95, 1, '{a} away'], say: '{a} will never forget this.' }],
+    ['✈️ Paid leave and a plane ticket', { cash: -0.2, a: 25, loyal: { a: 30 }, capacity: [0.95, 1, '{a} away'], next: ['family_update', 2, 3, 0.6], say: '{a} will never forget this.' }],
     ['🗓️ Unpaid leave', { a: 10, capacity: [0.95, 1, '{a} away'], say: '{a} left right away.' }],
     ['🤝 The team covers the shifts', { team: 5, a: 15, say: 'Everyone stepped up.' }],
     ['😬 "Can it wait until Friday?"', { a: -20, loyal: { a: -15 }, say: '{a} left anyway. And won\'t forget it.' }]

@@ -4,7 +4,7 @@
 var CS = globalThis.CS = globalThis.CS || {};
 
 (function () {
-  var H = CS.EVH, E = CS.E, man = H.man;
+  var U = CS.U, G = CS.G, H = CS.EVH, E = CS.E, man = H.man;
   var CH = { chainOnly: true };
 
   // =====================================================================
@@ -648,4 +648,357 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🤝 Do both, part-time', { capacity: [0.97, 12, '{a} part-time'], fans: 30, a: 15, say: '{a} works mornings and does TV at night.' }],
     ['🎥 Film a show at your shop', { fans: 40, a: 20, say: 'The show is filmed at your place now.' }]
   ], CH);
+  // =====================================================================
+  // 💍 LOVE AND MARRIAGE (starts with dating_boss). Your family is saved in g.family.
+  // =====================================================================
+
+  var fam = function (g) { return g.family || {}; };
+  var setFam = function (stage) {
+    return function (g, c) {
+      var f = g.family = g.family || { kids: [] };
+      f.partner = c.name; f.stage = stage; f.since = g.week; f.kids = f.kids || [];
+      if (stage === 'married') { f.married = g.week; G.news(g, '💍 You married ' + c.name + '!', 'good'); }
+    };
+  };
+  var single = function () { return function (g, c) { var f = g.family; if (f) { f.stage = null; f.partner = null; } }; };
+  var married = function (g) { return fam(g).stage === 'married'; };
+  var partner = function (g, c) { c.name = fam(g).partner; if (!c.name) return false; };
+
+  E('first_date', 'boss', '🌹', 'Your first date with {name}', 'Dinner by the river. You\'re nervous. They\'re funny and kind.', [
+    ['🗣️ Talk about your dreams', { chance: { p: 0.75, win: { run: setFam('dating'), next: ['relationship_serious', 4, 8], say: 'You talked until midnight. A second date is already planned.' }, lose: { say: 'A nice night. They didn\'t call back.' } } }],
+    ['😂 Just have fun', { chance: { p: 0.7, win: { run: setFam('dating'), next: ['relationship_serious', 4, 8], say: 'You laughed all night. They texted you first.' }, lose: { say: 'Fun, but no spark.' } } }],
+    ['💼 Talk about work all night', { chance: { p: 0.3, win: { run: setFam('dating'), next: ['relationship_serious', 4, 8], say: 'Somehow they loved it.' }, lose: { say: 'They yawned. Twice.' } } }],
+    ['📱 Answer a work call', { chance: { p: 0.15, win: { run: setFam('dating'), next: ['relationship_serious', 4, 8], say: 'They were patient. Lucky you.' }, lose: { say: 'They left before dessert.' } } }]
+  ], CH);
+
+  E('relationship_serious', 'boss', '💞', 'Things are serious with {name}', 'It\'s been months. {name} asks: "Where is this going?"', [
+    ['🏠 Move in together', { team: 3, next: ['proposal_time', 4, 8], say: 'Their stuff is everywhere. You love it.' }],
+    ['👪 Meet their family', { chance: { p: 0.7, win: { next: ['proposal_time', 4, 8], say: 'Their mom hugged you. You\'re in.' }, lose: { next: ['relationship_serious', 3, 6], say: 'Their dad asked about your money. Awkward.' } } }],
+    ['🐢 "Let\'s take it slow."', { chance: { p: 0.5, win: { next: ['relationship_serious', 4, 8], say: 'They understood.' }, lose: { run: single(), say: 'They wanted more. It\'s over. It hurts.' } } }],
+    ['💼 "I\'m too busy."', { run: single(), team: -2, say: 'They left. The shop feels quiet tonight.' }]
+  ], { chainOnly: true, cond: function (g) { return fam(g).stage === 'dating'; } });
+
+  E('proposal_time', 'boss', '💍', 'Time to propose to {name}?', 'You bought a ring months ago. It\'s been in your desk drawer ever since.', [
+    ['🌅 Propose at sunset', { chance: { p: 0.85, win: { run: setFam('engaged'), then: 'wedding_plans', say: 'They said YES. Crying, laughing, yes.' }, lose: { next: ['proposal_time', 6, 10], say: '"Not yet." It hurt. But they stayed.' } } }],
+    ['🏪 At your shop, with the team', { chance: { p: 0.8, win: { run: setFam('engaged'), team: 8, fans: 15, then: 'wedding_plans', say: 'YES! The whole team cheered.' }, lose: { next: ['proposal_time', 6, 10], say: 'They said "not yet", in front of everyone.' } } }],
+    ['📱 A big proposal online', { chance: { p: 0.6, win: { run: setFam('engaged'), fans: 40, then: 'wedding_plans', say: 'YES! A million people watched.' }, lose: { fans: 10, rep: -2, next: ['proposal_time', 8, 12], say: 'They said no. On camera. They hate big shows.' } } }],
+    ['⏳ Wait a little longer', { next: ['proposal_time', 6, 12], say: 'The ring stays in the drawer. For now.' }]
+  ], { chainOnly: true, cond: function (g) { return fam(g).stage === 'dating'; } });
+
+  E('wedding_plans', 'boss', '💒', 'Planning your wedding with {name}', 'They want something beautiful. Your accountant wants something cheap.', [
+    ['🏰 A huge wedding', { cash: -2, fans: 30, rep: 3, then: 'wedding_day', say: 'Five hundred guests. A castle. A cake taller than you.' }],
+    ['🌳 Small, with family', { cash: -0.4, team: 3, then: 'wedding_day', say: 'Just the people who matter.' }],
+    ['🏪 At your own shop', { closed: [1, 'Your wedding'], fans: 25, team: 8, then: 'wedding_day', say: 'Your team decorated everything.' }],
+    ['🏛️ Just the city hall', { then: 'wedding_day', say: 'Simple, quick, and still perfect.' }]
+  ], CH);
+
+  E('wedding_day', 'boss', '💐', 'Your wedding day', '{name} walks in. Your whole team is crying. Even the grumpy ones.', [
+    ['💃 Dance all night', { run: setFam('married'), team: 10, say: 'You married {name}. Best night of your life.' }],
+    ['🎤 A speech about how you met', { run: setFam('married'), rep: 3, fans: 10, say: 'Nobody had dry eyes. You married {name}.' }],
+    ['✈️ Leave for the honeymoon', { run: setFam('married'), closed: [1, 'Honeymoon'], team: 5, say: 'Married, and off to the beach.' }],
+    ['🎁 A bonus for the whole team', { run: setFam('married'), teamBonus: true, team: 12, say: 'Married, and your team got a gift too.' }]
+  ], CH);
+
+  E('spouse_helps', 'boss', '🤝', '{name} wants to work with you', 'Your partner has great ideas for the company. But working together is a big step.', [
+    ['📣 Let them run marketing', { fans: 30, demand: [1.08, 10, 'Family marketing'], say: '{name} is a natural.' }],
+    ['🕐 Part-time, to start', { fans: 10, demand: [1.04, 8, 'Family help'], say: 'A good balance.' }],
+    ['🏠 Keep home and work apart', { team: 2, say: 'You both agreed. Home stays home.' }],
+    ['💬 Just ask for their advice', { demand: [1.03, 6, 'Good advice'], say: 'Dinner talks became business plans.' }]
+  ], { w: 0.8, cd: 80, cond: married, init: partner });
+
+  E('wedding_anniversary', 'boss', '🥂', 'Your wedding anniversary with {name}', 'One more year together. {name} is waiting to see if you remember.', [
+    ['🍽️ A fancy dinner', { cash: -0.05, say: 'They loved it. Another year.' }],
+    ['✈️ A weekend away', { cash: -0.2, closed: [1, 'Anniversary trip'], team: 3, say: 'The best weekend of the year.' }],
+    ['🎁 A handmade gift', { say: 'They cried. It was perfect.' }],
+    ['😬 You forgot', { next: ['marriage_trouble', 1, 3, 0.7], say: 'They didn\'t say anything. That\'s worse.' }]
+  ], { w: 1, cd: 52, cond: function (g) { return married(g) && g.week - (fam(g).married || 0) >= 40; }, init: partner });
+
+  E('marriage_trouble', 'boss', '💔', '{name} says you\'re never home', '"I married you, not your company." They\'re serious. And they\'re right.', [
+    ['🕔 Come home at 6, every day', { capacity: [0.95, 12, 'Home on time'], team: 4, say: 'Dinners together again. It\'s getting better.' }],
+    ['🛋️ Go to couples counseling', { cash: -0.1, chance: { p: 0.8, win: { say: 'It helped. You\'re talking again.' }, lose: { next: ['marriage_trouble', 4, 8], say: 'Some sessions went badly. You keep trying.' } } }],
+    ['✈️ A trip, just the two of you', { cash: -0.3, closed: [1, 'Family trip'], say: 'You remembered why you fell in love.' }],
+    ['💼 "The business needs me."', { team: -3, next: ['marriage_trouble', 3, 6, 0.8], say: '{name} went quiet. Something broke tonight.' }]
+  ], { w: 0.6, cd: 40, cond: married, init: partner });
+
+  E('baby_news', 'boss', '🍼', 'You and {name} are having a baby', 'The test came back this morning. Your hands are shaking. In a good way.', [
+    ['🎉 Tell the whole team', { team: 10, next: ['baby_born', 8, 14], say: 'Your team threw a surprise party.' }],
+    ['🧸 Build a nursery at the shop', { cash: -0.3, team: 6, next: ['baby_born', 8, 14], say: 'A tiny room with a tiny bed. The team loves it.' }],
+    ['📅 Plan time off', { team: 4, next: ['baby_born', 8, 14], say: 'Your manager will run things for a while.' }],
+    ['🤫 Keep it secret for now', { next: ['baby_born', 8, 14], say: 'Just the two of you know. For now.' }]
+  ], { w: 0.7, cd: 80, cond: function (g) { return married(g) && (fam(g).kids || []).length < 3 && g.week - (fam(g).married || 0) >= 20; },
+    init: function (g, c) { c.kid = U.pick(CS.FIRST); return partner(g, c); } });
+
+  E('baby_born', 'boss', '👶', 'Meet {kid}!', 'Your baby is here. Tiny, loud and perfect. {name} is smiling through the tears.', [
+    ['🏠 Two weeks at home', { run: addKid, closed: [1, 'New baby'], team: 6, say: 'The best two weeks of your life.' }],
+    ['🍼 Bring {kid} to the shop', { run: addKid, fans: 25, happy: 4, say: 'Customers line up to say hello.' }],
+    ['🏷️ Name a product after {kid}', { run: addKid, fans: 15, demand: [1.05, 6, 'Baby special'], say: 'It became a best seller.' }],
+    ['💼 Back to work tomorrow', { run: addKid, team: -3, say: 'You yawned all day. Worth it.' }]
+  ], CH);
+  function addKid(g, c) { var f = g.family; if (f) { f.kids = (f.kids || []).concat([c.kid]); G.news(g, '👶 Welcome to the world, ' + c.kid + '!', 'good'); } }
+  // =====================================================================
+  // 🔗 WHAT HAPPENS NEXT (follow-ups for everyday events)
+  // =====================================================================
+
+  E('fight_punch', 'team', '👊', '{b} threw a punch at {a}', 'In the back room. {a} has a bleeding lip. The whole team saw it.', [
+    ['🚪 Fire {b}', { fire: 'b', a: 10, team: 4, say: 'Violence has no place here. The team agrees.' }],
+    ['🏥 Get {a} to a doctor', { cash: -0.05, a: 12, loyal: { a: 10 }, say: 'Just a split lip. {a} is grateful you cared.' }],
+    ['⏸️ Send both home for a week', { capacity: [0.9, 1, 'Two suspended'], a: -5, b: -10, say: 'A quiet week. Both came back calmer.' }],
+    ['👮 Call the police', { fire: 'b', rep: 1, team: -2, say: '{b} was taken away. It was a hard day.' }]
+  ], CH);
+
+  E('late_truth', 'team', '🚗', '{a} has been sleeping in their car', 'Their landlord threw them out. They wash at the gym before every shift.', [
+    ['🏠 Help find an apartment', { cash: -0.2, a: 25, loyal: { a: 30 }, say: 'A small place near the shop. {a} has never been on time more.' }],
+    ['💵 An advance on their pay', { cash: -0.1, a: 15, loyal: { a: 15 }, say: 'Enough for a deposit. {a} cried.' }],
+    ['🛋️ The back room, for now', { a: 12, team: 3, say: 'A sofa, a blanket, a key. It\'s a start.' }],
+    ['🤐 "Sorry, not my problem."', { a: -20, loyal: { a: -20 }, say: '{a} nodded and went back to work.' }]
+  ], CH);
+
+  E('counter_offer', 'team', '📄', '{a} shows you {rival}\'s offer', 'It\'s real. 30% more pay and a better title. {a} is waiting for your answer.', [
+    ['💰 Match it', { raise: ['a', 0.3], a: 15, loyal: { a: 15 }, say: '{a} tore up the letter.' }],
+    ['🪜 Promote {a} instead', { promote: 'a', a: 18, say: 'A new title, and a reason to stay.' }],
+    ['❤️ "Stay for the team."', { chance: { p: 0.4, win: { loyal: { a: 25 }, say: '{a} stayed. For the people, not the money.' }, lose: { quit: 'a', say: '{a} took the offer.' } } }],
+    ['👋 Let {a} go', { quit: 'a', say: '{a} works for {rival} now.' }]
+  ], CH);
+
+  E('machine_sparks', 'team', '⚡', 'The machine is sparking', 'You tightened one bolt too many. Now there\'s smoke coming out.', [
+    ['🔌 Pull the plug', { capacity: [0.85, 2, 'Broken machine'], say: 'The smoke stopped. The machine is dead for now.' }],
+    ['🧯 Grab the extinguisher', { chance: { p: 0.7, win: { capacity: [0.9, 2, 'Broken machine'], say: 'Out. Nobody hurt.' }, lose: { cash: -0.8, closed: [1, 'Fire damage'], say: 'It caught fire anyway.' } } }],
+    ['📞 Call an electrician', { cash: -0.5, say: 'Fixed properly this time.' }],
+    ['🏃 Everyone out, now', { closed: [1, 'Machine fire'], rep: 2, say: 'Safe first. The firefighters handled it.' }]
+  ], CH);
+
+  E('beach_photos', 'team', '🏖️', '{a} was at the beach', '{a} posted beach photos on the day they were "sick". The whole team saw them.', [
+    ['🚪 Fire {a}', { fire: 'a', team: 2, say: 'Lying has a price.' }],
+    ['⚠️ Final warning', { a: -10, reliable: { a: 10 }, say: '{a} apologized to everyone.' }],
+    ['💸 An unpaid day', { raise: ['a', -0.03], a: -8, say: '{a} got the message.' }],
+    ['😂 Let it go, this once', { team: -3, a: 5, say: 'The team thinks you\'re too soft.' }]
+  ], CH);
+
+  E('idea_hit', 'team', '💡', '{a}\'s idea is a huge hit', 'A big chain wants to buy the idea. {a} is watching to see what you do.', [
+    ['💰 Sell it', { cash: 2, a: -10, say: 'A lot of money. {a} expected a thank-you.' }],
+    ['🤝 License it to them', { extra: [0.08, 12, 'Idea license'], say: 'They pay you every month to use it.' }],
+    ['🎁 Sell it and share with {a}', { cash: 1.5, a: 25, loyal: { a: 25 }, say: '{a} will have ideas for you forever.' }],
+    ['🚀 Keep it yours', { demand: [1.1, 10, 'Hit idea'], a: 8, say: 'Only {company} has it.' }]
+  ], CH);
+
+  E('injury_news', 'team', '📰', '{a}\'s story is in the newspaper', '"Boss refused to help injured worker." Your phone won\'t stop ringing.', [
+    ['🙏 Pay everything and apologize', { cash: -0.8, rep: 3, a: 15, say: 'You made it right. People noticed.' }],
+    ['📰 Give your side', { chance: { p: 0.3, win: { rep: 1, say: 'Some people understood.' }, lose: { rep: -5, say: 'It sounded like excuses.' } } }],
+    ['🎁 A safety fund for all workers', { cash: -1, rep: 6, team: 8, say: 'Every worker is covered now.' }],
+    ['🤐 No comment', { rep: -6, team: -6, say: 'The story ran for a week.' }]
+  ], CH);
+
+  E('family_update', 'team', '🕊️', '{a} is back from the hospital', '{a}\'s mother didn\'t make it. {a} came back to work, but they\'re not okay.', [
+    ['🏠 More paid time off', { capacity: [0.95, 2, '{a} away'], a: 20, loyal: { a: 20 }, say: '"Take all the time you need."' }],
+    ['💐 Flowers from the whole team', { team: 6, a: 15, say: 'Everyone signed the card.' }],
+    ['🗣️ Someone to talk to', { cash: -0.1, a: 15, say: 'You paid for a grief counselor.' }],
+    ['💼 Let them work if they want', { a: 5, say: 'Work helped {a} keep going.' }]
+  ], CH);
+
+  E('defend_video', 'team', '📱', 'The video of {a} is spreading', 'The customer\'s video has 200,000 views. It doesn\'t show what they said first.', [
+    ['📹 Post your camera video', { chance: { p: 0.6, win: { fans: 20, rep: 3, say: 'The full video changed everything.' }, lose: { rep: -3, say: 'The internet had already decided.' } } }],
+    ['🙏 Apologize, but back {a}', { rep: 1, a: 8, say: 'A careful balance. It calmed down.' }],
+    ['📢 Stand by {a} publicly', { fans: 10, rep: -3, a: 15, loyal: { a: 20 }, say: 'Your team would walk through fire for you.' }],
+    ['🤐 Wait it out', { rep: -4, say: 'It faded, slowly.' }]
+  ], CH);
+
+  E('slip_trial', 'customers', '⚖️', 'The trial: the slip case', 'The customer limps into court. Your lawyer has one question: "What do we have?"', [
+    ['📹 Show the camera video', { chance: { p: 0.65, win: { rep: 3, say: 'They were faking. The judge was not happy with them.' }, lose: { cash: -1.5, say: 'The camera missed the moment. You lost.' } } }],
+    ['🧑‍⚖️ Hire a better lawyer', { cash: -0.5, chance: { p: 0.75, win: { say: 'Your new lawyer won it.' }, lose: { cash: -1.2, say: 'You lost anyway.' } } }],
+    ['🤝 Settle before the verdict', { cash: -0.8, say: 'Done. Not cheap, but done.' }],
+    ['🗣️ Tell your story yourself', { chance: { p: 0.4, win: { rep: 4, say: 'The judge believed you.' }, lose: { cash: -1.5, say: 'You got nervous. You lost.' } } }]
+  ], CH);
+
+  E('health_shutdown', 'customers', '🚫', 'The city shut you down', 'A sign on your door. Reporters outside. The health office wants a plan.', [
+    ['🧹 Full clean and new rules', { cash: -0.8, closed: [1, 'Shut down'], rep: 3, say: 'You passed the next inspection with top marks.' }],
+    ['🎤 Talk to reporters honestly', { rep: 2, fans: 5, say: 'People respected that you owned it.' }],
+    ['💸 Pay the sick customers', { cash: -0.6, rep: 4, say: 'The families dropped their complaints.' }],
+    ['🚪 Hide until it blows over', { rep: -5, demand: [0.85, 6, 'Bad news'], say: 'It took months to win customers back.' }]
+  ], CH);
+
+  E('fight_hurt', 'customers', '🤕', 'You got hurt breaking up the fight', 'A broken nose. Blood on your shirt. The two men ran off.', [
+    ['🏥 Go to the hospital', { capacity: [0.95, 1, 'Boss hurt'], team: 5, say: 'Two stitches. The team ran the shop.' }],
+    ['👮 Report them', { chance: { p: 0.6, win: { cash: 0.3, say: 'Caught. They paid for everything.' }, lose: { say: 'They were never found.' } } }],
+    ['💪 Keep working', { team: 6, rep: 2, say: 'Customers couldn\'t believe it. Tough boss.' }],
+    ['🦺 Hire a guard', { cash: -0.4, happy: 3, say: 'No more fights.' }]
+  ], CH);
+
+  E('accused_truth', 'customers', '📹', '{a} did take the wallet', 'The camera shows it clearly. {a} can\'t look at you.', [
+    ['🚪 Fire {a}', { fire: 'a', rep: 2, say: 'You gave her wallet back and apologized.' }],
+    ['👮 Call the police', { fire: 'a', rep: 3, say: '{a} was arrested.' }],
+    ['💬 Hear {a} out', { chance: { p: 0.4, win: { a: 10, loyal: { a: 20 }, say: '{a} was desperate. You gave one last chance.' }, lose: { fire: 'a', say: 'No good reason. {a} is gone.' } } }],
+    ['🤝 Return it and apologize', { a: -10, rep: 1, say: 'The customer calmed down. {a} owes you.' }]
+  ], CH);
+
+  E('bribe_accused', 'business', '🍪', 'The inspector reported you for bribery', 'A plate of cookies. That\'s all it was. But now there\'s a letter from the city.', [
+    ['⚖️ Get a lawyer', { cash: -0.4, say: 'Case dropped. Expensive cookies.' }],
+    ['🙏 Explain and apologize', { chance: { p: 0.6, win: { say: 'They believed you.' }, lose: { cash: -0.6, say: 'A fine anyway.' } } }],
+    ['💸 Pay the fine', { cash: -0.6, say: 'Done. No more cookies for inspectors.' }],
+    ['📢 Post the cookie story', { chance: { p: 0.6, win: { fans: 25, say: 'The internet laughed. The city dropped it.' }, lose: { rep: -3, say: 'The city was not amused.' } } }]
+  ], CH);
+
+  E('boss_burned', 'business', '🩹', 'You got burned', 'Your arm is badly burned. The fire is out. Your team is scared.', [
+    ['🏥 Hospital, and rest a week', { closed: [1, 'Boss injured'], team: 6, say: 'You healed. The team handled everything.' }],
+    ['🩹 Bandage it and keep going', { team: -3, say: 'It hurt all week. The team worried.' }],
+    ['🦺 Fire training for everyone', { cash: -0.3, team: 5, rep: 2, say: 'Next time, everyone knows what to do.' }],
+    ['🤗 Thank the firefighters', { rep: 4, fans: 10, say: 'Free lunch for the fire station, forever.' }]
+  ], CH);
+
+  E('hackers_again', 'business', '💻', 'The hackers want more', 'They took your money and locked the files again. Now they want double.', [
+    ['🧑‍💻 Hire experts now', { cash: -0.6, say: 'Files back. Hackers locked out.' }],
+    ['👮 Call the police', { chance: { p: 0.4, win: { cash: 0.5, say: 'They traced them. Some money came back.' }, lose: { closed: [1, 'Hacked'], say: 'No luck. A lost week.' } } }],
+    ['💸 Pay again', { cash: -1.5, chance: { p: 0.3, win: { say: 'They unlocked it this time.' }, lose: { closed: [1, 'Hacked'], say: 'They lied again.' } } }],
+    ['🆕 Wipe everything', { closed: [1, 'Hacked'], say: 'Start from zero. Never pay hackers.' }]
+  ], CH);
+
+  E('recall_victims', 'business', '🚑', 'A child was hurt by your product', 'Not badly, but the parents are furious. The news is calling.', [
+    ['🏥 Visit and pay for everything', { cash: -0.8, rep: 4, say: 'The parents saw you cared. They didn\'t sue.' }],
+    ['📢 A full recall, now', { cash: -0.8, rep: 2, say: 'Late, but right.' }],
+    ['🙏 A public apology', { rep: 2, say: 'People accepted it.' }],
+    ['⚖️ Call your lawyer first', { rep: -6, cash: -1, say: 'The parents sued. The news ran it for days.' }]
+  ], CH);
+
+  E('friend_ruined', 'money', '😞', 'Your friend lost everything too', 'Their savings, their car. They gave you that stock tip. Now they need help.', [
+    ['💵 Lend them money', { cash: -0.5, chance: { p: 0.6, win: { cash: 0.5, say: 'They paid it all back, months later.' }, lose: { say: 'They never could pay it back.' } } }],
+    ['💼 Give them a job', { hireSpecial: { role: 'front', skill: 50, traits: ['loyal'] }, say: 'A fresh start, with you.' }],
+    ['🤗 Just be there', { say: 'Dinner, every Friday. It helped.' }],
+    ['😤 "This is your fault."', { say: 'You haven\'t spoken since.' }]
+  ], CH);
+
+  E('payday_missed', 'money', '💸', 'Payday came. The money didn\'t.', 'Your team is standing in your office. Some have rent due tomorrow.', [
+    ['🏦 An emergency loan', { cash: 1.5, supply: [0.03, 12, 'Emergency loan'], team: 5, say: 'Everyone got paid. You\'ll pay it back.' }],
+    ['🚗 Sell your own car', { cash: 1, team: 12, say: 'The team heard what you did. They\'ll never forget.' }],
+    ['🧾 Pay half now', { cash: 0.3, team: -6, say: 'Nobody is happy.' }],
+    ['🙏 "Next week, I promise."', { team: -15, next: ['resign', 1, 2, 0.6], say: 'Two people are looking for new jobs.' }]
+  ], { chainOnly: true, who: { a: 'any' } });
+
+  E('bank_fraud', 'money', '🚓', 'The police are at your door', 'Moving the bank\'s money was a crime. They want to talk.', [
+    ['⚖️ Get a lawyer', { cash: -1, say: 'A fine and a lesson. No jail.' }],
+    ['🙏 Confess and pay it back', { cash: -1.2, rep: -3, say: 'Honesty kept it small.' }],
+    ['😬 Blame the bank', { rep: -6, cash: -1.5, say: 'The judge did not like that.' }],
+    ['🤐 Say nothing', { chance: { p: 0.3, win: { cash: -0.5, say: 'Your lawyer found a mistake in their case.' }, lose: { cash: -2, rep: -8, say: 'The worst outcome.' } } }]
+  ], CH);
+
+  E('rival_collapse', 'rivals', '📉', '{rival} is running out of money', 'Their price war backfired. Their boss is on the phone for you.', [
+    ['🏢 Buy their shop cheap', { cash: -2, rival: -0.4, capacity: [1.1, 16, 'Bought rival shop'], say: 'Their shop has your name on it now.' }],
+    ['🧑‍🍳 Hire their best people', { hireSpecial: { role: 'front', skill: 78 }, rival: -0.1, say: 'Their best worker is yours.' }],
+    ['🤝 Offer a fair truce', { rep: 3, say: 'You both stopped the price war.' }],
+    ['😈 Let them sink', { rival: -0.2, say: 'You watched them struggle.' }]
+  ], CH);
+
+  E('debate_backlash', 'rivals', '📺', 'The internet turned on you', 'Clips of you shouting at {rival}\'s boss are everywhere.', [
+    ['🙏 Apologize on air', { rep: 3, say: 'People respect a real apology.' }],
+    ['😂 Laugh at yourself', { chance: { p: 0.6, win: { fans: 30, say: 'Your self-roast video was a hit.' }, lose: { rep: -2, say: 'It came off wrong.' } } }],
+    ['🤝 Coffee with their boss', { rep: 4, rival: 0.02, say: 'A photo of you two laughing ended it.' }],
+    ['🤐 Log off for a week', { rep: -2, say: 'It faded without you.' }]
+  ], CH);
+
+  E('countersuit_trial', 'rivals', '⚖️', 'Court day: you vs {rival}', 'Both lawyers are ready. The judge looks tired.', [
+    ['🎨 Show your old designs', { chance: { p: 0.65, win: { cash: 1.5, rival: -0.1, say: 'Your designs came first. You won.' }, lose: { cash: -0.5, say: 'Not enough. You lost.' } } }],
+    ['🧑‍⚖️ Let the lawyer do it', { cash: -0.3, chance: { p: 0.55, win: { cash: 1.5, say: 'Your lawyer was brilliant.' }, lose: { cash: -0.5, say: 'You lost.' } } }],
+    ['🤝 Settle in the hallway', { cash: -0.2, say: 'Both sides dropped it.' }],
+    ['🔥 Attack their reputation', { chance: { p: 0.4, win: { rival: -0.15, say: 'The judge sided with you.' }, lose: { rep: -5, say: 'The judge warned you. You lost.' } } }]
+  ], CH);
+
+  E('neighbor_rival_deal', 'rivals', '🤝', '{rival} wants to share costs', 'Your new neighbors suggest sharing deliveries and a street party.', [
+    ['🚚 Share deliveries', { supply: [-0.02, 12, 'Shared deliveries'], say: 'Cheaper for both.' }],
+    ['🎉 A street party together', { cash: -0.1, fans: 20, say: 'The whole street came.' }],
+    ['🕵️ It\'s a trick', { chance: { p: 0.5, win: { say: 'It was real. You missed out.' }, lose: { rival: -0.05, say: 'You were right. They wanted your supplier.' } } }],
+    ['🙅 Keep your distance', { say: 'Friendly, but not friends.' }]
+  ], CH);
+
+  E('family_ultimatum', 'boss', '🍽️', 'Your mom cooked dinner. You never came.', 'It was your birthday. She waited three hours. She called, crying.', [
+    ['🏠 Change how you work', { capacity: [0.95, 12, 'Family time'], team: 3, say: 'Sunday dinners are sacred now.' }],
+    ['🎁 Make it up to her', { cash: -0.1, say: 'A trip, just the two of you. She forgave you.' }],
+    ['🧑‍💼 Hire someone to help you', { hireSpecial: { role: 'mgr', skill: 60 }, say: 'Now you can leave at six.' }],
+    ['💼 "It\'s all for the family."', { next: ['family_ultimatum', 6, 10, 0.5], say: 'She stopped calling.' }]
+  ], CH);
+
+  E('burnout_breakdown', 'boss', '😣', 'You broke down at work', 'Your team found you crying in the storage room. You couldn\'t breathe.', [
+    ['🏥 See a doctor today', { capacity: [0.95, 2, 'Boss resting'], team: 5, say: 'The doctor gave you a plan. You\'re following it.' }],
+    ['🏖️ Two weeks off', { closed: [1, 'Boss resting'], team: 8, say: 'The team said: "Go. We\'ve got this."' }],
+    ['🗣️ Talk to someone', { cash: -0.1, team: 3, say: 'Talking helped more than you expected.' }],
+    ['💪 "I\'m fine."', { next: ['boss_collapse', 3, 8, 0.6], say: 'You weren\'t fine.' }]
+  ], CH);
+
+  E('safety_victim', 'shady', '🚑', 'A worker got hurt', 'The machine you didn\'t check broke. A worker\'s hand is badly hurt.', [
+    ['🏥 Pay everything, full salary', { cash: -1, team: 8, say: 'They will heal. You will never skip a check again.' }],
+    ['🙏 Tell the inspectors the truth', { cash: -0.8, rep: 2, say: 'A big fine. But you slept at night.' }],
+    ['⚖️ Blame the machine maker', { rep: -4, say: 'Nobody believed it.' }],
+    ['🤫 Cover it up', { chance: { p: 0.3, win: { say: 'Nobody found out. You feel terrible.' }, lose: { cash: -3, rep: -15, say: 'It came out. The worst week of your life.' } } }]
+  ], CH);
+
+  // =====================================================================
+  // 🕯️ SERIOUS MOMENTS
+  // =====================================================================
+
+  E('worker_struggling', 'team', '🌧️', '{a} hasn\'t smiled in weeks', 'Today {a} tells you: "I\'m not okay. I can\'t sleep. Everything feels heavy."', [
+    ['🗣️ Listen, really listen', { a: 10, loyal: { a: 15 }, say: 'You didn\'t fix it. But {a} felt heard.' }],
+    ['🩺 Pay for a therapist', { cash: -0.2, a: 20, loyal: { a: 20 }, say: 'Weeks later, {a} laughed at a joke. Everyone noticed.' }],
+    ['🏠 Paid time off', { capacity: [0.97, 2, '{a} resting'], a: 15, say: '{a} came back lighter.' }],
+    ['💼 "Try to cheer up."', { a: -12, say: '{a} stopped talking about it.' }]
+  ], { w: 1, cd: 40, who: { a: 'lowmood' } });
+
+  E('layoffs', 'business', '📉', 'You may have to let people go', 'Sales are down. The numbers don\'t work. Something has to change.', [
+    ['✂️ Let {a} go', { fire: 'a', supply: [-0.03, 8, 'Smaller team'], team: -6, say: 'The hardest conversation of your career.' }],
+    ['💸 Everyone takes a pay cut', { teamRaise: -0.1, team: -8, say: 'Nobody lost their job. Nobody is happy.' }],
+    ['🏦 Borrow to keep everyone', { cash: 1, supply: [0.03, 16, 'Rescue loan'], team: 8, say: 'Risky. But your team knows you fought for them.' }],
+    ['💳 Stop paying yourself', { cash: 0.5, team: 12, say: 'Your team found out. They\'ll work twice as hard.' }]
+  ], { w: 1, cd: 40, need: 5, who: { a: 'any' }, cond: function (g) { return g.cash < G.cost(g, 2); } });
+
+  E('neighbor_fire', 'customers', '🔥', 'The family next door lost their home', 'A fire took everything last night. Three kids. They\'re standing in the street.', [
+    ['🛋️ They can stay in the back', { team: 4, rep: 6, say: 'For two weeks, your shop was their home.' }],
+    ['💰 Start a fundraiser', { cash: -0.2, rep: 8, fans: 20, say: 'Your customers raised enough for a new start.' }],
+    ['🍽️ Free meals for a month', { cash: -0.2, rep: 5, say: 'The kids called your shop "the kitchen".' }],
+    ['🙏 Send your sympathy', { rep: 1, say: 'They said thank you.' }]
+  ], { w: 0.7, cd: 80 });
+
+  E('refugee_family', 'customers', '🧳', 'A refugee family asks for work', 'They fled a war. The mother was a chef, the father an engineer. They\'ll do anything.', [
+    ['💼 Hire the mother', { hireSpecial: { role: 'front', skill: 75, traits: ['hardworking', 'loyal'] }, rep: 3, say: 'The best hire you ever made.' }],
+    ['📝 Help with their papers', { cash: -0.1, rep: 4, say: 'They got their work permits.' }],
+    ['🍽️ A welcome dinner', { cash: -0.05, rep: 3, team: 3, say: 'They cooked for your whole team.' }],
+    ['🙅 "We\'re not hiring."', { say: 'They thanked you anyway.' }]
+  ], { w: 0.8, cd: 60 });
+
+  E('unfair_manager', 'team', '⚖️', '{a} says {m} treats them unfairly', 'Because of where {a} is from. Two other workers say the same.', [
+    ['🔍 Investigate properly', { cash: -0.2, chance: { p: 0.75, win: { demote: 'm', a: 15, team: 8, say: 'It was true. {m} is no longer a manager.' }, lose: { say: 'Not enough proof. You\'re watching closely.' } } }],
+    ['⬇️ Demote {m} now', { demote: 'm', a: 12, team: 5, say: 'A clear message.' }],
+    ['💬 Talk to {m}', { chance: { p: 0.5, win: { m: -5, a: 8, say: '{m} was shocked and apologized.' }, lose: { m: -10, say: '{m} denied everything.' } } }],
+    ['🙈 "Probably a misunderstanding."', { a: -20, team: -8, rep: -3, say: 'Three people are looking for new jobs.' }]
+  ], { w: 0.7, cd: 60, need: 4, who: { a: 'notmgr', m: 'mgr' } });
+
+  E('kid_bullied', 'customers', '🎒', 'Kids are bullying a boy outside', 'Every day after school. Today they threw his bag in the street.', [
+    ['🗣️ Step in', { rep: 4, say: 'The bullies ran. The boy said thanks, quietly.' }],
+    ['📞 Call his school', { rep: 3, say: 'The school took it seriously.' }],
+    ['🛡️ Let him wait inside', { rep: 5, fans: 5, say: 'He does his homework at your counter now.' }],
+    ['🙈 "Kids will be kids."', { rep: -3, say: 'A customer saw you look away.' }]
+  ], { w: 0.8, cd: 60 });
+
+  E('worker_illness', 'team', '🎗️', '{a} has cancer', 'They found it early. {a} needs months of treatment and is scared about money.', [
+    ['💵 Full pay during treatment', { cash: -1, a: 30, loyal: { a: 40 }, team: 10, capacity: [0.95, 8, '{a} in treatment'], next: ['worker_recovered_illness', 12, 20, 0.85], say: '"Just get better." {a} couldn\'t speak.' }],
+    ['🗓️ Flexible hours', { a: 15, capacity: [0.97, 8, '{a} in treatment'], next: ['worker_recovered_illness', 12, 20, 0.8], say: '{a} works when they can.' }],
+    ['🎗️ A fundraiser with customers', { rep: 6, fans: 15, a: 20, next: ['worker_recovered_illness', 12, 20, 0.85], say: 'Customers gave more than anyone expected.' }],
+    ['📋 Unpaid leave only', { a: -10, next: ['worker_recovered_illness', 12, 20, 0.7], say: '{a} understood. It was hard.' }]
+  ], { w: 0.5, cd: 80, minWeek: 20, who: { a: 'veteran' } });
+
+  E('worker_recovered_illness', 'team', '🎉', '{a} is cancer-free', 'The doctors said the words today. {a} walked into the shop crying and laughing.', [
+    ['🎉 Party for {a}', { cash: -0.1, team: 12, a: 20, say: 'Cake, balloons, and a lot of hugs.' }],
+    ['🔔 Ring a bell in the shop', { fans: 15, rep: 3, say: 'Customers cheered with you.' }],
+    ['🏖️ A paid week off to celebrate', { capacity: [0.97, 1, '{a} celebrating'], a: 25, say: '{a} went to the sea.' }],
+    ['🤗 A quiet hug', { a: 12, say: 'Some moments don\'t need words.' }]
+  ], CH);
+
+  E('eviction', 'trouble', '📜', 'You have 60 days to leave', 'The building was sold. The new owner wants it empty.', [
+    ['🏠 Find a new place now', { cash: -1, closed: [1, 'Moving'], demand: [0.95, 4, 'New address'], say: 'A new home for {company}.' }],
+    ['⚖️ Fight it in court', { cash: -0.4, chance: { p: 0.5, win: { say: 'Your lease protected you. You stay.' }, lose: { cash: -1, closed: [1, 'Moving'], say: 'You lost. You moved in a hurry.' } } }],
+    ['🤝 Talk to the new owner', { chance: { p: 0.5, win: { rent: 0.15, say: 'You can stay, for higher rent.' }, lose: { cash: -1, closed: [1, 'Moving'], say: 'They wouldn\'t listen.' } } }],
+    ['🏢 Buy it from them', { cash: -3.5, rent: -0.3, say: 'Nobody can make you leave now.' }]
+  ], { w: 0.5, cd: 100, minWeek: 25 });
+
+  E('customer_hit', 'trouble', '🚑', 'A customer was hit by a car outside', 'Crossing the street to your shop. They\'re alive, but badly hurt.', [
+    ['🏃 Run out and help', { rep: 6, say: 'You held their hand until the ambulance came.' }],
+    ['📞 Call an ambulance', { rep: 3, say: 'It came in four minutes.' }],
+    ['🚸 Push the city for a crossing', { cash: -0.3, rep: 5, say: 'A new crossing, with a light. Paid partly by you.' }],
+    ['💐 Visit them in the hospital', { rep: 4, say: 'They cried when they saw you.' }]
+  ], { w: 0.6, cd: 80 });
 })();

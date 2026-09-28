@@ -25,7 +25,7 @@ CS.EVENTS.forEach(d => {
 // Every piece of text must fill in: no leftover {placeholders}, and {a}/{b}/{m} only when the event picks those people.
 (function () {
   const G = CS.G, g = G.newGame({ name: 'Test Co', industry: 'cafe', city: 'london', funding: 'savings' });
-  G.resume(g); g.pet = '🐶';
+  G.resume(g); g.pet = '🐶'; g.family = { partner: 'Sam Lee', stage: 'married', married: 0, kids: [] };
   const texts = [];
   function walk(v) {
     if (!v) return;

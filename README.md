@@ -17,9 +17,11 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 - **Large:** oil company, soda company, football club, shipping, gold mine, airline, bank, movie studio and more.
 - **VIP:** YouTube channel, esports team, music label, zoo, theme park, space company, social media app.
 
-**800 events, and every one has 4 answers**
+**840+ events, and every one has 4 answers**
 - **Short and dramatic.** Every event is a one- or two-line situation with real stakes, like in a life simulator. Some answers are safe, some are a gamble (you see the chance), and some come back weeks later.
-- **Stories that continue.** Catch a scammer faking refunds, and the next event opens right away: "Omar is a scammer" (confront him, call the police, forgive him, or give a last chance). Forgive him, and a week or two later he's back with the same trick. There are 35+ stories like this: shoplifters, a spy on your team, a worker who steals for their sick mom, a greedy inspector, a loan shark, a pushy investor who tries to take over, a stray dog, a mystery tipper, and more.
+- **Stories that continue.** Catch a scammer faking refunds, and the next event opens right away: "Omar is a scammer" (confront him, call the police, forgive him, or give a last chance). Forgive him, and a week or two later he's back with the same trick. There are 70+ stories like this: a fight between workers turns into a punch, a worker who keeps being late tells you the truth, a slip in your shop goes to court, a kitchen fire hurts someone, shoplifters, a spy on your team, a greedy inspector, a loan shark, a pushy investor who tries to take over, and more.
+- **💍 Marriage and family.** Meet someone, go on a first date, get serious, propose, plan the wedding and get married. Your partner helps at work or feels left out, you celebrate anniversaries, and you can have up to 3 kids. The Goals tab shows your family.
+- **Serious moments.** A worker who is quietly struggling, layoffs when money runs out, a neighbor's house fire, a refugee family looking for work, a kid being bullied, a worker's illness, an eviction. The right answer is usually the kind one.
 - **Every business has its own events** (7 each), so a football academy, a banana farm and an oil company feel completely different: a scout at training, a hurricane on the farm, an oil spill, a lion out of its enclosure.
 - **Angry customers:** someone screams at you, someone slaps you, "I want to speak to the owner".
 - **Shady deals:** a bribe, hidden cash or fake reviews can pay off, or come back as a tax raid or a police investigation.
@@ -71,11 +73,25 @@ A colorful business life game for phones. Start a lemonade stand, a banana farm 
 **Feels alive**
 - Loading screen and animations on everything: cards fly in, numbers count up, confetti, coin bursts, screen shake, and a page-flip between weeks.
 - 🏙️ **Living town:** hand-drawn cartoon people walk by, go into your shop and come out with a bag. Cars drive past, trees sway, there's a city skyline, and workers wave from the windows. The building grows with your rank and has props that match your business: an oil pump, banana trees, a football goal, a rocket or a gold mine cart. The sky follows the real time of day and the weather follows the season.
-- 🎵 **5 original songs and sound effects**, played live in code with chords, bass, melody, drums and a little echo, so there are no audio files and no copyright issues. The menu, the game and wars each have their own music, and the game moves between 3 songs.
+- 🎵 **5 original songs and sound effects**, played live in code: a sampled-style piano and plucked guitar, stereo pads, bass, drums, a little echo, human timing, and a build-up and breakdown in every song. No audio files and no copyright issues. The menu, the game and wars each have their own music, and the game moves between 3 songs.
+- 🎧 **Your own songs (optional):** drop `menu.mp3`, `game1.mp3`, `game2.mp3`… and `war.mp3` into `src/music/` and build. The Android app plays them instead of the built-in songs, with fades between them. See [`src/music/README.txt`](src/music/README.txt) for where to get songs you're allowed to use.
 
-**VIP subscription** (Google Play Billing, product id `vip_monthly`)
-- VIP companies, double daily gifts, faster powers, a 4th mission slot, 2x offline earnings, an extra ad try, unlimited Friend Wars, more war energy and VIP logos.
-- On the web there is no payment, so VIP can be switched on for free as a demo.
+**💎 Shop (real money, Google Play Billing)**
+
+| Product id | What it is | Price |
+|---|---|---|
+| `vip_pass` | 👑 VIP Pass, forever (pay once) | $9.99 |
+| `starter_pack` | 🎒 Star worker, 3 war energy, 500 fans (once) | $2.99 |
+| `cash_small` | 💰 5 weeks of profit | $0.99 |
+| `cash_medium` | 💼 30 weeks of profit | $4.99 |
+| `cash_large` | 🏦 80 weeks of profit | $9.99 |
+| `war_energy` | ⚡ Full war energy +2 | $0.99 |
+
+- VIP gives the VIP companies, double daily gifts, faster powers, a 4th mission slot, 2x offline earnings, an extra ad try, unlimited Friend Wars, more war energy and VIP logos.
+- Cash packs scale with your company, so they're worth the same to a lemonade stand and an oil company.
+- The shop says the items cost real money and asks kids to check with a parent. There's a **Restore my purchases** button.
+- The web version can't take payments, so the shop only explains that buying works in the Android app. The old `vip_monthly` subscription still counts as VIP.
+- How to create the products: [PLAYSTORE.md, step 8](PLAYSTORE.md#8-set-up-the-shop-real-money).
 
 ## Development
 
@@ -91,11 +107,11 @@ src/js/events-fun.js   events, part 3: rivals, world news, lucky breaks, mini-ga
 src/js/events-life.js  events, part 4: your life, shady deals, trouble and sad goodbyes
 src/js/events-story.js stories that continue: follow-up events and people who come back
 src/js/events-biz*.js  events for one kind of business (small, medium and large businesses)
-src/js/store.js        VIP subscription (Google Play Billing via cordova-plugin-purchase)
-src/js/music.js        background song
+src/js/store.js        the real-money shop and VIP Pass (Google Play Billing via cordova-plugin-purchase)
 src/js/scene.js        the living town scene
 src/js/ui.js           screens, event cards, mini-games, sounds and animations
-src/js/music.js        the 5 songs and the little music engine that plays them
+src/js/music.js        the 5 songs and the little music engine that plays them (or your own songs)
+src/music/             optional: your own song files for the Android app
 android/               the Android project (Capacitor)
 store/                 Play Store icon, feature graphic, screenshots and listing text
 ```

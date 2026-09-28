@@ -303,9 +303,20 @@ CS.VIP_PERKS = [
   ['💤', 'Bigger offline earnings', 'Your shop earns 2x while you are away'],
   ['📺', 'Extra ad try', '4 free ad tries every week instead of 3'],
   ['⚔️', 'Unlimited Friend Wars', 'Battle friends as much as you want, and store 4 war energy'],
-  ['👑', 'VIP look', 'Golden name badge and VIP logos']
+  ['👑', 'VIP look', 'Golden name badge and VIP logos'],
+  ['♾️', 'Yours forever', 'Pay once. No subscription, nothing to cancel']
 ];
 CS.VIP_LOGOS = ['👑', '💰', '🏆', '🪐', '🐉', '🌈'];
+
+// The real-money shop (prices come from Google Play; see store.js). weeks = cash worth that many weeks of sales.
+CS.SHOP = {
+  vip: { emoji: '👑', name: 'VIP Pass', desc: 'Every VIP perk, forever. Pay once, keep it.' },
+  starter: { emoji: '🎒', name: 'Starter Pack', desc: '15 weeks of cash, a superstar worker, +3 war energy and 500 fans. Once per player.', weeks: 15 },
+  cash_s: { emoji: '💰', name: 'Bag of Cash', desc: '5 weeks of sales in cash, right now.', weeks: 5 },
+  cash_m: { emoji: '💼', name: 'Briefcase of Cash', desc: '30 weeks of sales in cash. Best value!', weeks: 30 },
+  cash_l: { emoji: '🏦', name: 'Bank Vault', desc: '80 weeks of sales in cash. Skip ahead!', weeks: 80 },
+  energy: { emoji: '⚡', name: 'War Energy Refill', desc: 'Full war energy, plus 2 extra.' }
+};
 
 // Link used when players share the game. Update it if you change the app id (see PLAYSTORE.md).
 CS.SHARE_URL = 'https://play.google.com/store/apps/details?id=com.companysim.game';

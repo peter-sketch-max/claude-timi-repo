@@ -15,14 +15,14 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['📉 Cut prices that weekend', { supply: [0.06, 2, 'Price cut'], demand: [1.15, 2, 'Beat the opening'], say: 'Their opening was half empty.' }],
     ['🎉 Throw a bigger party', { cash: -0.4, fans: 20, rival: -0.05, say: 'Everyone came to your party instead.' }],
     ['⭐ Focus on quality', { rep: 3, demand: [0.95, 3, 'New rival'], say: 'You lost a few, but kept the best customers.' }],
-    ['🤝 Say hello with a gift', { rep: 2, say: 'They were surprised. Things are friendly for now.' }]
+    ['🤝 Say hello with a gift', { rep: 2, next: ['neighbor_rival_deal', 3, 6, 0.6], say: 'They were surprised. Things are friendly for now.' }]
   ], { w: 1.5, cd: 30, minWeek: 6, init: rival });
 
   E('rival_price_cut', 'rivals', '🏷️', '{rival} slashed their prices', 'They\'re 30% cheaper than you. Your regulars are starting to leave.', [
     ['📉 Match their prices', { price: -1, say: 'You kept your customers. Your profits shrank.' }],
     ['⭐ Stay pricey but better', { cash: -0.3, rep: 4, say: 'Quality kept your best customers.' }],
     ['🎟️ A loyalty deal for regulars', { cash: -0.1, happy: 4, say: 'Your regulars stayed.' }],
-    ['⏳ Wait for them to run out', { demand: [0.88, 4, 'Price war'], chance: { p: 0.5, win: { rival: -0.1, say: 'They couldn\'t afford it. Prices went back up.' }, lose: { say: 'They lasted longer than you hoped.' } } }]
+    ['⏳ Wait for them to run out', { demand: [0.88, 4, 'Price war'], chance: { p: 0.5, win: { rival: -0.1, then: 'rival_collapse', say: 'They couldn\'t afford it.' }, lose: { say: 'They lasted longer than you hoped.' } } }]
   ], { w: 2, cd: 15, minWeek: 4, init: rival });
 
   E('rival_poach_manager', 'rivals', '🎣', '{rival} is trying to steal {m}', 'They offered your manager a huge salary. {m} hasn\'t answered yet.', [
@@ -62,7 +62,7 @@ var CS = globalThis.CS = globalThis.CS || {};
 
   E('rival_tv_debate', 'rivals', '📺', '{rival}\'s boss wants a TV debate', 'Live TV. Both bosses. The topic: who\'s the best {industry} in {city}.', [
     ['🎤 Accept and prepare', { chance: { p: 0.6, win: { fans: 40, rep: 5, rival: -0.08, say: 'You won the debate. Everyone is talking about you.' }, lose: { rep: -3, say: 'They were sharper.' } } }],
-    ['🔥 Go on the attack', { chance: { p: 0.45, win: { fans: 50, rival: -0.12, say: 'You destroyed them on live TV.' }, lose: { rep: -6, say: 'You came off as mean.' } } }],
+    ['🔥 Go on the attack', { chance: { p: 0.45, win: { fans: 50, rival: -0.12, say: 'You destroyed them on live TV.' }, lose: { rep: -3, then: 'debate_backlash', say: 'You came off as mean.' } } }],
     ['🤝 Stay classy and kind', { rep: 5, fans: 15, say: 'People liked you more.' }],
     ['🙅 Don\'t show up', { rep: -3, rival: 0.05, say: 'They talked about you with an empty chair.' }]
   ], { w: 1, cd: 40, minWeek: 12, init: rival });
@@ -105,7 +105,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('rival_lawsuit', 'rivals', '⚖️', '{rival} is suing you', 'They say your logo looks too much like theirs.', [
     ['⚖️ Fight it', { cash: -0.5, chance: { p: 0.6, win: { rep: 3, say: 'Case thrown out.' }, lose: { cash: -1, say: 'You lost. New logo needed.' } } }],
     ['🎨 Just change your logo', { cash: -0.3, fans: 5, say: 'New look. Fresh start.' }],
-    ['⚖️ Sue them back', { cash: -0.7, chance: { p: 0.45, win: { cash: 1.5, rival: -0.1, say: 'You won. They paid.' }, lose: { cash: -0.5, say: 'Expensive loss.' } } }],
+    ['⚖️ Sue them back', { cash: -0.3, then: 'countersuit_trial', say: 'Your lawyer filed the papers.' }],
     ['🤝 Settle quietly', { cash: -0.5, say: 'Done.' }]
   ], { w: 1, cd: 35, minWeek: 10, init: rival });
 

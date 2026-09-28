@@ -17,7 +17,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   E('boss_burnout', 'boss', '🥵', 'You haven\'t slept properly in weeks', 'Your hands are shaking. You forgot your own birthday.', [
     ['🏖️ Take a week off', { closed: [1, 'Boss on vacation'], team: 5, say: 'You came back a new person.' }],
     ['👔 Let the manager run things', { capacity: [0.95, 2, 'Boss resting'], say: 'You rested. The shop survived.' }],
-    ['☕ More coffee', { chance: { p: 0.5, win: { say: 'You pushed through. Somehow.' }, lose: { rep: -3, team: -5, say: 'You snapped at a customer. Everyone saw.' } } }],
+    ['☕ More coffee', { chance: { p: 0.5, win: { say: 'You pushed through. Somehow.' }, lose: { rep: -3, then: 'burnout_breakdown', say: 'You snapped at a customer. Then you ran to the back.' } } }],
     ['🧘 Short breaks every day', { team: 3, say: 'Small breaks. Big difference.' }]
   ], { w: 1.5, cd: 30, minWeek: 10 });
 
@@ -32,7 +32,7 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🏠 Leave early every Friday', { capacity: [0.97, 8, 'Family time'], team: 3, say: 'Fridays are for family now.' }],
     ['✈️ A family trip', { cash: -0.3, closed: [1, 'Family trip'], say: 'Best week of the year.' }],
     ['🧑‍🤝‍🧑 Bring them to work', { team: 4, fans: 5, say: 'They saw what you built. They\'re proud.' }],
-    ['💼 "The business comes first"', { say: 'The house is very quiet when you get home.' }]
+    ['💼 "The business comes first"', { next: ['family_ultimatum', 3, 6, 0.7], say: 'The house is very quiet when you get home.' }]
   ], { w: 1.2, cd: 30, minWeek: 8 });
 
   E('cousin_job', 'boss', '🧑', 'Your cousin needs a job', 'Your aunt calls. "Please. He\'ll work hard." He has never worked before.', [
@@ -112,12 +112,12 @@ var CS = globalThis.CS = globalThis.CS || {};
     ['🚶 Go without a van', { capacity: [0.92, 4, 'No van'], say: 'Deliveries are slow now.' }]
   ], { w: 1, cd: 40 });
 
-  E('dating_boss', 'boss', '💘', 'You met someone special', 'You keep checking your phone and smiling. The team noticed.', [
-    ['🍷 Take a night off for a date', { team: 4, say: 'You came back smiling.' }],
-    ['💼 Bring them to see the shop', { team: 3, fans: 5, say: 'The team approves.' }],
+  E('dating_boss', 'boss', '💘', 'You met someone: {name}', '{name} came in for coffee and stayed three hours. You keep smiling at your phone.', [
+    ['🍷 Ask {name} on a date', { team: 2, then: 'first_date', say: 'They said yes before you finished asking.' }],
+    ['💼 Show them your shop', { team: 3, then: 'first_date', say: 'The team approves. Now ask them out!' }],
     ['📵 No time for love', { say: 'Maybe someday.' }],
-    ['💐 Plan something big', { cash: -0.1, say: 'They said it was the best date ever.' }]
-  ], { w: 1, cd: 40, minWeek: 5 });
+    ['💐 Plan something big', { cash: -0.1, then: 'first_date', say: 'You booked the best table in {city}.' }]
+  ], { w: 1.2, cd: 30, minWeek: 5, init: H.person, cond: function (g) { return !g.family || !g.family.stage; } });
 
   E('vacation_call', 'boss', '🏝️', 'The shop calls during your vacation', 'You finally took a break. Now {m} says something is wrong.', [
     ['✈️ Fly back now', { cash: -0.2, team: 4, say: 'You fixed it. Vacation over.' }],
@@ -271,7 +271,7 @@ var CS = globalThis.CS = globalThis.CS || {};
   ], { w: 1, cd: 40 });
 
   E('shady_skip_safety', 'shady', '⚠️', 'Skip the safety check?', 'It costs a lot and closes you for a day. "Nobody checks anyway."', [
-    ['🤫 Skip it', { chance: { p: 0.7, win: { say: 'Nothing happened.' }, lose: { cash: -1.5, rep: -8, say: 'Something broke. Someone got hurt.' } } }],
+    ['🤫 Skip it', { chance: { p: 0.7, win: { say: 'Nothing happened.' }, lose: { rep: -3, then: 'safety_victim', say: 'You heard a scream from the back.' } } }],
     ['✅ Do the check', { cash: -0.3, closed: [1, 'Safety check'], say: 'All safe.' }],
     ['⏳ Do it next month', { chance: { p: 0.85, win: { say: 'Nothing happened. You did it later.' }, lose: { cash: -1, rep: -4, say: 'Something broke before you did it.' } } }],
     ['🧰 Do it at night', { cash: -0.4, team: -4, say: 'Safe. The team worked late.' }]
