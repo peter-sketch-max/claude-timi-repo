@@ -5,6 +5,7 @@
 **Files**
 - `lowpoly_pack.blend`: open it in Blender and all 40 models are there.
 - `lowpoly_pack.glb`: the same models for Unity, Godot, Unreal, or three.js.
+- `roblox/`: Roblox Studio versions (FBX files with the colours baked into a texture). See `roblox/README.md`.
 - `lowpoly_pack.py`: the script that builds them. In Blender go to **Scripting → Open → Run Script**.
   Change the numbers in any model function and run it again to make your own versions.
 
